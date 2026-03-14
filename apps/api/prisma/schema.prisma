@@ -1,0 +1,279 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  EDITOR
+  MODERATOR
+  USER
+}
+
+enum MembershipPlan {
+  FREE
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  EXPIRED
+  PAST_DUE
+}
+
+enum PromptVisibility {
+  FREE
+  EXCLUSIVE
+}
+
+enum PromptStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PromptType {
+  GEMINI_IMAGE
+  IMAGE
+  CONTENT
+  KEYWORD
+  CODE
+  VIDEO
+  WEBSITE
+}
+
+enum ImagePromptMode {
+  NORMAL
+  RECREATE
+}
+
+enum WebsitePromptKind {
+  COMPONENT
+  FEATURE
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum EngagementEventType {
+  VIEW
+  LIKE
+  SAVE
+  SHARE
+}
+
+model User {
+  id               String            @id @default(cuid())
+  email            String            @unique
+  name             String?
+  avatarUrl        String?           @db.VarChar(1024)
+  role             UserRole          @default(USER)
+  plan             MembershipPlan    @default(FREE)
+
+  prompts          Prompt[]
+  collabs          Collab[]
+
+  likes            PromptLike[]
+  saves            SavedPrompt[]
+  events           EngagementEvent[]
+
+  submissions      Submission[]      @relation("SubmissionAuthor")
+  reviewedSubmits  Submission[]      @relation("SubmissionReviewer")
+  subscriptions    Subscription[]
+
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model Prompt {
+  id                  String              @id @default(cuid())
+  title               String
+  slug                String              @unique
+  description         String?             @db.Text
+  content             String              @db.LongText
+
+  promptType          PromptType
+  imageMode           ImagePromptMode?
+  websitePromptKind   WebsitePromptKind?
+  websiteComponent    String?
+  websiteFeature      String?
+
+  visibility          PromptVisibility    @default(FREE)
+  status              PromptStatus        @default(DRAFT)
+
+  featuredImageUrl    String?             @db.VarChar(1024)
+
+  authorId            String
+  author              User                @relation(fields: [authorId], references: [id])
+
+  categories          Category[]          @relation("PromptCategories")
+  tags                Tag[]               @relation("PromptTags")
+
+  likes               PromptLike[]
+  saves               SavedPrompt[]
+  events              EngagementEvent[]
+
+  collabs             CollabPrompt[]
+  includedInCollabs   CollabPrompt[]      @relation("PromptSource")
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  publishedAt         DateTime?
+
+  @@index([promptType, status, visibility])
+  @@index([publishedAt])
+}
+
+model Collab {
+  id                String        @id @default(cuid())
+  title             String
+  slug              String        @unique
+  description       String?         @db.Text
+  featuredImageUrl  String?         @db.VarChar(1024)
+
+  authorId          String
+  author            User          @relation(fields: [authorId], references: [id])
+
+  prompts           CollabPrompt[] @relation("CollabItems")
+  categories        Category[]     @relation("CollabCategories")
+  tags              Tag[]          @relation("CollabTags")
+
+  visibility        PromptVisibility @default(FREE)
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([visibility, createdAt])
+}
+
+model CollabPrompt {
+  collabId        String
+  promptId        String
+  sourcePromptId  String?
+  sortOrder       Int          @default(0)
+
+  collab          Collab       @relation("CollabItems", fields: [collabId], references: [id])
+  prompt          Prompt       @relation(fields: [promptId], references: [id])
+  sourcePrompt    Prompt?      @relation("PromptSource", fields: [sourcePromptId], references: [id])
+
+  @@id([collabId, promptId])
+  @@index([sortOrder])
+}
+
+model Category {
+  id           String    @id @default(cuid())
+  name         String    @unique
+  slug         String    @unique
+
+  prompts      Prompt[]  @relation("PromptCategories")
+  collabs      Collab[]  @relation("CollabCategories")
+
+  createdAt    DateTime  @default(now())
+}
+
+model Tag {
+  id           String    @id @default(cuid())
+  name         String    @unique
+  slug         String    @unique
+
+  prompts      Prompt[]  @relation("PromptTags")
+  collabs      Collab[]  @relation("CollabTags")
+
+  createdAt    DateTime  @default(now())
+}
+
+model PromptLike {
+  promptId     String
+  userId       String
+  createdAt    DateTime      @default(now())
+
+  prompt       Prompt        @relation(fields: [promptId], references: [id])
+  user         User          @relation(fields: [userId], references: [id])
+
+  @@id([promptId, userId])
+  @@index([createdAt])
+}
+
+model SavedPrompt {
+  promptId     String
+  userId       String
+  createdAt    DateTime      @default(now())
+
+  prompt       Prompt        @relation(fields: [promptId], references: [id])
+  user         User          @relation(fields: [userId], references: [id])
+
+  @@id([promptId, userId])
+  @@index([createdAt])
+}
+
+model EngagementEvent {
+  id           String              @id @default(cuid())
+  promptId      String
+  userId        String?
+  eventType     EngagementEventType
+
+  prompt        Prompt              @relation(fields: [promptId], references: [id])
+  user          User?               @relation(fields: [userId], references: [id])
+
+  createdAt     DateTime            @default(now())
+
+  @@index([promptId, eventType, createdAt])
+  @@index([userId, eventType, createdAt])
+}
+
+model Submission {
+  id                String            @id @default(cuid())
+  title             String
+  description       String?           @db.Text
+  content           String            @db.LongText
+
+  promptType        PromptType
+  imageMode         ImagePromptMode?
+  websitePromptKind WebsitePromptKind?
+
+  previewImageUrl   String?           @db.VarChar(1024)
+
+  status            SubmissionStatus  @default(PENDING)
+
+  submittedById     String
+  submittedBy       User              @relation("SubmissionAuthor", fields: [submittedById], references: [id])
+
+  reviewerId        String?
+  reviewer          User?             @relation("SubmissionReviewer", fields: [reviewerId], references: [id])
+
+  reviewNote        String?           @db.Text
+
+  createdAt         DateTime          @default(now())
+  reviewedAt        DateTime?
+
+  @@index([status, createdAt])
+}
+
+model Subscription {
+  id               String              @id @default(cuid())
+  userId           String
+  user             User                @relation(fields: [userId], references: [id])
+
+  plan             MembershipPlan
+  status           SubscriptionStatus
+  provider         String
+  providerRef      String?             @unique
+
+  startAt          DateTime
+  endAt            DateTime?
+  canceledAt       DateTime?
+
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([userId, status])
+}

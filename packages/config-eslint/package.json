@@ -1,0 +1,9 @@
+{
+  "name": "@gemini-prompts/config-eslint",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "peerDependencies": {
+    "eslint": ">=8"
+  }
+}
