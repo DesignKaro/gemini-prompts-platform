@@ -1,0 +1,2 @@
+ALTER TABLE `User`
+  ADD COLUMN `suspendedAt` DATETIME(3) NULL;

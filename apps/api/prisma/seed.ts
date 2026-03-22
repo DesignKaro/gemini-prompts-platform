@@ -1,6 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import { AuthProvider, PrismaClient } from '@prisma/client';
+import { scrypt as nodeScrypt } from 'node:crypto';
+import { promisify } from 'node:util';
 
 const prisma = new PrismaClient();
+const scrypt = promisify(nodeScrypt);
 
 function slugify(value: string): string {
   return value
@@ -11,7 +14,15 @@ function slugify(value: string): string {
     .replace(/-+/g, '-');
 }
 
+async function hashPassword(password: string): Promise<string> {
+  const salt = 'seed-static-salt';
+  const derivedKey = (await scrypt(password, salt, 64)) as Buffer;
+  return `${salt}:${derivedKey.toString('hex')}`;
+}
+
 async function main() {
+  const seedPasswordHash = await hashPassword('SeedPass123!');
+
   const admin = await prisma.user.upsert({
     where: { email: 'admin@geminiprompts.local' },
     update: {
@@ -39,6 +50,56 @@ async function main() {
       name: 'Creator User',
       role: 'USER',
       plan: 'FREE',
+    },
+  });
+
+  await prisma.passwordCredential.upsert({
+    where: { userId: admin.id },
+    update: { passwordHash: seedPasswordHash },
+    create: {
+      userId: admin.id,
+      passwordHash: seedPasswordHash,
+    },
+  });
+
+  await prisma.passwordCredential.upsert({
+    where: { userId: contributor.id },
+    update: { passwordHash: seedPasswordHash },
+    create: {
+      userId: contributor.id,
+      passwordHash: seedPasswordHash,
+    },
+  });
+
+  await prisma.authAccount.upsert({
+    where: {
+      provider_providerAccountId: {
+        provider: AuthProvider.CREDENTIALS,
+        providerAccountId: admin.email,
+      },
+    },
+    update: { email: admin.email, userId: admin.id },
+    create: {
+      userId: admin.id,
+      provider: AuthProvider.CREDENTIALS,
+      providerAccountId: admin.email,
+      email: admin.email,
+    },
+  });
+
+  await prisma.authAccount.upsert({
+    where: {
+      provider_providerAccountId: {
+        provider: AuthProvider.CREDENTIALS,
+        providerAccountId: contributor.email,
+      },
+    },
+    update: { email: contributor.email, userId: contributor.id },
+    create: {
+      userId: contributor.id,
+      provider: AuthProvider.CREDENTIALS,
+      providerAccountId: contributor.email,
+      email: contributor.email,
     },
   });
 
@@ -212,7 +273,7 @@ async function main() {
     },
   });
 
-  console.log('Seed completed successfully.');
+  console.log('Seed completed successfully. Seed credentials password: SeedPass123!');
 }
 
 main()

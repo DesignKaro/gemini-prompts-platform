@@ -15,6 +15,9 @@ yarn-error.log*
 
 # Build output
 .next
+apps/web/.next.broken-*/
+apps/web/.next.rebuild-*/
+apps/web/.next.stale-*/
 dist
 coverage
 .turbo
@@ -22,6 +25,9 @@ coverage
 # Logs
 logs
 *.log
+
+# Local npm cache (should never be committed)
+.npm-cache/
 
 # Prisma
 apps/api/prisma/dev.db

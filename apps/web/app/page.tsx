@@ -1,11 +1,50 @@
-export default function HomePage() {
+import HomePageClient from './home-page-client';
+import {
+  getAuthorList,
+  getHomeContent,
+  getPromptList,
+  type HomeResponse,
+  type ListResponse,
+  type PublicAuthor,
+  type PublicPrompt,
+} from '../lib/public-content';
+
+export default async function HomePage() {
+  let initialHomeContent: HomeResponse | null = null;
+  let initialLatestPrompts: ListResponse<PublicPrompt> | null = null;
+  let initialTrendingAuthors: ListResponse<PublicAuthor> | null = null;
+
+  try {
+    initialHomeContent = await getHomeContent();
+  } catch {
+    initialHomeContent = null;
+  }
+
+  try {
+    initialLatestPrompts = await getPromptList({
+      sort: 'latest',
+      take: 8,
+      skip: 0,
+      includeTags: 1,
+    });
+  } catch {
+    initialLatestPrompts = null;
+  }
+
+  try {
+    initialTrendingAuthors = await getAuthorList({
+      take: 12,
+      sort: 'popular',
+    });
+  } catch {
+    initialTrendingAuthors = null;
+  }
+
   return (
-    <main className="mx-auto max-w-[1380px] px-4 py-14">
-      <h1 className="text-3xl font-medium text-ink">AI Prompt Sharing Platform</h1>
-      <p className="mt-3 max-w-2xl text-slate-700">
-        Foundation ready. Next step is implementing CMS workflows, membership gating, and discovery
-        experiences phase by phase.
-      </p>
-    </main>
+    <HomePageClient
+      initialHomeContent={initialHomeContent}
+      initialLatestPrompts={initialLatestPrompts}
+      initialTrendingAuthors={initialTrendingAuthors}
+    />
   );
 }

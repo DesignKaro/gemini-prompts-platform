@@ -12,6 +12,9 @@ const config: Config = {
         brand: '#0a7f5a',
         ink: '#0f172a',
       },
+      fontFamily: {
+        poppins: ['var(--font-poppins)'],
+      },
     },
   },
   plugins: [],

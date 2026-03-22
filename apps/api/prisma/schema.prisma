@@ -12,6 +12,7 @@ enum UserRole {
   EDITOR
   MODERATOR
   USER
+  SUPERADMIN
 }
 
 enum MembershipPlan {
@@ -24,6 +25,11 @@ enum SubscriptionStatus {
   CANCELED
   EXPIRED
   PAST_DUE
+}
+
+enum AuthProvider {
+  GOOGLE
+  CREDENTIALS
 }
 
 enum PromptVisibility {
@@ -71,209 +77,641 @@ enum EngagementEventType {
   SHARE
 }
 
+enum CommentStatus {
+  PENDING
+  APPROVED
+  TRASH
+}
+
+enum CommentTargetType {
+  PROMPT
+  POST
+}
+
+enum MediaStatus {
+  ACTIVE
+  TRASH
+}
+
+enum MediaTargetType {
+  PROMPT
+  POST
+  CATEGORY
+  USER
+}
+
+enum PostType {
+  POST
+  PROMPT
+}
+
+enum PostFormat {
+  STANDARD
+  CHECKLIST
+  GALLERY
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?          @db.Text
+  isSystem    Boolean          @default(false)
+  permissions RolePermission[]
+  users       UserRoleAssignment[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  code        String           @unique
+  label       String
+  group       String
+  description String?          @db.Text
+  roles       RolePermission[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+}
+
+model UserRoleAssignment {
+  userId String
+  roleId String
+  user   User @relation(fields: [userId], references: [id])
+  role   Role @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+  @@map("UserRole")
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  PUBLISH
+  UNPUBLISH
+  ARCHIVE
+  RESTORE
+}
+
+enum AuditTargetType {
+  PROMPT
+  POST
+  CATEGORY
+  TAG
+  COMMENT
+  MEDIA
+  USER
+}
+
 model User {
-  id               String            @id @default(cuid())
-  email            String            @unique
-  name             String?
-  avatarUrl        String?           @db.VarChar(1024)
-  role             UserRole          @default(USER)
-  plan             MembershipPlan    @default(FREE)
+  id              String         @id @default(cuid())
+  email           String         @unique
+  name            String?
+  handle          String?        @unique @db.VarChar(40)
+  profileTitle    String?        @db.VarChar(120)
+  bio             String?        @db.Text
+  focusTags       Json?
+  avatarUrl       String?        @db.LongText
+  avatarUpdatedAt DateTime?
+  suspendedAt     DateTime?
+  role            UserRole       @default(USER)
+  plan            MembershipPlan @default(FREE)
 
-  prompts          Prompt[]
-  collabs          Collab[]
+  prompts      Prompt[]
+  collabs      Collab[]
+  posts        Post[]
+  transactions Transaction[]
+  comments     Comment[] @relation("CommentAuthor")
+  moderatedComments Comment[] @relation("CommentModerator")
+  commentLikes CommentLike[]
+  mediaAssets  MediaAsset[] @relation("MediaUploader")
+  auditLogs    AuditLog[] @relation("AuditActor")
 
-  likes            PromptLike[]
-  saves            SavedPrompt[]
-  events           EngagementEvent[]
+  likes  PromptLike[]
+  saves  SavedPrompt[]
+  promptViews PromptView[]
+  postViews   PostView[]
+  following AuthorFollow[] @relation("UserFollowing")
+  followers AuthorFollow[] @relation("UserFollowers")
+  events EngagementEvent[]
+  roles  UserRoleAssignment[]
 
-  submissions      Submission[]      @relation("SubmissionAuthor")
-  reviewedSubmits  Submission[]      @relation("SubmissionReviewer")
-  subscriptions    Subscription[]
+  submissions        Submission[]        @relation("SubmissionAuthor")
+  reviewedSubmits    Submission[]        @relation("SubmissionReviewer")
+  subscriptions      Subscription[]
+  authAccounts       AuthAccount[]
+  refreshTokens      RefreshToken[]
+  passwordCredential PasswordCredential?
 
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
 }
 
 model Prompt {
-  id                  String              @id @default(cuid())
-  title               String
-  slug                String              @unique
-  description         String?             @db.Text
-  content             String              @db.LongText
+  id          String  @id @default(cuid())
+  title       String
+  slug        String  @unique
+  description String? @db.Text
+  content     String  @db.LongText
 
-  promptType          PromptType
-  imageMode           ImagePromptMode?
-  websitePromptKind   WebsitePromptKind?
-  websiteComponent    String?
-  websiteFeature      String?
+  promptType        PromptType
+  imageMode         ImagePromptMode?
+  websitePromptKind WebsitePromptKind?
+  websiteComponent  String?
+  websiteFeature    String?
 
-  visibility          PromptVisibility    @default(FREE)
-  status              PromptStatus        @default(DRAFT)
+  visibility PromptVisibility @default(FREE)
+  status     PromptStatus     @default(DRAFT)
 
-  featuredImageUrl    String?             @db.VarChar(1024)
+  featuredImageUrl String? @db.LongText
+  seoTitle         String? @db.VarChar(191)
+  seoDescription   String? @db.VarChar(512)
 
-  authorId            String
-  author              User                @relation(fields: [authorId], references: [id])
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
 
-  categories          Category[]          @relation("PromptCategories")
-  tags                Tag[]               @relation("PromptTags")
+  primaryCategoryId String?
+  primaryCategory   Category? @relation("PromptPrimaryCategory", fields: [primaryCategoryId], references: [id])
+  categories Category[] @relation("PromptCategories")
+  tags       Tag[]      @relation("PromptTags")
 
-  likes               PromptLike[]
-  saves               SavedPrompt[]
-  events              EngagementEvent[]
+  likes   PromptLike[]
+  ipLikes PromptLikeIp[]
+  saves   SavedPrompt[]
+  views   PromptView[]
+  events  EngagementEvent[]
 
-  collabs             CollabPrompt[]
-  includedInCollabs   CollabPrompt[]      @relation("PromptSource")
+  collabs           CollabPrompt[]
+  includedInCollabs CollabPrompt[] @relation("PromptSource")
+  transactions      Transaction[]
 
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  publishedAt         DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  deletedAt   DateTime?
+
+  viewCount Int @default(0)
+  likeCount Int @default(0)
+  saveCount Int @default(0)
 
   @@index([promptType, status, visibility])
   @@index([publishedAt])
+  @@index([deletedAt])
+  @@index([deletedAt, updatedAt])
+  @@index([deletedAt, viewCount])
+  @@index([authorId, status, deletedAt, publishedAt, updatedAt], map: "Prompt_public_author_latest_idx")
 }
 
 model Collab {
-  id                String        @id @default(cuid())
-  title             String
-  slug              String        @unique
-  description       String?         @db.Text
-  featuredImageUrl  String?         @db.VarChar(1024)
+  id               String  @id @default(cuid())
+  title            String
+  slug             String  @unique
+  description      String? @db.Text
+  featuredImageUrl String? @db.LongText
 
-  authorId          String
-  author            User          @relation(fields: [authorId], references: [id])
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
 
-  prompts           CollabPrompt[] @relation("CollabItems")
-  categories        Category[]     @relation("CollabCategories")
-  tags              Tag[]          @relation("CollabTags")
+  prompts    CollabPrompt[] @relation("CollabItems")
+  categories Category[]     @relation("CollabCategories")
+  tags       Tag[]          @relation("CollabTags")
 
-  visibility        PromptVisibility @default(FREE)
+  visibility PromptVisibility @default(FREE)
 
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([visibility, createdAt])
 }
 
 model CollabPrompt {
-  collabId        String
-  promptId        String
-  sourcePromptId  String?
-  sortOrder       Int          @default(0)
+  collabId       String
+  promptId       String
+  sourcePromptId String?
+  sortOrder      Int     @default(0)
 
-  collab          Collab       @relation("CollabItems", fields: [collabId], references: [id])
-  prompt          Prompt       @relation(fields: [promptId], references: [id])
-  sourcePrompt    Prompt?      @relation("PromptSource", fields: [sourcePromptId], references: [id])
+  collab       Collab  @relation("CollabItems", fields: [collabId], references: [id])
+  prompt       Prompt  @relation(fields: [promptId], references: [id])
+  sourcePrompt Prompt? @relation("PromptSource", fields: [sourcePromptId], references: [id])
 
   @@id([collabId, promptId])
   @@index([sortOrder])
 }
 
 model Category {
-  id           String    @id @default(cuid())
-  name         String    @unique
-  slug         String    @unique
+  id   String @id @default(cuid())
+  name String @unique
+  slug String @unique
 
-  prompts      Prompt[]  @relation("PromptCategories")
-  collabs      Collab[]  @relation("CollabCategories")
+  parentId String?
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
 
-  createdAt    DateTime  @default(now())
+  description String? @db.Text
+  imageUrl    String? @db.LongText
+  colorConfig Json?
+  sortOrder   Int     @default(0)
+  deletedAt   DateTime?
+
+  prompts Prompt[] @relation("PromptCategories")
+  collabs Collab[] @relation("CollabCategories")
+  posts   Post[]   @relation("PostCategories")
+  primaryPrompts Prompt[] @relation("PromptPrimaryCategory")
+  primaryPosts   Post[]   @relation("PostPrimaryCategory")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([deletedAt])
 }
 
 model Tag {
-  id           String    @id @default(cuid())
-  name         String    @unique
-  slug         String    @unique
+  id    String  @id @default(cuid())
+  name  String  @unique
+  slug  String  @unique
+  color String? @db.VarChar(50)
+  deletedAt DateTime?
 
-  prompts      Prompt[]  @relation("PromptTags")
-  collabs      Collab[]  @relation("CollabTags")
+  prompts Prompt[] @relation("PromptTags")
+  collabs Collab[] @relation("CollabTags")
+  posts   Post[]   @relation("PostTags")
 
-  createdAt    DateTime  @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([deletedAt])
+}
+
+model Post {
+  id      String  @id @default(cuid())
+  title   String
+  slug    String  @unique
+  excerpt String? @db.Text
+  content String  @db.LongText
+
+  status     PromptStatus     @default(DRAFT)
+  visibility PromptVisibility @default(FREE)
+  postType   PostType         @default(POST)
+  postFormat PostFormat       @default(STANDARD)
+
+  featuredImageUrl String? @db.LongText
+  seoTitle         String? @db.VarChar(191)
+  seoDescription   String? @db.VarChar(512)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  primaryCategoryId String?
+  primaryCategory   Category? @relation("PostPrimaryCategory", fields: [primaryCategoryId], references: [id])
+  categories        Category[] @relation("PostCategories")
+  tags              Tag[]      @relation("PostTags")
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  deletedAt   DateTime?
+
+  viewCount    Int @default(0)
+  commentCount Int @default(0)
+  views        PostView[]
+
+  @@index([status, visibility])
+  @@index([publishedAt])
+  @@index([deletedAt])
+  @@index([deletedAt, updatedAt])
+  @@index([deletedAt, viewCount])
+  @@index([authorId, status, deletedAt, publishedAt, updatedAt], map: "Post_public_author_latest_idx")
+}
+
+model Transaction {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  amount   Decimal @db.Decimal(10, 2)
+  currency String  @default("USD")
+
+  provider    String
+  providerRef String @unique
+
+  status String
+
+  promptId String?
+  prompt   Prompt? @relation(fields: [promptId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([createdAt])
 }
 
 model PromptLike {
-  promptId     String
-  userId       String
-  createdAt    DateTime      @default(now())
+  promptId  String
+  userId    String
+  createdAt DateTime @default(now())
 
-  prompt       Prompt        @relation(fields: [promptId], references: [id])
-  user         User          @relation(fields: [userId], references: [id])
+  prompt Prompt @relation(fields: [promptId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 
   @@id([promptId, userId])
   @@index([createdAt])
+}
+
+model PromptLikeIp {
+  promptId  String
+  ipHash    String   @db.VarChar(64)
+  createdAt DateTime @default(now())
+
+  prompt Prompt @relation(fields: [promptId], references: [id])
+
+  @@id([promptId, ipHash])
+  @@index([createdAt])
+  @@index([ipHash])
+}
+
+model PromptView {
+  promptId      String
+  viewerHash    String   @db.VarChar(64)
+  userId        String?
+  firstViewedAt DateTime @default(now())
+  lastViewedAt  DateTime @default(now())
+  viewCount     Int      @default(1)
+
+  prompt Prompt @relation(fields: [promptId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@id([promptId, viewerHash])
+  @@index([viewerHash])
+  @@index([lastViewedAt])
+  @@index([userId, lastViewedAt])
+}
+
+model PostView {
+  postId        String
+  viewerHash    String   @db.VarChar(64)
+  userId        String?
+  firstViewedAt DateTime @default(now())
+  lastViewedAt  DateTime @default(now())
+  viewCount     Int      @default(1)
+
+  post Post  @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@id([postId, viewerHash])
+  @@index([viewerHash])
+  @@index([lastViewedAt])
+  @@index([userId, lastViewedAt])
 }
 
 model SavedPrompt {
-  promptId     String
-  userId       String
-  createdAt    DateTime      @default(now())
+  promptId  String
+  userId    String
+  createdAt DateTime @default(now())
 
-  prompt       Prompt        @relation(fields: [promptId], references: [id])
-  user         User          @relation(fields: [userId], references: [id])
+  prompt Prompt @relation(fields: [promptId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 
   @@id([promptId, userId])
   @@index([createdAt])
+  @@index([userId, createdAt])
+}
+
+model AuthorFollow {
+  followerId String
+  authorId   String
+  createdAt  DateTime @default(now())
+
+  follower User @relation("UserFollowing", fields: [followerId], references: [id])
+  author   User @relation("UserFollowers", fields: [authorId], references: [id])
+
+  @@id([followerId, authorId])
+  @@index([authorId, createdAt])
+  @@index([followerId, createdAt])
 }
 
 model EngagementEvent {
-  id           String              @id @default(cuid())
-  promptId      String
-  userId        String?
-  eventType     EngagementEventType
+  id        String              @id @default(cuid())
+  promptId  String
+  userId    String?
+  eventType EngagementEventType
 
-  prompt        Prompt              @relation(fields: [promptId], references: [id])
-  user          User?               @relation(fields: [userId], references: [id])
+  prompt Prompt @relation(fields: [promptId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
 
-  createdAt     DateTime            @default(now())
+  createdAt DateTime @default(now())
 
   @@index([promptId, eventType, createdAt])
   @@index([userId, eventType, createdAt])
+  @@index([eventType, createdAt])
 }
 
 model Submission {
-  id                String            @id @default(cuid())
-  title             String
-  description       String?           @db.Text
-  content           String            @db.LongText
+  id          String  @id @default(cuid())
+  title       String
+  description String? @db.Text
+  content     String  @db.LongText
 
   promptType        PromptType
   imageMode         ImagePromptMode?
   websitePromptKind WebsitePromptKind?
 
-  previewImageUrl   String?           @db.VarChar(1024)
+  previewImageUrl String? @db.VarChar(1024)
 
-  status            SubmissionStatus  @default(PENDING)
+  status SubmissionStatus @default(PENDING)
 
-  submittedById     String
-  submittedBy       User              @relation("SubmissionAuthor", fields: [submittedById], references: [id])
+  submittedById String
+  submittedBy   User   @relation("SubmissionAuthor", fields: [submittedById], references: [id])
 
-  reviewerId        String?
-  reviewer          User?             @relation("SubmissionReviewer", fields: [reviewerId], references: [id])
+  reviewerId String?
+  reviewer   User?   @relation("SubmissionReviewer", fields: [reviewerId], references: [id])
 
-  reviewNote        String?           @db.Text
+  reviewNote String? @db.Text
 
-  createdAt         DateTime          @default(now())
-  reviewedAt        DateTime?
+  createdAt  DateTime  @default(now())
+  reviewedAt DateTime?
 
   @@index([status, createdAt])
 }
 
 model Subscription {
-  id               String              @id @default(cuid())
-  userId           String
-  user             User                @relation(fields: [userId], references: [id])
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  plan             MembershipPlan
-  status           SubscriptionStatus
-  provider         String
-  providerRef      String?             @unique
+  plan        MembershipPlan
+  status      SubscriptionStatus
+  provider    String
+  providerRef String?            @unique
 
-  startAt          DateTime
-  endAt            DateTime?
-  canceledAt       DateTime?
+  startAt    DateTime
+  endAt      DateTime?
+  canceledAt DateTime?
 
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId, status])
+}
+
+model AuthAccount {
+  id                String       @id @default(cuid())
+  userId            String
+  user              User         @relation(fields: [userId], references: [id])
+  provider          AuthProvider
+  providerAccountId String
+  email             String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([userId, provider])
+}
+
+model PasswordCredential {
+  userId       String @id
+  user         User   @relation(fields: [userId], references: [id])
+  passwordHash String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RefreshToken {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById String?
+  userAgent    String?
+  ipAddress    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, revokedAt, expiresAt])
+  @@index([expiresAt])
+}
+
+model Comment {
+  id         String            @id @default(cuid())
+  targetType CommentTargetType
+  targetId   String
+  authorId   String?
+  author     User? @relation("CommentAuthor", fields: [authorId], references: [id])
+  content    String @db.Text
+  status     CommentStatus @default(PENDING)
+  likeCount  Int @default(0)
+
+  parentId String?
+  parent   Comment? @relation("CommentThread", fields: [parentId], references: [id])
+  replies  Comment[] @relation("CommentThread")
+  likes    CommentLike[]
+  ipLikes  CommentLikeIp[]
+
+  moderatedById String?
+  moderatedBy   User? @relation("CommentModerator", fields: [moderatedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@index([targetType, targetId, createdAt])
+  @@index([status, createdAt])
+  @@index([targetType, targetId, parentId, status, deletedAt, createdAt], map: "Comment_public_thread_idx")
+  @@index([parentId, createdAt], map: "Comment_parent_created_idx")
+}
+
+model CommentLike {
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@id([commentId, userId])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}
+
+model CommentLikeIp {
+  commentId String
+  ipHash    String @db.VarChar(64)
+  createdAt DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id])
+
+  @@id([commentId, ipHash])
+  @@index([createdAt])
+  @@index([ipHash])
+}
+
+model MediaAsset {
+  id          String      @id @default(cuid())
+  title       String?     @db.VarChar(191)
+  url         String      @db.LongText
+  storageKey  String?     @db.VarChar(512)
+  mime        String?     @db.VarChar(100)
+  size        Int?
+  width       Int?
+  height      Int?
+  altText     String?     @db.VarChar(255)
+  status      MediaStatus @default(ACTIVE)
+
+  uploadedById String?
+  uploadedBy   User? @relation("MediaUploader", fields: [uploadedById], references: [id])
+
+  usages   MediaUsage[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@index([status, createdAt])
+}
+
+model MediaUsage {
+  id         String          @id @default(cuid())
+  assetId    String
+  asset      MediaAsset      @relation(fields: [assetId], references: [id])
+  targetType MediaTargetType
+  targetId   String
+  field      String? @db.VarChar(60)
+
+  createdAt DateTime @default(now())
+
+  @@index([targetType, targetId])
+}
+
+model AuditLog {
+  id         String          @id @default(cuid())
+  actorId    String?
+  actor      User? @relation("AuditActor", fields: [actorId], references: [id])
+  action     AuditAction
+  targetType AuditTargetType
+  targetId   String?
+  metadata   Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, createdAt])
 }

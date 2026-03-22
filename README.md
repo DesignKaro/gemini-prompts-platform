@@ -40,3 +40,32 @@ Apply `db/migrations/0001_init.sql` to your remote MySQL database, run seed data
    - `npm run typecheck`
    - `npm run lint`
    - `npm run build`
+
+## Google Login Setup (Web)
+1. Copy `apps/web/.env.example` to `apps/web/.env.local`.
+2. Fill these values:
+   - `NEXTAUTH_URL=http://localhost:3000`
+   - `NEXTAUTH_SECRET=<long-random-secret>`
+   - `AUTH_API_URL=http://127.0.0.1:4000`
+   - `NEXT_PUBLIC_API_URL=http://127.0.0.1:4000`
+   - `GOOGLE_CLIENT_ID=<google-client-id>`
+   - `GOOGLE_CLIENT_SECRET=<google-client-secret>`
+3. In Google Cloud OAuth client config for local development:
+   - Authorized JavaScript origin: `http://localhost:3000`
+   - Authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
+
+Security note: if a client secret has ever been shared in chat/screenshots, rotate/regenerate it in Google Cloud and use the new secret in your local env.
+
+## API Auth Setup
+1. Copy `apps/api/.env.example` to `apps/api/.env`.
+2. Fill these auth-specific values:
+   - `JWT_SECRET=<long-random-secret>`
+   - `JWT_ACCESS_TTL_SECONDS=900`
+   - `REFRESH_TOKEN_TTL_DAYS=30`
+   - `FRONTEND_URL=http://localhost:3000`
+   - `GOOGLE_CLIENT_ID=<same-as-web-client-id>`
+3. Apply migrations in `db/migrations` (including `0002_auth.sql`), then run `npm run prisma:generate -w @gemini-prompts/api`.
+4. Verify DB connectivity + required auth tables:
+   - `npm run db:check -w @gemini-prompts/api`
+5. Runtime health check endpoint:
+   - `GET http://127.0.0.1:4000/api/health`

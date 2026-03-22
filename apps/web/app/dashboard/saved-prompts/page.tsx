@@ -1,3 +1,5 @@
-export default function SavedPromptsPage() {
-  return <div>Saved Prompts Dashboard Page</div>;
+import { redirect } from 'next/navigation';
+
+export default function DashboardSavedPromptsRedirectPage() {
+  redirect('/profile#saved-prompts');
 }

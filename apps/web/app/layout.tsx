@@ -1,153 +1,132 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { Poppins } from 'next/font/google';
+import type { Metadata, Viewport } from 'next';
+import { Providers } from './components/providers';
+import { ConditionalShell, ConditionalHeader } from './components/conditional-shell';
+import { SiteFooter } from './components/site-footer';
 import './globals.css';
-
-const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['300', '500'],
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: 'Gemini Prompts',
   description: 'AI prompt sharing and membership platform',
 };
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const navItems = [
-    {
-      href: '/',
-      label: 'Home',
-      icon: (
-        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
-          <path
-            d="M4 10.7 12 4l8 6.7V20a1 1 0 0 1-1 1h-4.8v-5.2H9.8V21H5a1 1 0 0 1-1-1v-9.3Z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      ),
-    },
-    {
-      href: '/latest',
-      label: 'Services',
-      icon: (
-        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
-          <path
-            d="m12 3.8 7.6 4.4v7.6L12 20.2l-7.6-4.4V8.2L12 3.8Z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-          />
-          <path d="m7.8 10.2 4.2 2.4 4.2-2.4" fill="none" stroke="currentColor" strokeWidth="1.6" />
-        </svg>
-      ),
-    },
-    {
-      href: '/membership',
-      label: 'Pricing',
-      icon: (
-        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
-          <rect
-            x="3.4"
-            y="6.4"
-            width="17.2"
-            height="11.2"
-            rx="2.2"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-          />
-          <path d="M3.5 10.8h17" fill="none" stroke="currentColor" strokeWidth="1.6" />
-        </svg>
-      ),
-    },
-    {
-      href: '/trending',
-      label: 'Features',
-      icon: (
-        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
-          <rect
-            x="5"
-            y="3.5"
-            width="14"
-            height="17"
-            rx="7"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-          />
-          <path d="M8.2 11.2h7.6M9.5 14.4h5" fill="none" stroke="currentColor" strokeWidth="1.6" />
-        </svg>
-      ),
-    },
-  ];
-
   return (
-    <html lang="en">
-      <body className={poppins.className}>
-        <header className="bg-[#c3c4cc] px-4 pb-2 pt-5 md:px-6">
-          <div className="mx-auto max-w-[1380px] rounded-[38px] border border-white/80 bg-[#f3f4f6] px-5 py-4 shadow-[0_2px_14px_rgba(15,23,42,0.06)] sm:px-7">
-            <div className="flex items-center justify-between gap-3 lg:gap-6">
-              <Link href="/" className="flex shrink-0 items-center gap-3 text-[#101418]">
-                <svg aria-hidden="true" viewBox="0 0 36 30" className="h-[30px] w-[36px]">
-                  <path d="M2 4h9.2l13 14.1V4H34v22h-9.4L11.8 11.8V26H2z" fill="currentColor" />
-                </svg>
-                <span className="text-[40px] leading-none tracking-[-0.015em] sm:text-[42px]">Banking</span>
-              </Link>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap"
+        />
+      </head>
+      <body suppressHydrationWarning>
+        <Providers>
+          <div id="top" />
+          <ConditionalHeader />
+          {children}
+          <ConditionalShell
+            newsletterCta={
+              <section key="newsletterCta" className="relative overflow-hidden bg-[#d5ea52]">
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -right-[220px] -top-[240px] h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.45)_0%,rgba(255,255,255,0)_65%)] blur-3xl"
+                />
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -bottom-[300px] -left-[240px] h-[620px] w-[620px] rounded-full bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.07)_0%,rgba(0,0,0,0)_65%)] blur-3xl"
+                />
 
-              <nav className="hidden items-center gap-3 lg:flex">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className="flex items-center gap-3 rounded-full bg-[#e9edf1] px-4 py-2.5 text-[18px] leading-none text-[#15181d]"
-                  >
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#d1d8de] bg-white text-[#171b21]">
-                      {item.icon}
-                    </span>
-                    <span>{item.label}</span>
-                  </Link>
-                ))}
-              </nav>
+                <div className="page-container-wide px-4 py-12 sm:px-6 lg:py-16">
+                  <div className="relative grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+                    <div>
+                      <h2 className="section-heading-medium text-[1.95rem] leading-[1.05] tracking-[-0.05em] text-[#0f1116] sm:text-[2.25rem] lg:text-[2.65rem]">
+                        Get the weekly prompt drop.
+                      </h2>
+                      <p className="mt-4 max-w-[34rem] text-[1.02rem] leading-[1.7] text-[#2a3010]">
+                        High-signal prompts, new collections, and the best blog reads — delivered
+                        once a week. No spam.
+                      </p>
+                    </div>
 
-              <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-                <Link
-                  href="/membership"
-                  className="rounded-full bg-[#d5ea52] px-5 py-2.5 text-[20px] leading-none text-[#101418] sm:px-8 sm:py-3"
-                >
-                  Open Account
-                </Link>
-                <button
-                  type="button"
-                  aria-label="Open action"
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-[#091216] text-white"
-                >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
-                    <path
-                      d="M7 17 17 7M9.6 7H17v7.4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.9"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
-        {children}
-        <footer className="mt-16 border-t border-slate-200 bg-white">
-          <div className="mx-auto max-w-[1380px] px-4 py-8 text-sm text-slate-600">
-            Gemini Prompts Platform - scaffold phase
-          </div>
-        </footer>
+                    <div className="rounded-[26px] border border-black/10 bg-white p-5 shadow-none sm:p-6">
+                      <form className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <label className="sr-only" htmlFor="newsletter-email">
+                          Email address
+                        </label>
+                        <input
+                          id="newsletter-email"
+                          name="email"
+                          type="email"
+                          inputMode="email"
+                          autoComplete="email"
+                          placeholder="you@company.com"
+                          className="h-[52px] w-full rounded-full border border-[#d8dce2] bg-white px-5 text-[1rem] text-[#101418] outline-none transition focus:border-[#101010]"
+                        />
+                        <button
+                          type="submit"
+                          className="h-[52px] w-full rounded-full bg-[#d5ea52] px-7 text-[1rem] font-[500] text-[#0f1116] transition-colors hover:bg-[#c8e030] sm:w-auto"
+                        >
+                          Subscribe
+                        </button>
+                      </form>
+
+                      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[0.9rem] text-[#6a7280]">
+                        <span className="inline-flex items-center gap-2">
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/80">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 text-[#111111]">
+                              <path
+                                d="M6 12.3l3.3 3.2L18.5 6.8"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          </span>
+                          Unsubscribe anytime
+                        </span>
+                        <span className="inline-flex items-center gap-2">
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/80">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 text-[#111111]">
+                              <path
+                                d="M7.5 10.8V9.4a4.5 4.5 0 0 1 9 0v1.4"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.9"
+                                strokeLinecap="round"
+                              />
+                              <rect
+                                x="6.2"
+                                y="10.8"
+                                width="11.6"
+                                height="9.6"
+                                rx="2.2"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.9"
+                              />
+                            </svg>
+                          </span>
+                          We keep your email private
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            }
+            footer={
+              <SiteFooter key="footer" />
+            }
+          />
+        </Providers>
       </body>
     </html>
   );
