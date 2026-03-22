@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default function ContactPage() {
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
 
   const breadcrumbSchema = {
     '@context': 'https://schema.org',

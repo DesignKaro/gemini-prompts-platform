@@ -7,7 +7,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(8),
   JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().positive().default(900),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
-  FRONTEND_URL: z.string().url().default('http://localhost:3000'),
+  FRONTEND_URL: z.string().url().default('http://localhost:30001'),
   GOOGLE_CLIENT_ID: z.string().min(1),
   SUPERADMIN_EMAILS: z.string().optional().default(''),
   REDIS_URL: z.string().min(1),

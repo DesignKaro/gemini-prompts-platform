@@ -4,7 +4,7 @@ import { AuthorAvatar } from '../components/author-avatar';
 import { getAuthorList, type PublicAuthor } from '../../lib/public-content';
 export default async function AboutPage() {
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   let trendingAuthors: PublicAuthor[] = [];
 
   try {

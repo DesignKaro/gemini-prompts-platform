@@ -54,7 +54,7 @@ export default async function NewsletterIssuePage({ params }: PageProps) {
   }
 
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   const canonicalUrl = `${baseUrl}/newsletter/${encodeURIComponent(post.slug)}`;
   const categoryName = getPostCategoryName(post);
   const dateLabel = formatDisplayDate(post.publishedAt || post.updatedAt);

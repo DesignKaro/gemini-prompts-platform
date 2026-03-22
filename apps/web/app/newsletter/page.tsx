@@ -4,7 +4,7 @@ const NEWSLETTER_TAG = 'newsletter';
 
 export default async function NewsletterPage() {
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
 
   let response = await getPostList({
     take: 1,

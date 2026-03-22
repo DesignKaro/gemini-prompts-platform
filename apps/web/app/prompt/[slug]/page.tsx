@@ -87,7 +87,7 @@ export default async function PromptDetailPage({ params }: PageProps) {
   }
 
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   const canonicalUrl = `${baseUrl}/prompt/${encodeURIComponent(prompt.slug)}`;
   const promptText = prompt.isLocked ? '' : stripHtml(prompt.content || prompt.description || '');
   const categoryName = getPromptCategoryName(prompt);

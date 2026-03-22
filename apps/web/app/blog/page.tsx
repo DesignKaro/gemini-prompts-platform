@@ -18,7 +18,7 @@ type PageProps = {
 export default async function BlogArchivePage({ searchParams }: PageProps) {
   const resolvedSearchParams = await searchParams;
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   const page = Math.max(1, Number.parseInt(resolvedSearchParams?.page ?? '1', 10) || 1);
   const skip = (page - 1) * PAGE_SIZE;
   const response = await getPostList({

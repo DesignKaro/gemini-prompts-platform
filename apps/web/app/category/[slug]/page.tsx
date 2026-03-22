@@ -18,7 +18,7 @@ type PageProps = {
 export default async function CategoryDetailPage({ params }: PageProps) {
   const { slug } = await params;
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   const category = await getCategoryDetail(slug);
 
   if (!category) {

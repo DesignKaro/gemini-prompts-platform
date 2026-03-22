@@ -17,10 +17,13 @@ async function bootstrap() {
     console.log('[bootstrap] Nest application created.');
   }
   const configService = app.get(ConfigService);
-  const frontendUrl = configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+  const frontendUrl = configService.get<string>('FRONTEND_URL') ?? 'http://localhost:30001';
   const nodeEnv = configService.get<string>('NODE_ENV') ?? 'development';
   const allowedOrigins = new Set<string>([frontendUrl]);
   if (nodeEnv !== 'production') {
+    allowedOrigins.add('http://localhost:30001');
+    allowedOrigins.add('http://127.0.0.1:30001');
+    // legacy local dev port
     allowedOrigins.add('http://localhost:3000');
     allowedOrigins.add('http://127.0.0.1:3000');
   }

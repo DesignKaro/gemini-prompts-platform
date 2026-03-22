@@ -25,7 +25,7 @@ export default function MembershipPage() {
   const sectionSpacing = 'mt-12 sm:mt-14 lg:mt-16';
   const sectionSubSpacing = 'mt-8 sm:mt-10';
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
 
   const breadcrumbSchema = {
     '@context': 'https://schema.org',

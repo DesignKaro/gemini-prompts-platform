@@ -34,7 +34,7 @@ export default async function AuthorDetailPage({ params, searchParams }: PagePro
   const { slug } = await params;
   const resolvedSearchParams = await searchParams;
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   const promptPage = Math.max(1, Number.parseInt(resolvedSearchParams?.promptPage ?? '1', 10) || 1);
   const blogPage = Math.max(1, Number.parseInt(resolvedSearchParams?.blogPage ?? '1', 10) || 1);
   const author = await getAuthorDetail(slug, { revalidateSeconds: revalidate });
