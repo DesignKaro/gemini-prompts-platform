@@ -18,15 +18,16 @@ async function bootstrap() {
   }
   const configService = app.get(ConfigService);
   const frontendUrl = configService.get<string>('FRONTEND_URL') ?? 'http://localhost:30001';
-  const nodeEnv = configService.get<string>('NODE_ENV') ?? 'development';
-  const allowedOrigins = new Set<string>([frontendUrl]);
-  if (nodeEnv !== 'production') {
-    allowedOrigins.add('http://localhost:30001');
-    allowedOrigins.add('http://127.0.0.1:30001');
+  const allowedOrigins = [
+    frontendUrl,
+    'http://localhost:30001',
+    'http://127.0.0.1:30001',
     // legacy local dev port
-    allowedOrigins.add('http://localhost:3000');
-    allowedOrigins.add('http://127.0.0.1:3000');
-  }
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'https://geminiprompts.io',
+    'https://www.geminiprompts.io',
+  ];
 
   app.setGlobalPrefix('api');
   app.enableCors({
@@ -34,11 +35,17 @@ async function bootstrap() {
       origin: string | undefined,
       callback: (error: Error | null, allow?: boolean) => void,
     ) => {
+      // Allow requests with no origin (curl, server-to-server, mobile apps).
       if (!origin) return callback(null, true);
-      if (allowedOrigins.has(origin)) return callback(null, true);
-      return callback(new Error(`CORS blocked for origin: ${origin}`), false);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      console.error('Blocked CORS origin:', origin);
+      // Do not throw here; returning false keeps preflight stable.
+      return callback(null, false);
     },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
+    optionsSuccessStatus: 200,
   });
   app.useGlobalPipes(
     new ValidationPipe({
