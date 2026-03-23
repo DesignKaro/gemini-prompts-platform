@@ -329,31 +329,23 @@ export default async function PromptDetailPage({ params }: PageProps) {
           </article>
 
           <aside className="space-y-5 lg:sticky lg:top-8">
-            <div className="rounded-[20px] border border-[#e6e9f2] bg-white p-5">
-              <p className="text-[0.92rem] font-medium text-[#0b0f18]">At a glance</p>
-              <div className="mt-4 space-y-3 text-[0.92rem] text-[#4b5563]">
-                <div className="flex items-center justify-between gap-3">
-                  <span>Type</span>
-                  <span className="font-medium text-[#0f1118]">{prompt.promptType}</span>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span>Views</span>
-                  <span className="font-medium text-[#0f1118]">
-                    {prompt.viewCount.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span>Likes</span>
-                  <span className="font-medium text-[#0f1118]">
-                    {prompt.likeCount.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span>Comments</span>
-                  <span className="font-medium text-[#0f1118]">{prompt.commentCount}</span>
-                </div>
-              </div>
-            </div>
+            <section className="overflow-hidden rounded-[20px] border border-[#dbe4b8] bg-[#f7fbdf] p-5">
+              <p className="text-[0.78rem] font-medium uppercase tracking-[0.08em] text-[#4f5d1d]">
+                Subscription
+              </p>
+              <h3 className="mt-2 text-[1.2rem] font-medium leading-[1.25] text-[#13180a]">
+                Unlock premium prompts and member-only updates.
+              </h3>
+              <p className="mt-3 text-[0.92rem] leading-[1.6] text-[#495521]">
+                Get access to exclusive prompt packs, deeper variants, and fresh releases every week.
+              </p>
+              <Link
+                href="/membership"
+                className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-[#111111] px-5 text-[0.92rem] font-medium text-white transition-colors hover:bg-black"
+              >
+                View plans
+              </Link>
+            </section>
 
             {prompt.isLocked ? (
               <ExclusiveAccessCard

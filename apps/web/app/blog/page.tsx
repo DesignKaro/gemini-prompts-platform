@@ -25,7 +25,7 @@ export default async function BlogArchivePage({ searchParams }: PageProps) {
     take: PAGE_SIZE,
     skip,
     sort: 'latest',
-    includeContent: 1,
+    includeContent: 0,
   });
 
   const totalPages = Math.max(1, Math.ceil(response.total / PAGE_SIZE));

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { FaRegComment, FaRegEye } from 'react-icons/fa6';
+import { FaRegComment } from 'react-icons/fa6';
 import { auth } from '../../../auth';
 import AISummarizeWidget from '../../components/ai-summarize-widget';
 import { AuthorAvatar } from '../../components/author-avatar';
@@ -245,7 +245,6 @@ export default async function BlogPostPage({ params }: PageProps) {
 
               <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                 <span className="inline-flex h-10 items-center gap-2 rounded-full border border-[#d8dce2] bg-white px-3.5 text-[0.9rem] text-[#4b5563]">
-                  <FaRegEye aria-hidden="true" className="h-[15px] w-[15px] text-[#6b7280]" />
                   <span className="font-medium text-[#111827]">{post.viewCount.toLocaleString()}</span>
                 </span>
                 <a
