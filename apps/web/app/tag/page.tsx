@@ -16,8 +16,7 @@ export const metadata = {
 
 export default async function TagsArchivePage({ searchParams }: PageProps) {
   const resolvedSearchParams = await searchParams;
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   const page = Math.max(1, Number.parseInt(resolvedSearchParams?.page ?? '1', 10) || 1);
   const skip = (page - 1) * PAGE_SIZE;
   const tagsResponse = await getTagList({ take: PAGE_SIZE, skip, sort: 'popular' });
@@ -106,7 +105,14 @@ export default async function TagsArchivePage({ searchParams }: PageProps) {
             </h2>
             <label className="mt-4 flex items-center gap-2 rounded-[12px] border border-[#e0e3e9] bg-[#fcfdff] px-4 py-3">
               <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 text-[#9aa1ae]">
-                <circle cx="11" cy="11" r="6.7" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                <circle
+                  cx="11"
+                  cy="11"
+                  r="6.7"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                />
                 <path
                   d="m16 16 4 4"
                   fill="none"

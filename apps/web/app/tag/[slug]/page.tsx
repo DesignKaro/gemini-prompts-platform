@@ -17,8 +17,7 @@ type PageProps = {
 
 export default async function TagDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   const tag = await getTagDetail(slug);
 
   if (!tag) {
@@ -78,12 +77,8 @@ export default async function TagDetailPage({ params }: PageProps) {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 text-[0.9rem] text-[#4b525e]">
-            <span className="rounded-full bg-[#f1f4f8] px-4 py-2">
-              {tag.promptCount} prompts
-            </span>
-            <span className="rounded-full bg-[#f1f4f8] px-4 py-2">
-              {tag.postCount} posts
-            </span>
+            <span className="rounded-full bg-[#f1f4f8] px-4 py-2">{tag.promptCount} prompts</span>
+            <span className="rounded-full bg-[#f1f4f8] px-4 py-2">{tag.postCount} posts</span>
           </div>
         </div>
 

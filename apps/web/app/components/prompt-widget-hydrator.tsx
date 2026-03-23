@@ -19,7 +19,7 @@ export function PromptWidgetHydrator() {
     const widgets = document.querySelectorAll('.prompt-widget:not([data-hydrated])');
     widgets.forEach((widget) => {
       widget.setAttribute('data-hydrated', 'true');
-      
+
       const llmsContainer = widget.querySelector('.prompt-widget-llms');
       if (!llmsContainer) return;
 
@@ -48,12 +48,12 @@ export function PromptWidgetHydrator() {
       llms.forEach((llm) => {
         if (ICONS[llm]) {
           const Icon = ICONS[llm] as React.ElementType;
-          
+
           const badge = document.createElement('button');
           badge.className = `prompt-widget-llm prompt-widget-llm-${llm.toLowerCase()} is-active`;
           badge.type = 'button';
           badge.title = llm;
-          
+
           const root = createRoot(badge);
           root.render(<Icon size={18} />);
           llmsContainer.appendChild(badge);
@@ -61,7 +61,7 @@ export function PromptWidgetHydrator() {
           // Add click listener: copy prompt & open new tab
           badge.addEventListener('click', (e) => {
             e.preventDefault();
-            
+
             const content = widget.querySelector('.prompt-widget-content');
             if (content) {
               const textToCopy = content.textContent || '';
@@ -75,7 +75,7 @@ export function PromptWidgetHydrator() {
               Perplexity: 'https://www.perplexity.ai/',
               Grok: 'https://x.com/i/grok',
             };
-            
+
             if (urls[llm]) {
               window.open(urls[llm], '_blank');
             }
@@ -88,29 +88,32 @@ export function PromptWidgetHydrator() {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const btn = target.closest('.prompt-widget-copy-btn');
-      
+
       if (!btn) return;
-      
+
       const widget = btn.closest('.prompt-widget');
       if (!widget) return;
-      
+
       const content = widget.querySelector('.prompt-widget-content');
       if (!content) return;
-      
+
       const textToCopy = content.textContent || '';
-      
-      navigator.clipboard.writeText(textToCopy.trim()).then(() => {
-        btn.classList.add('copied');
-        const textSpan = btn.querySelector('.prompt-widget-copy-text');
-        if (textSpan) textSpan.textContent = 'Copied!';
-        
-        setTimeout(() => {
-          btn.classList.remove('copied');
-          if (textSpan) textSpan.textContent = 'Copy';
-        }, 2000);
-      }).catch(err => {
-        console.error('Failed to copy prompt text: ', err);
-      });
+
+      navigator.clipboard
+        .writeText(textToCopy.trim())
+        .then(() => {
+          btn.classList.add('copied');
+          const textSpan = btn.querySelector('.prompt-widget-copy-text');
+          if (textSpan) textSpan.textContent = 'Copied!';
+
+          setTimeout(() => {
+            btn.classList.remove('copied');
+            if (textSpan) textSpan.textContent = 'Copy';
+          }, 2000);
+        })
+        .catch((err) => {
+          console.error('Failed to copy prompt text: ', err);
+        });
     };
 
     document.addEventListener('click', handleClick);

@@ -62,7 +62,16 @@ export default function CategoryTrashPage() {
     };
   }, [authStatus, request]);
 
-  const toggle = (id: string) => setSelected((prev) => { const n = new Set(prev); if (n.has(id)) { n.delete(id); } else { n.add(id); } return n; });
+  const toggle = (id: string) =>
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) {
+        n.delete(id);
+      } else {
+        n.add(id);
+      }
+      return n;
+    });
   const allSelected = items.length > 0 && selected.size === items.length;
   const toggleAll = () => setSelected(allSelected ? new Set() : new Set(items.map((i) => i.id)));
 
@@ -135,20 +144,36 @@ export default function CategoryTrashPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116]">Category Trash</h1>
+          <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116]">
+            Category Trash
+          </h1>
           <p className="text-[0.95rem] text-gray-500">Recover or permanently delete categories.</p>
         </div>
         <div className="flex items-center gap-2">
           {isSelectMode ? (
-            <button type="button" onClick={() => { setIsSelectMode(false); setSelected(new Set()); }} className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] hover:bg-gray-50 transition-colors">
+            <button
+              type="button"
+              onClick={() => {
+                setIsSelectMode(false);
+                setSelected(new Set());
+              }}
+              className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] hover:bg-gray-50 transition-colors"
+            >
               Cancel
             </button>
           ) : (
-            <button type="button" onClick={() => setIsSelectMode(true)} className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] hover:bg-gray-50 transition-colors">
+            <button
+              type="button"
+              onClick={() => setIsSelectMode(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] hover:bg-gray-50 transition-colors"
+            >
               Select
             </button>
           )}
-          <Link href="/dashboard/categories" className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] hover:bg-gray-50 transition-colors">
+          <Link
+            href="/dashboard/categories"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] hover:bg-gray-50 transition-colors"
+          >
             Back to Categories
           </Link>
         </div>
@@ -164,14 +189,29 @@ export default function CategoryTrashPage() {
         <div className="rounded-[20px] border border-[#e2e6ee] bg-white px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <label className="flex items-center gap-2 text-[0.85rem] text-gray-600 cursor-pointer">
-              <input type="checkbox" checked={allSelected} onChange={toggleAll} className="h-4 w-4 rounded accent-[#0f1116]" />
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleAll}
+                className="h-4 w-4 rounded accent-[#0f1116]"
+              />
               Select all ({items.length})
             </label>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={restoreSelected} disabled={selected.size === 0} className="flex items-center gap-1.5 rounded-xl border border-[#e1e5ee] px-3 py-2 text-[0.8rem] text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors">
+              <button
+                type="button"
+                onClick={restoreSelected}
+                disabled={selected.size === 0}
+                className="flex items-center gap-1.5 rounded-xl border border-[#e1e5ee] px-3 py-2 text-[0.8rem] text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+              >
                 <MdRestoreFromTrash size={15} /> Restore selected
               </button>
-              <button type="button" onClick={deleteSelected} disabled={selected.size === 0} className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-2 text-[0.8rem] text-white hover:bg-red-700 disabled:opacity-40 transition-colors">
+              <button
+                type="button"
+                onClick={deleteSelected}
+                disabled={selected.size === 0}
+                className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-2 text-[0.8rem] text-white hover:bg-red-700 disabled:opacity-40 transition-colors"
+              >
                 <MdDeleteOutline size={15} /> Delete selected
               </button>
             </div>
@@ -182,23 +222,57 @@ export default function CategoryTrashPage() {
       {items.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2">
           {items.map((item) => (
-            <div key={item.id} className={`rounded-[24px] border bg-white p-5 shadow-sm transition-colors ${selected.has(item.id) ? 'border-[#0f1116]/20 bg-[#f7f8fb]' : 'border-[#e2e6ee]'}`}>
+            <div
+              key={item.id}
+              className={`rounded-[24px] border bg-white p-5 shadow-sm transition-colors ${selected.has(item.id) ? 'border-[#0f1116]/20 bg-[#f7f8fb]' : 'border-[#e2e6ee]'}`}
+            >
               <div className="flex items-start gap-3">
-                {isSelectMode && <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggle(item.id)} className="mt-1 h-4 w-4 rounded accent-[#0f1116]" />}
+                {isSelectMode && (
+                  <input
+                    type="checkbox"
+                    checked={selected.has(item.id)}
+                    onChange={() => toggle(item.id)}
+                    className="mt-1 h-4 w-4 rounded accent-[#0f1116]"
+                  />
+                )}
                 <div className="flex-1">
-                  <h3 className="text-[1rem] font-medium text-[#0f1116] line-through decoration-gray-300">{item.name}</h3>
-                  <p className="text-[0.8rem] text-gray-400 mt-0.5">/{item.slug} · Deleted {item.deletedAt}</p>
+                  <h3 className="text-[1rem] font-medium text-[#0f1116] line-through decoration-gray-300">
+                    {item.name}
+                  </h3>
+                  <p className="text-[0.8rem] text-gray-400 mt-0.5">
+                    /{item.slug} · Deleted {item.deletedAt}
+                  </p>
                   <div className="mt-4 flex items-center gap-2">
-                    <button type="button" onClick={() => restore(item.id)} className="flex items-center gap-1.5 rounded-xl bg-[#0f1116] px-3 py-2 text-[0.78rem] font-medium text-white hover:opacity-90 transition-opacity">
+                    <button
+                      type="button"
+                      onClick={() => restore(item.id)}
+                      className="flex items-center gap-1.5 rounded-xl bg-[#0f1116] px-3 py-2 text-[0.78rem] font-medium text-white hover:opacity-90 transition-opacity"
+                    >
                       <MdRestoreFromTrash size={14} /> Restore
                     </button>
                     {confirmId === item.id ? (
                       <>
-                        <button type="button" onClick={() => deletePerm(item.id)} className="rounded-xl bg-red-600 px-3 py-2 text-[0.78rem] font-medium text-white hover:bg-red-700 transition-colors">Confirm</button>
-                        <button type="button" onClick={() => setConfirmId(null)} className="rounded-xl border border-[#e1e5ee] px-3 py-2 text-[0.78rem] text-gray-500 hover:bg-gray-50 transition-colors">Cancel</button>
+                        <button
+                          type="button"
+                          onClick={() => deletePerm(item.id)}
+                          className="rounded-xl bg-red-600 px-3 py-2 text-[0.78rem] font-medium text-white hover:bg-red-700 transition-colors"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmId(null)}
+                          className="rounded-xl border border-[#e1e5ee] px-3 py-2 text-[0.78rem] text-gray-500 hover:bg-gray-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
                       </>
                     ) : (
-                      <button type="button" onClick={() => setConfirmId(item.id)} className="flex items-center gap-1.5 rounded-xl border border-red-100 px-3 py-2 text-[0.78rem] text-red-600 hover:bg-red-50 transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => setConfirmId(item.id)}
+                        className="flex items-center gap-1.5 rounded-xl border border-red-100 px-3 py-2 text-[0.78rem] text-red-600 hover:bg-red-50 transition-colors"
+                      >
                         <MdDeleteOutline size={14} /> Delete forever
                       </button>
                     )}
@@ -214,7 +288,12 @@ export default function CategoryTrashPage() {
           <p className="text-[1rem] font-medium text-gray-400">
             {isLoading ? 'Loading trash…' : 'Category trash is empty'}
           </p>
-          <Link href="/dashboard/categories" className="text-[0.85rem] text-[#1e4fd2] hover:underline">Back to categories</Link>
+          <Link
+            href="/dashboard/categories"
+            className="text-[0.85rem] text-[#1e4fd2] hover:underline"
+          >
+            Back to categories
+          </Link>
         </div>
       )}
     </div>

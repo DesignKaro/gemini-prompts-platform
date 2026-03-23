@@ -152,13 +152,21 @@ export class AuthService {
     private readonly configService: ConfigService<Env, true>,
   ) {
     this.jwtSecret = this.configService.getOrThrow('JWT_SECRET', { infer: true });
-    this.jwtAccessTtlSeconds = this.configService.getOrThrow('JWT_ACCESS_TTL_SECONDS', { infer: true });
-    this.refreshTokenTtlDays = this.configService.getOrThrow('REFRESH_TOKEN_TTL_DAYS', { infer: true });
+    this.jwtAccessTtlSeconds = this.configService.getOrThrow('JWT_ACCESS_TTL_SECONDS', {
+      infer: true,
+    });
+    this.refreshTokenTtlDays = this.configService.getOrThrow('REFRESH_TOKEN_TTL_DAYS', {
+      infer: true,
+    });
     this.googleClientId = this.configService.getOrThrow('GOOGLE_CLIENT_ID', { infer: true });
     this.isProduction = this.configService.getOrThrow('NODE_ENV', { infer: true }) === 'production';
   }
 
-  async register(dto: RegisterDto, metadata: RequestMetadata, response: CookieResponse): Promise<AuthResult> {
+  async register(
+    dto: RegisterDto,
+    metadata: RequestMetadata,
+    response: CookieResponse,
+  ): Promise<AuthResult> {
     const email = this.normalizeEmail(dto.email);
     const passwordHash = await hashPassword(dto.password);
     const name = this.normalizeName(dto.name);
@@ -237,7 +245,11 @@ export class AuthService {
     return this.issueSession(user, metadata, response);
   }
 
-  async login(dto: LoginDto, metadata: RequestMetadata, response: CookieResponse): Promise<AuthResult> {
+  async login(
+    dto: LoginDto,
+    metadata: RequestMetadata,
+    response: CookieResponse,
+  ): Promise<AuthResult> {
     const email = this.normalizeEmail(dto.email);
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -252,7 +264,10 @@ export class AuthService {
 
     this.assertNotSuspended(user.suspendedAt);
 
-    const passwordMatches = await verifyPassword(dto.password, user.passwordCredential.passwordHash);
+    const passwordMatches = await verifyPassword(
+      dto.password,
+      user.passwordCredential.passwordHash,
+    );
     if (!passwordMatches) {
       throw new UnauthorizedException('Invalid email or password.');
     }
@@ -389,7 +404,9 @@ export class AuthService {
     this.setRefreshCookie(response, rotatedRefreshToken, createdToken.expiresAt);
 
     const accessExpiresAt = this.calculateAccessExpiry();
-    const publicUser = await this.ensureProtectedSuperadminRole(this.toPublicUser(existingToken.user));
+    const publicUser = await this.ensureProtectedSuperadminRole(
+      this.toPublicUser(existingToken.user),
+    );
     this.assertNotSuspended(existingToken.user.suspendedAt);
     const permissionBundle = await this.resolvePermissions(
       publicUser.id,
@@ -411,7 +428,10 @@ export class AuthService {
     };
   }
 
-  async logout(refreshToken: string | undefined, response: CookieResponse): Promise<{ success: true }> {
+  async logout(
+    refreshToken: string | undefined,
+    response: CookieResponse,
+  ): Promise<{ success: true }> {
     if (refreshToken) {
       const tokenHash = this.hashRefreshToken(refreshToken);
       await this.prisma.refreshToken.updateMany({
@@ -523,8 +543,16 @@ export class AuthService {
   }
 
   async getProfileSummary(userId: string): Promise<ProfileSummary> {
-    const [user, promptCount, savedCount, likedCount, audienceUsers, savedPromptRecords, likeRecords, createdPromptRecords] =
-      await this.prisma.$transaction([
+    const [
+      user,
+      promptCount,
+      savedCount,
+      likedCount,
+      audienceUsers,
+      savedPromptRecords,
+      likeRecords,
+      createdPromptRecords,
+    ] = await this.prisma.$transaction([
       this.prisma.user.findUnique({
         where: { id: userId },
         select: this.publicUserSelect,
@@ -586,7 +614,9 @@ export class AuthService {
     }
 
     const publicUser = await this.ensureProtectedSuperadminRole(this.toPublicUser(user));
-    const resolvedUser = publicUser.handle ? publicUser : await this.ensureUserHandle(publicUser, this.prisma);
+    const resolvedUser = publicUser.handle
+      ? publicUser
+      : await this.ensureUserHandle(publicUser, this.prisma);
 
     const audienceCount = audienceUsers.length;
 
@@ -891,10 +921,7 @@ export class AuthService {
     throw new ConflictException('Unable to allocate a unique handle.');
   }
 
-  private async ensureUserHandle(
-    user: PublicUser,
-    client: PrismaClientLike,
-  ): Promise<PublicUser> {
+  private async ensureUserHandle(user: PublicUser, client: PrismaClientLike): Promise<PublicUser> {
     if (user.handle) {
       return user;
     }
@@ -1091,7 +1118,8 @@ export class AuthService {
       }
 
       const tokenInfo = (await tokenInfoResponse.json()) as TokenInfoResponse;
-      const audienceMatches = tokenInfo.aud === this.googleClientId || tokenInfo.azp === this.googleClientId;
+      const audienceMatches =
+        tokenInfo.aud === this.googleClientId || tokenInfo.azp === this.googleClientId;
       if (!audienceMatches) {
         throw new UnauthorizedException('Google token audience mismatch.');
       }
@@ -1142,7 +1170,8 @@ export class AuthService {
     userId: string,
     profile: GoogleProfile,
   ): Promise<PublicUser> {
-    const updateData: { name?: string | null; avatarUrl?: string | null; avatarUpdatedAt?: Date } = {};
+    const updateData: { name?: string | null; avatarUrl?: string | null; avatarUpdatedAt?: Date } =
+      {};
     const normalizedName = this.normalizeName(profile.name);
     if (normalizedName) {
       updateData.name = normalizedName;

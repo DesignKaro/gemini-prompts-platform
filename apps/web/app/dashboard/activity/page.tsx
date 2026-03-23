@@ -1,7 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { MdAutoAwesome, MdChatBubble, MdCheckCircle, MdRefresh, MdSearch, MdArticle } from 'react-icons/md';
+import {
+  MdAutoAwesome,
+  MdChatBubble,
+  MdCheckCircle,
+  MdRefresh,
+  MdSearch,
+  MdArticle,
+} from 'react-icons/md';
 import { useAdminApi } from '../../components/dashboard/use-admin-api';
 import { Skeleton } from '../../components/ui/skeleton';
 import { buildActivityMessage } from '../../../lib/utils/activity';
@@ -67,7 +74,7 @@ export default function ActivityPage() {
         );
         setTotal(payload.total ?? 0);
         setActivity((prev) =>
-          replace ? payload.items ?? [] : [...prev, ...(payload.items ?? [])],
+          replace ? (payload.items ?? []) : [...prev, ...(payload.items ?? [])],
         );
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : (err as { message?: string }).message;
@@ -134,9 +141,7 @@ export default function ActivityPage() {
     return Array.from(groups.values())
       .map((group) => ({
         ...group,
-        items: group.items.sort(
-          (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
-        ),
+        items: group.items.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)),
       }))
       .sort((a, b) => b.latest - a.latest);
   }, [filtered]);
@@ -179,7 +184,10 @@ export default function ActivityPage() {
         {isLoading && activity.length === 0 && (
           <div className="space-y-3">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div key={`activity-loading-${index}`} className="flex items-start gap-3 rounded-xl p-2.5">
+              <div
+                key={`activity-loading-${index}`}
+                className="flex items-start gap-3 rounded-xl p-2.5"
+              >
                 <Skeleton className="h-8 w-8 rounded-full" />
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-2/3" />
@@ -204,9 +212,7 @@ export default function ActivityPage() {
             >
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-[0.95rem] font-medium text-[#0f1116]">
-                    {group.title}
-                  </span>
+                  <span className="text-[0.95rem] font-medium text-[#0f1116]">{group.title}</span>
                   <span className="rounded-full bg-white px-2 py-0.5 text-[0.7rem] text-gray-500">
                     {group.items.length}
                   </span>
@@ -242,22 +248,26 @@ export default function ActivityPage() {
                       const { icon, color } = activityIcon(item.targetType);
                       return (
                         <tr key={item.id} className="border-t border-[#eef2f6]">
-                      <td className="py-3">
-                        <div className="flex items-center gap-2">
-                          <span className={`flex h-7 w-7 items-center justify-center rounded-full ${color}`}>
-                            {icon}
-                          </span>
-                          <span className="truncate font-medium">{actorName}</span>
-                        </div>
-                      </td>
-                      <td className="py-3">
-                        <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[0.7rem] ${actionBadge(item.action)}`}>
-                          {item.action}
-                        </span>
-                      </td>
-                      <td className="py-3">
-                        <span className="truncate text-[#0f1116]">{label}</span>
-                      </td>
+                          <td className="py-3">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`flex h-7 w-7 items-center justify-center rounded-full ${color}`}
+                              >
+                                {icon}
+                              </span>
+                              <span className="truncate font-medium">{actorName}</span>
+                            </div>
+                          </td>
+                          <td className="py-3">
+                            <span
+                              className={`inline-flex rounded-full border px-2.5 py-0.5 text-[0.7rem] ${actionBadge(item.action)}`}
+                            >
+                              {item.action}
+                            </span>
+                          </td>
+                          <td className="py-3">
+                            <span className="truncate text-[#0f1116]">{label}</span>
+                          </td>
                           <td className="py-3 text-gray-500">
                             {item.targetType?.toLowerCase() ?? 'activity'}
                           </td>

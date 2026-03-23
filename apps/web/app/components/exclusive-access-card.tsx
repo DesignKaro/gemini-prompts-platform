@@ -22,8 +22,8 @@ export function ExclusiveAccessCard({
         Unlock the full {contentLabel}
       </h2>
       <p className="mt-3 max-w-[40rem] text-[1rem] leading-[1.8] text-[#4b5563]">
-        This page is part of the premium library. Upgrade to open the full content, copy the
-        full material, and join the discussion.
+        This page is part of the premium library. Upgrade to open the full content, copy the full
+        material, and join the discussion.
       </p>
       <div className="mt-6 flex flex-wrap gap-3">
         <Link

@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { PromptVisibility } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -70,8 +60,7 @@ export class PublicController {
     @Query('sort') sort?: 'latest' | 'popular' | 'trending',
     @Req() request?: HttpRequest,
   ) {
-    const includeTagsFlag =
-      includeTags === '1' || includeTags?.toLowerCase() === 'true';
+    const includeTagsFlag = includeTags === '1' || includeTags?.toLowerCase() === 'true';
     const parsedAuthorIds = Array.from(
       new Set(
         (authorIds ?? '')
@@ -81,21 +70,24 @@ export class PublicController {
       ),
     );
 
-    return this.publicService.getPrompts({
-      skip: skip ? parseInt(skip, 10) : 0,
-      take: take ? parseInt(take, 10) : 20,
-      search,
-      categorySlug,
-      tagSlug,
-      authorSlug,
-      authorId,
-      authorIds: parsedAuthorIds.length > 0 ? parsedAuthorIds : undefined,
-      publishedFrom,
-      publishedTo,
-      includeTags: includeTagsFlag,
-      visibility,
-      sort,
-    }, request ? this.resolveOptionalViewer(request) : undefined);
+    return this.publicService.getPrompts(
+      {
+        skip: skip ? parseInt(skip, 10) : 0,
+        take: take ? parseInt(take, 10) : 20,
+        search,
+        categorySlug,
+        tagSlug,
+        authorSlug,
+        authorId,
+        authorIds: parsedAuthorIds.length > 0 ? parsedAuthorIds : undefined,
+        publishedFrom,
+        publishedTo,
+        includeTags: includeTagsFlag,
+        visibility,
+        sort,
+      },
+      request ? this.resolveOptionalViewer(request) : undefined,
+    );
   }
 
   @Get('prompts/:slug')
@@ -207,24 +199,25 @@ export class PublicController {
     @Query('sort') sort?: 'latest' | 'popular',
     @Req() request?: HttpRequest,
   ) {
-    const includeContentFlag =
-      includeContent === '1' || includeContent?.toLowerCase() === 'true';
-    const includeTagsFlag =
-      includeTags === '1' || includeTags?.toLowerCase() === 'true';
+    const includeContentFlag = includeContent === '1' || includeContent?.toLowerCase() === 'true';
+    const includeTagsFlag = includeTags === '1' || includeTags?.toLowerCase() === 'true';
 
-    return this.publicService.getPosts({
-      skip: skip ? parseInt(skip, 10) : 0,
-      take: take ? parseInt(take, 10) : 20,
-      search,
-      categorySlug,
-      tagSlug,
-      authorSlug,
-      authorId,
-      includeContent: includeContentFlag,
-      includeTags: includeTagsFlag,
-      visibility,
-      sort,
-    }, request ? this.resolveOptionalViewer(request) : undefined);
+    return this.publicService.getPosts(
+      {
+        skip: skip ? parseInt(skip, 10) : 0,
+        take: take ? parseInt(take, 10) : 20,
+        search,
+        categorySlug,
+        tagSlug,
+        authorSlug,
+        authorId,
+        includeContent: includeContentFlag,
+        includeTags: includeTagsFlag,
+        visibility,
+        sort,
+      },
+      request ? this.resolveOptionalViewer(request) : undefined,
+    );
   }
 
   @Get('posts/:slug')
@@ -279,10 +272,13 @@ export class PublicController {
     @Query('sort') sort?: 'name' | 'popular',
     @Req() request?: HttpRequest,
   ) {
-    return this.publicService.getCategories({
-      take: take ? parseInt(take, 10) : 48,
-      sort,
-    }, request ? this.resolveOptionalViewer(request) : undefined);
+    return this.publicService.getCategories(
+      {
+        take: take ? parseInt(take, 10) : 48,
+        sort,
+      },
+      request ? this.resolveOptionalViewer(request) : undefined,
+    );
   }
 
   @Get('categories/:slug')
@@ -296,10 +292,13 @@ export class PublicController {
     @Query('sort') sort?: 'name' | 'popular',
     @Req() request?: HttpRequest,
   ) {
-    return this.publicService.getTags({
-      take: take ? parseInt(take, 10) : 100,
-      sort,
-    }, request ? this.resolveOptionalViewer(request) : undefined);
+    return this.publicService.getTags(
+      {
+        take: take ? parseInt(take, 10) : 100,
+        sort,
+      },
+      request ? this.resolveOptionalViewer(request) : undefined,
+    );
   }
 
   @Get('tags/:slug')
@@ -313,10 +312,13 @@ export class PublicController {
     @Query('sort') sort?: 'name' | 'popular',
     @Req() request?: HttpRequest,
   ) {
-    return this.publicService.getAuthors({
-      take: take ? parseInt(take, 10) : 48,
-      sort,
-    }, request ? this.resolveOptionalViewer(request) : undefined);
+    return this.publicService.getAuthors(
+      {
+        take: take ? parseInt(take, 10) : 48,
+        sort,
+      },
+      request ? this.resolveOptionalViewer(request) : undefined,
+    );
   }
 
   @UseGuards(JwtAuthGuard)

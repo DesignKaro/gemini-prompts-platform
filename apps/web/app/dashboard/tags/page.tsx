@@ -2,7 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { MdSearch, MdAdd, MdLabel, MdEdit, MdDeleteOutline, MdClose, MdCheck } from 'react-icons/md';
+import {
+  MdSearch,
+  MdAdd,
+  MdLabel,
+  MdEdit,
+  MdDeleteOutline,
+  MdClose,
+  MdCheck,
+} from 'react-icons/md';
 import { useAdminApi } from '../../components/dashboard/use-admin-api';
 
 type Tag = {
@@ -13,8 +21,14 @@ type Tag = {
 };
 
 const PRESET_COLORS = [
-  '#d5ea52', '#60a5fa', '#a855f7', '#f97316',
-  '#10b981', '#f43f5e', '#eab308', '#6366f1',
+  '#d5ea52',
+  '#60a5fa',
+  '#a855f7',
+  '#f97316',
+  '#10b981',
+  '#f43f5e',
+  '#eab308',
+  '#6366f1',
 ];
 
 type TagResponse = {
@@ -43,7 +57,10 @@ function TagModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) { setError('Tag name is required.'); return; }
+    if (!name.trim()) {
+      setError('Tag name is required.');
+      return;
+    }
     onSave(name.trim().toLowerCase().replace(/\s+/g, '-'), color);
   };
 
@@ -52,7 +69,9 @@ function TagModal({
   return createPortal(
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="w-full max-w-[440px] rounded-[28px] bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between gap-4">
@@ -79,7 +98,10 @@ function TagModal({
             <input
               type="text"
               value={name}
-              onChange={(e) => { setName(e.target.value); setError(''); }}
+              onChange={(e) => {
+                setName(e.target.value);
+                setError('');
+              }}
               placeholder="e.g. prompt-engineering"
               className={`mt-1 w-full rounded-[12px] border px-3.5 py-2.5 text-[0.9rem] text-[#0f1116] outline-none transition-colors focus:border-[#0f1116] focus:ring-1 focus:ring-[#0f1116]/10 ${error ? 'border-red-300 bg-red-50' : 'border-[#e1e5ee]'}`}
             />
@@ -112,9 +134,7 @@ function TagModal({
             >
               <MdLabel size={15} />
             </span>
-            <p className="text-[0.88rem] font-medium text-[#0f1116]">
-              #{name || 'preview-tag'}
-            </p>
+            <p className="text-[0.88rem] font-medium text-[#0f1116]">#{name || 'preview-tag'}</p>
           </div>
 
           <div className="flex gap-3 pt-1">
@@ -181,12 +201,16 @@ export default function TagsPage() {
     };
   }, [authStatus, request]);
 
-  const filtered = tags.filter((t) =>
-    t.name.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = tags.filter((t) => t.name.toLowerCase().includes(search.toLowerCase()));
 
-  const openCreate = () => { setEditingTag(null); setIsModalOpen(true); };
-  const openEdit = (tag: Tag) => { setEditingTag(tag); setIsModalOpen(true); };
+  const openCreate = () => {
+    setEditingTag(null);
+    setIsModalOpen(true);
+  };
+  const openEdit = (tag: Tag) => {
+    setEditingTag(tag);
+    setIsModalOpen(true);
+  };
 
   const handleSave = async (name: string, color: string) => {
     setLoadError(null);
@@ -254,7 +278,7 @@ export default function TagsPage() {
 
   const toggleSelection = (id: string) => {
     setSelectedIds((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
     );
   };
 
@@ -272,14 +296,19 @@ export default function TagsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116]">Tags</h1>
-          <p className="text-[0.95rem] text-gray-500">Organize your prompts and posts with reusable tags.</p>
+          <p className="text-[0.95rem] text-gray-500">
+            Organize your prompts and posts with reusable tags.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-3">
           {isSelectMode ? (
             <>
               <button
                 type="button"
-                onClick={() => { setIsSelectMode(false); setSelectedIds([]); }}
+                onClick={() => {
+                  setIsSelectMode(false);
+                  setSelectedIds([]);
+                }}
                 className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] shadow-sm hover:bg-gray-50 transition-colors"
               >
                 Cancel
@@ -375,7 +404,9 @@ export default function TagsPage() {
                   </span>
                   <div>
                     <p className="text-[0.9rem] font-medium text-[#0f1116]">#{tag.name}</p>
-                    <p className="text-[0.8rem] text-gray-500">Used in {tag.usage.toLocaleString()} items</p>
+                    <p className="text-[0.8rem] text-gray-500">
+                      Used in {tag.usage.toLocaleString()} items
+                    </p>
                   </div>
                 </div>
 
@@ -434,7 +465,9 @@ export default function TagsPage() {
                     : 'No tags created yet'}
               </h2>
               <p className="mt-1 text-[0.85rem] text-gray-500">
-                {search ? 'Try a different keyword.' : 'Start by adding a few tags to group related prompts and posts.'}
+                {search
+                  ? 'Try a different keyword.'
+                  : 'Start by adding a few tags to group related prompts and posts.'}
               </p>
             </div>
             {!search && (

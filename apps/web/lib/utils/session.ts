@@ -24,7 +24,7 @@ export async function refreshSession(update?: SessionUpdater): Promise<Session |
         throw error;
       })
       .finally(() => {
-      refreshPromise = null;
+        refreshPromise = null;
       });
   }
   return refreshPromise;

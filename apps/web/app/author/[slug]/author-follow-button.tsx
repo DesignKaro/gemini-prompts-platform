@@ -22,10 +22,7 @@ function isAccessTokenExpired(expiresAt?: string | null) {
   return expiresAtMs <= Date.now() + 60_000;
 }
 
-export function AuthorFollowButton({
-  authorId,
-  initialFollowerCount,
-}: AuthorFollowButtonProps) {
+export function AuthorFollowButton({ authorId, initialFollowerCount }: AuthorFollowButtonProps) {
   const { data: session, status: sessionStatus, update } = useSession();
   const [following, setFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(initialFollowerCount);

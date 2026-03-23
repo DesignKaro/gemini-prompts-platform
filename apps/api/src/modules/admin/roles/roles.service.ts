@@ -29,7 +29,11 @@ export class RolesService {
     }));
   }
 
-  async createRole(input: { name: string; description?: string | null; permissionCodes?: string[] }) {
+  async createRole(input: {
+    name: string;
+    description?: string | null;
+    permissionCodes?: string[];
+  }) {
     const name = input.name?.trim();
     if (!name) {
       throw new BadRequestException('Role name is required.');

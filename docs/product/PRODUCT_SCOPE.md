@@ -1,9 +1,11 @@
 # Product Scope (Implementation Baseline)
 
 ## Platform Goal
+
 Build a prompt publishing and discovery platform with membership gating, community submissions, and modern high-performance UX.
 
 ## Content Model
+
 - Prompt post types:
   - Gemini image prompts
   - Image prompts (normal, recreate)
@@ -17,16 +19,19 @@ Build a prompt publishing and discovery platform with membership gating, communi
 - Visibility: free vs exclusive
 
 ## User Roles
+
 - Admin: full platform control
 - Editor/Content Manager: create/publish/manage prompts
 - Moderator: submission review and approval
 - User: browse, submit, like, save, share
 
 ## Membership Rules
+
 - Free: ads on, limited saved prompts, public content only
 - Premium: ad-free, unlimited saves, exclusive content access
 
 ## Core Pages
+
 - Landing page
 - Category archive
 - Tag archive
@@ -41,10 +46,12 @@ Build a prompt publishing and discovery platform with membership gating, communi
 - Saved prompts dashboard
 
 ## Engagement and Ranking
+
 - Like/save/share/view tracking
 - Trending score based on weighted engagement signals
 
 ## Technical Baseline
+
 - Frontend: Next.js + TypeScript + Tailwind
 - Backend: NestJS/Express + Prisma
 - Database: MySQL
@@ -54,6 +61,7 @@ Build a prompt publishing and discovery platform with membership gating, communi
 - Storage: S3/R2
 
 ## Non-Goals for Initial Build
+
 - Marketplace payments for creators
 - Full AI playground
 - Comments and ratings (can be Phase 2 expansion)

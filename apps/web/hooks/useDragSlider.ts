@@ -33,13 +33,13 @@ export function useDragSlider() {
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     const slider = sliderRef.current;
     if (!slider) return;
-    
+
     // Cancel any ongoing momentum animation
     if (animationFrame) {
       cancelAnimationFrame(animationFrame);
       setAnimationFrame(null);
     }
-    
+
     setIsPointerDown(true);
     setIsDragging(false);
     dragStartedRef.current = false;
@@ -56,7 +56,7 @@ export function useDragSlider() {
 
     const slider = sliderRef.current;
     if (!slider) return;
-    
+
     const currentTime = Date.now();
     const deltaTime = currentTime - lastTimeRef.current;
     const x = e.pageX - slider.offsetLeft;
@@ -75,16 +75,16 @@ export function useDragSlider() {
     }
 
     e.preventDefault();
-    
+
     // Calculate velocity for momentum
     if (deltaTime > 0) {
-      const newVelocity = (x - lastX) / deltaTime * 10; // Scale for smoother feel
+      const newVelocity = ((x - lastX) / deltaTime) * 10; // Scale for smoother feel
       setVelocity(newVelocity);
     }
-    
+
     const walk = (x - startX) * 1.2; // Reduced multiplier for more control
     slider.scrollLeft = scrollLeft - walk;
-    
+
     setLastX(x);
     lastTimeRef.current = currentTime;
   };
@@ -100,7 +100,7 @@ export function useDragSlider() {
       slider.style.scrollSnapType = 'x mandatory';
       slider.classList.remove('dragging');
       dragStartedRef.current = false;
-      
+
       // Apply momentum if velocity is significant
       if (isDragging && Math.abs(velocity) > 2) {
         const frame = requestAnimationFrame(applyMomentum);
@@ -122,7 +122,7 @@ export function useDragSlider() {
       slider.style.scrollSnapType = 'x mandatory';
       slider.classList.remove('dragging');
       dragStartedRef.current = false;
-      
+
       // Apply momentum if velocity is significant
       if (isDragging && Math.abs(velocity) > 2) {
         const frame = requestAnimationFrame(applyMomentum);
@@ -136,13 +136,13 @@ export function useDragSlider() {
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     const slider = sliderRef.current;
     if (!slider || !e.touches || e.touches.length === 0) return;
-    
+
     // Cancel any ongoing momentum animation
     if (animationFrame) {
       cancelAnimationFrame(animationFrame);
       setAnimationFrame(null);
     }
-    
+
     setIsPointerDown(true);
     setIsDragging(false);
     dragStartedRef.current = false;
@@ -157,10 +157,10 @@ export function useDragSlider() {
 
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
     if (!isPointerDown) return;
-    
+
     const slider = sliderRef.current;
     if (!slider || !e.touches || e.touches.length === 0) return;
-    
+
     const currentTime = Date.now();
     const deltaTime = currentTime - lastTimeRef.current;
     const touch = e.touches[0]!;
@@ -179,16 +179,16 @@ export function useDragSlider() {
     }
 
     e.preventDefault();
-    
+
     // Calculate velocity for momentum
     if (deltaTime > 0) {
-      const newVelocity = (x - lastX) / deltaTime * 10; // Scale for smoother feel
+      const newVelocity = ((x - lastX) / deltaTime) * 10; // Scale for smoother feel
       setVelocity(newVelocity);
     }
-    
+
     const walk = (x - startX) * 1.2; // Reduced multiplier for more control
     slider.scrollLeft = scrollLeft - walk;
-    
+
     setLastX(x);
     lastTimeRef.current = currentTime;
   };
@@ -203,7 +203,7 @@ export function useDragSlider() {
       slider.style.scrollSnapType = 'x mandatory';
       slider.classList.remove('dragging');
       dragStartedRef.current = false;
-      
+
       // Apply momentum if velocity is significant
       if (isDragging && Math.abs(velocity) > 2) {
         const frame = requestAnimationFrame(applyMomentum);

@@ -1,4 +1,7 @@
-export function readCookie(cookieHeader: string | undefined, cookieName: string): string | undefined {
+export function readCookie(
+  cookieHeader: string | undefined,
+  cookieName: string,
+): string | undefined {
   if (!cookieHeader) {
     return undefined;
   }

@@ -192,9 +192,7 @@ export default function CategoryPostsSlider({ posts }: CategoryPostsSliderProps)
                     className="h-11 w-11"
                     initialClassName="text-[0.86rem]"
                   />
-                  <p className="text-[1.08rem] leading-none text-[#161a22]">
-                    {post.author}
-                  </p>
+                  <p className="text-[1.08rem] leading-none text-[#161a22]">{post.author}</p>
                 </div>
 
                 <p className="mt-3 text-[1rem] leading-none text-[#5f6778]">{post.date}</p>

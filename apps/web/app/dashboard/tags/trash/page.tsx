@@ -6,7 +6,13 @@ import { MdRestoreFromTrash, MdDeleteOutline, MdLabel } from 'react-icons/md';
 import { useAdminApi } from '../../../components/dashboard/use-admin-api';
 import { formatRelativeTimeOrDash } from '../../../../lib/utils/format';
 
-type TrashedTag = { id: string; name: string; color: string; deletedAt: string; deletedAtISO: string };
+type TrashedTag = {
+  id: string;
+  name: string;
+  color: string;
+  deletedAt: string;
+  deletedAtISO: string;
+};
 
 type TagResponse = {
   items: Array<{
@@ -127,9 +133,7 @@ export default function TagsTrashPage() {
   const deleteSelected = async () => {
     try {
       await Promise.all(
-        Array.from(selected).map((id) =>
-          request(`/api/admin/tags/${id}`, { method: 'DELETE' }),
-        ),
+        Array.from(selected).map((id) => request(`/api/admin/tags/${id}`, { method: 'DELETE' })),
       );
       setItems((p) => p.filter((i) => !selected.has(i.id)));
     } catch (err) {
@@ -146,19 +150,35 @@ export default function TagsTrashPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116]">Tag Trash</h1>
-          <p className="text-[0.95rem] text-gray-500">Recover or permanently delete trashed tags.</p>
+          <p className="text-[0.95rem] text-gray-500">
+            Recover or permanently delete trashed tags.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {isSelectMode ? (
-            <button type="button" onClick={() => { setIsSelectMode(false); setSelected(new Set()); }} className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] hover:bg-gray-50 transition-colors">
+            <button
+              type="button"
+              onClick={() => {
+                setIsSelectMode(false);
+                setSelected(new Set());
+              }}
+              className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] hover:bg-gray-50 transition-colors"
+            >
               Cancel
             </button>
           ) : (
-            <button type="button" onClick={() => setIsSelectMode(true)} className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] hover:bg-gray-50 transition-colors">
+            <button
+              type="button"
+              onClick={() => setIsSelectMode(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] hover:bg-gray-50 transition-colors"
+            >
               Select
             </button>
           )}
-          <Link href="/dashboard/tags" className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] hover:bg-gray-50 transition-colors">
+          <Link
+            href="/dashboard/tags"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] hover:bg-gray-50 transition-colors"
+          >
             Back to Tags
           </Link>
         </div>
@@ -174,14 +194,29 @@ export default function TagsTrashPage() {
         <div className="rounded-[20px] border border-[#e2e6ee] bg-white px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <label className="flex items-center gap-2 text-[0.85rem] text-gray-600 cursor-pointer">
-              <input type="checkbox" checked={allSelected} onChange={toggleAll} className="h-4 w-4 rounded accent-[#0f1116]" />
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleAll}
+                className="h-4 w-4 rounded accent-[#0f1116]"
+              />
               Select all ({items.length})
             </label>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={restoreSelected} disabled={selected.size === 0} className="flex items-center gap-1.5 rounded-xl border border-[#e1e5ee] px-3 py-2 text-[0.8rem] text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors">
+              <button
+                type="button"
+                onClick={restoreSelected}
+                disabled={selected.size === 0}
+                className="flex items-center gap-1.5 rounded-xl border border-[#e1e5ee] px-3 py-2 text-[0.8rem] text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+              >
                 <MdRestoreFromTrash size={15} /> Restore selected
               </button>
-              <button type="button" onClick={deleteSelected} disabled={selected.size === 0} className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-2 text-[0.8rem] text-white hover:bg-red-700 disabled:opacity-40 transition-colors">
+              <button
+                type="button"
+                onClick={deleteSelected}
+                disabled={selected.size === 0}
+                className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-2 text-[0.8rem] text-white hover:bg-red-700 disabled:opacity-40 transition-colors"
+              >
                 <MdDeleteOutline size={15} /> Delete selected
               </button>
             </div>
@@ -192,28 +227,63 @@ export default function TagsTrashPage() {
       {items.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
-            <div key={item.id} className={`flex items-center justify-between rounded-[20px] border bg-white p-4 transition-colors ${selected.has(item.id) ? 'border-[#0f1116]/20 bg-[#f7f8fb]' : 'border-[#eef1f6]'}`}>
+            <div
+              key={item.id}
+              className={`flex items-center justify-between rounded-[20px] border bg-white p-4 transition-colors ${selected.has(item.id) ? 'border-[#0f1116]/20 bg-[#f7f8fb]' : 'border-[#eef1f6]'}`}
+            >
               <div className="flex items-center gap-3">
-                {isSelectMode && <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggle(item.id)} className="h-4 w-4 rounded accent-[#0f1116]" />}
-                <span className="flex h-7 w-7 items-center justify-center rounded-full" style={{ backgroundColor: item.color }}>
+                {isSelectMode && (
+                  <input
+                    type="checkbox"
+                    checked={selected.has(item.id)}
+                    onChange={() => toggle(item.id)}
+                    className="h-4 w-4 rounded accent-[#0f1116]"
+                  />
+                )}
+                <span
+                  className="flex h-7 w-7 items-center justify-center rounded-full"
+                  style={{ backgroundColor: item.color }}
+                >
                   <MdLabel size={14} className="text-[#0f1116]/70" />
                 </span>
                 <div>
-                  <p className="text-[0.88rem] font-medium text-gray-400 line-through">#{item.name}</p>
+                  <p className="text-[0.88rem] font-medium text-gray-400 line-through">
+                    #{item.name}
+                  </p>
                   <p className="text-[0.75rem] text-gray-400">Deleted {item.deletedAt}</p>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1.5">
-                <button type="button" onClick={() => restore(item.id)} className="flex items-center gap-1 rounded-lg bg-[#0f1116] px-2.5 py-1.5 text-[0.75rem] font-medium text-white hover:opacity-90 transition-opacity">
+                <button
+                  type="button"
+                  onClick={() => restore(item.id)}
+                  className="flex items-center gap-1 rounded-lg bg-[#0f1116] px-2.5 py-1.5 text-[0.75rem] font-medium text-white hover:opacity-90 transition-opacity"
+                >
                   <MdRestoreFromTrash size={13} /> Restore
                 </button>
                 {confirmId === item.id ? (
                   <div className="flex gap-1">
-                    <button type="button" onClick={() => deletePerm(item.id)} className="rounded-lg bg-red-600 px-2.5 py-1.5 text-[0.75rem] text-white hover:bg-red-700">Confirm</button>
-                    <button type="button" onClick={() => setConfirmId(null)} className="rounded-lg border border-[#e1e5ee] px-2.5 py-1.5 text-[0.75rem] text-gray-500 hover:bg-gray-50">Cancel</button>
+                    <button
+                      type="button"
+                      onClick={() => deletePerm(item.id)}
+                      className="rounded-lg bg-red-600 px-2.5 py-1.5 text-[0.75rem] text-white hover:bg-red-700"
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmId(null)}
+                      className="rounded-lg border border-[#e1e5ee] px-2.5 py-1.5 text-[0.75rem] text-gray-500 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
                   </div>
                 ) : (
-                  <button type="button" onClick={() => setConfirmId(item.id)} className="flex items-center gap-1 rounded-lg border border-red-100 px-2.5 py-1.5 text-[0.75rem] text-red-600 hover:bg-red-50 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmId(item.id)}
+                    className="flex items-center gap-1 rounded-lg border border-red-100 px-2.5 py-1.5 text-[0.75rem] text-red-600 hover:bg-red-50 transition-colors"
+                  >
                     <MdDeleteOutline size={13} /> Delete
                   </button>
                 )}
@@ -227,7 +297,9 @@ export default function TagsTrashPage() {
           <p className="text-[1rem] font-medium text-gray-400">
             {isLoading ? 'Loading trash…' : 'Tag trash is empty'}
           </p>
-          <Link href="/dashboard/tags" className="text-[0.85rem] text-[#1e4fd2] hover:underline">Back to tags</Link>
+          <Link href="/dashboard/tags" className="text-[0.85rem] text-[#1e4fd2] hover:underline">
+            Back to tags
+          </Link>
         </div>
       )}
     </div>

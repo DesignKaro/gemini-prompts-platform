@@ -17,10 +17,7 @@ export function formatRelativeTimeOrDash(value?: string | null): string {
   return formatRelativeTime(value);
 }
 
-export function formatBytes(
-  value?: number | null,
-  options?: { zeroAsDash?: boolean },
-): string {
+export function formatBytes(value?: number | null, options?: { zeroAsDash?: boolean }): string {
   if (value === null || value === undefined) return '—';
   if (options?.zeroAsDash && value <= 0) return '—';
   const units = ['B', 'KB', 'MB', 'GB'];

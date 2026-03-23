@@ -1,6 +1,4 @@
-const tagSeeds = [
-  'Creative - 24',
-];
+const tagSeeds = ['Creative - 24'];
 
 function toSlug(value) {
   return value
@@ -22,5 +20,4 @@ const tagDefinitions = tagSeeds.map((tag) => {
 });
 
 console.log(tagDefinitions);
-console.log(tagDefinitions.find(t => t.slug === 'creative'));
-
+console.log(tagDefinitions.find((t) => t.slug === 'creative'));

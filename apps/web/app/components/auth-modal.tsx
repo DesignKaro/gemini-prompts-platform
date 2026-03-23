@@ -33,12 +33,10 @@ async function checkAuthHealth(): Promise<HealthCheckResult> {
       cache: 'no-store',
       signal: controller.signal,
     });
-    const payload = (await response.json().catch(() => null)) as
-      | {
-          status?: string;
-          database?: { connected?: boolean; missingTables?: string[]; error?: string };
-        }
-      | null;
+    const payload = (await response.json().catch(() => null)) as {
+      status?: string;
+      database?: { connected?: boolean; missingTables?: string[]; error?: string };
+    } | null;
 
     if (!response.ok || !payload) {
       return {
@@ -67,7 +65,8 @@ async function checkAuthHealth(): Promise<HealthCheckResult> {
 
       return {
         ok: false,
-        message: 'API is running but the database is not ready. Apply migrations and restart the API.',
+        message:
+          'API is running but the database is not ready. Apply migrations and restart the API.',
       };
     }
 
@@ -84,7 +83,10 @@ async function checkAuthHealth(): Promise<HealthCheckResult> {
 
 function mapSignInError(error?: string, code?: string, mode: AuthTab = 'signin'): AuthErrorState {
   if (code === 'email_exists') {
-    return { target: 'email', message: 'This email is already registered. Please sign in instead.' };
+    return {
+      target: 'email',
+      message: 'This email is already registered. Please sign in instead.',
+    };
   }
 
   if (code === 'invalid_credentials') {
@@ -305,7 +307,9 @@ export function AuthModal({ isOpen, onClose, callbackUrl }: AuthModalProps) {
       onClose();
       window.location.href = result?.url || callbackUrl;
     } catch {
-      setFormError('Auth service is unavailable. Please make sure web and API servers are running.');
+      setFormError(
+        'Auth service is unavailable. Please make sure web and API servers are running.',
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -345,8 +349,12 @@ export function AuthModal({ isOpen, onClose, callbackUrl }: AuthModalProps) {
         </div>
 
         <div className="mt-2 text-center">
-          <h2 className="text-[1.75rem] leading-[1.08] text-[#111319] sm:text-[1.9rem]">{headingText}</h2>
-          <p className="mt-2 text-[0.95rem] leading-[1.35] text-[#9299a9] sm:text-[1rem]">{subtitleText}</p>
+          <h2 className="text-[1.75rem] leading-[1.08] text-[#111319] sm:text-[1.9rem]">
+            {headingText}
+          </h2>
+          <p className="mt-2 text-[0.95rem] leading-[1.35] text-[#9299a9] sm:text-[1rem]">
+            {subtitleText}
+          </p>
         </div>
 
         <div className="mt-5 grid grid-cols-2 rounded-[15px] bg-[#f1f2f5] p-1.5">
@@ -564,7 +572,14 @@ export function AuthModal({ isOpen, onClose, callbackUrl }: AuthModalProps) {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
-                    <circle cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="2.8"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    />
                   </svg>
                 )}
               </button>
@@ -573,11 +588,16 @@ export function AuthModal({ isOpen, onClose, callbackUrl }: AuthModalProps) {
         </div>
         <div className="min-h-[24px]">
           {passwordError ? (
-            <p id="auth-password-error" className="mt-2 text-[0.86rem] leading-[1.2] text-[#cd3f3f]">
+            <p
+              id="auth-password-error"
+              className="mt-2 text-[0.86rem] leading-[1.2] text-[#cd3f3f]"
+            >
               {passwordError}
             </p>
           ) : activeTab === 'signup' ? (
-            <p className="mt-2 text-[0.82rem] leading-[1.2] text-[#7e8697]">Use at least 8 characters.</p>
+            <p className="mt-2 text-[0.82rem] leading-[1.2] text-[#7e8697]">
+              Use at least 8 characters.
+            </p>
           ) : null}
         </div>
 
@@ -590,12 +610,16 @@ export function AuthModal({ isOpen, onClose, callbackUrl }: AuthModalProps) {
           {isSubmitting ? 'Please wait...' : 'Continue'}
         </button>
         {formError ? (
-          <p className="mt-3 text-center text-[0.95rem] leading-[1.3] text-[#c94040]">{formError}</p>
+          <p className="mt-3 text-center text-[0.95rem] leading-[1.3] text-[#c94040]">
+            {formError}
+          </p>
         ) : null}
 
         <div className="mt-5 flex items-center gap-3">
           <span className="h-px flex-1 bg-[#e5e7ec]" />
-          <p className="text-[0.9rem] leading-none text-[#7d8391] sm:text-[0.95rem]">Or Continue With</p>
+          <p className="text-[0.9rem] leading-none text-[#7d8391] sm:text-[0.95rem]">
+            Or Continue With
+          </p>
           <span className="h-px flex-1 bg-[#e5e7ec]" />
         </div>
 

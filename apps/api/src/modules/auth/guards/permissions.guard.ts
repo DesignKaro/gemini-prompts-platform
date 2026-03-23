@@ -20,7 +20,11 @@ export class PermissionsGuard implements CanActivate {
       return isProtectedSuperadminEmail(user.email);
     }
 
-    if (user.role === UserRole.ADMIN || user.role === UserRole.EDITOR || user.role === UserRole.MODERATOR) {
+    if (
+      user.role === UserRole.ADMIN ||
+      user.role === UserRole.EDITOR ||
+      user.role === UserRole.MODERATOR
+    ) {
       return true;
     }
 
@@ -64,7 +68,11 @@ export class PermissionsGuard implements CanActivate {
         user.role === UserRole.SUPERADMIN && !isProtectedSuperadminEmail(user.email)
           ? UserRole.USER
           : user.role;
-      const permissionBundle = await this.authService.resolvePermissions(user.sub, user.role, user.email);
+      const permissionBundle = await this.authService.resolvePermissions(
+        user.sub,
+        user.role,
+        user.email,
+      );
       permissions = permissionBundle.permissions;
       request.user = {
         ...user,

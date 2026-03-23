@@ -17,11 +17,7 @@ type SocialShareMenuProps = {
   align?: 'left' | 'right';
 };
 
-export function SocialShareMenu({
-  shareUrl,
-  shareText,
-  align = 'right',
-}: SocialShareMenuProps) {
+export function SocialShareMenu({ shareUrl, shareText, align = 'right' }: SocialShareMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);

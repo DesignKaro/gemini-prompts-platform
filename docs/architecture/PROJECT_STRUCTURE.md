@@ -5,7 +5,6 @@ This structure is designed for a scalable, headless app with separate frontend a
 ```text
 Gemini Prompts/
 ├── README.md
-├── .env.mysql.example
 ├── apps/
 │   ├── web/
 │   │   ├── app/
@@ -99,6 +98,7 @@ Gemini Prompts/
 ```
 
 ## Notes
+
 - `apps/web` and `apps/api` remain decoupled for clean headless architecture.
 - `packages` supports reusable shared code and unified tooling.
 - `docs/phases` is the execution source of truth.

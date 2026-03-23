@@ -1,7 +1,13 @@
 'use client';
 
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { MdClose, MdOutlineImage, MdDeleteOutline, MdOpenInNew, MdContentCopy } from 'react-icons/md';
+import {
+  MdClose,
+  MdOutlineImage,
+  MdDeleteOutline,
+  MdOpenInNew,
+  MdContentCopy,
+} from 'react-icons/md';
 import { useAdminApi } from '../../../components/dashboard/use-admin-api';
 import { formatBytes, formatRelativeTimeOrDash } from '../../../../lib/utils/format';
 
@@ -112,9 +118,7 @@ export default function MediaManagementPage() {
 
   const toggleSelection = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
   };
 
   const toggleSelectAll = () => {
@@ -128,9 +132,7 @@ export default function MediaManagementPage() {
   const handleUpdateActiveMedia = (field: 'altText' | 'title', value: string) => {
     if (!activeMediaId) return;
     setMediaItems((prev) =>
-      prev.map((item) =>
-        item.id === activeMediaId ? { ...item, [field]: value } : item
-      )
+      prev.map((item) => (item.id === activeMediaId ? { ...item, [field]: value } : item)),
     );
   };
 
@@ -227,18 +229,25 @@ export default function MediaManagementPage() {
   return (
     <div className="relative flex h-full w-full overflow-hidden">
       {/* Main Content Area */}
-      <div className={`flex-1 overflow-y-auto pr-2 sm:pr-4 transition-all duration-300 ${activeMediaId ? 'mr-[360px] hidden xl:block' : ''}`}>
+      <div
+        className={`flex-1 overflow-y-auto pr-2 sm:pr-4 transition-all duration-300 ${activeMediaId ? 'mr-[360px] hidden xl:block' : ''}`}
+      >
         <div className="space-y-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116]">Media</h1>
-              <p className="text-[0.95rem] text-gray-500">Manage your uploads, assets, and media library.</p>
+              <p className="text-[0.95rem] text-gray-500">
+                Manage your uploads, assets, and media library.
+              </p>
             </div>
             {isSelectMode ? (
               <>
                 <button
                   type="button"
-                  onClick={() => { setIsSelectMode(false); setSelectedIds([]); }}
+                  onClick={() => {
+                    setIsSelectMode(false);
+                    setSelectedIds([]);
+                  }}
                   className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] shadow-sm hover:bg-gray-50 transition-colors shrink-0"
                 >
                   Cancel
@@ -279,7 +288,9 @@ export default function MediaManagementPage() {
               <div className="max-w-xs">
                 <h3 className="text-[1.1rem] font-medium text-[#0f1116]">No media yet</h3>
                 <p className="text-[0.85rem] text-gray-500 mt-2">
-                  {isLoading ? 'Loading media library…' : 'Upload your first image or asset to build the library.'}
+                  {isLoading
+                    ? 'Loading media library…'
+                    : 'Upload your first image or asset to build the library.'}
                 </p>
               </div>
               <label className="mt-2 cursor-pointer rounded-xl bg-[#d5ea52] px-6 py-2.5 text-[0.85rem] font-medium text-[#0f1116] shadow-sm hover:opacity-90 transition-opacity">
@@ -297,7 +308,9 @@ export default function MediaManagementPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-[1.1rem] font-medium text-[#0f1116]">Recent uploads</h2>
-                  <p className="text-[0.85rem] text-gray-500">Showing {filteredItems.length} files</p>
+                  <p className="text-[0.85rem] text-gray-500">
+                    Showing {filteredItems.length} files
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   {isSelectMode && (
@@ -366,14 +379,16 @@ export default function MediaManagementPage() {
                 </div>
               </div>
 
-              <div className={`mt-5 grid gap-5 grid-cols-2 sm:grid-cols-3 ${activeMediaId ? 'md:grid-cols-3 xl:grid-cols-4' : 'md:grid-cols-4 lg:grid-cols-5'}`}>
+              <div
+                className={`mt-5 grid gap-5 grid-cols-2 sm:grid-cols-3 ${activeMediaId ? 'md:grid-cols-3 xl:grid-cols-4' : 'md:grid-cols-4 lg:grid-cols-5'}`}
+              >
                 {filteredItems.map((item: MediaItem) => {
                   const isSelected = selectedIds.includes(item.id);
                   const isActive = activeMediaId === item.id;
-                  
+
                   return (
-                    <div 
-                      key={item.id} 
+                    <div
+                      key={item.id}
                       onClick={() => setActiveMediaId(item.id)}
                       className={`group cursor-pointer overflow-hidden rounded-[16px] border transition-all hover:shadow-lg hover:shadow-black/5 ${isActive ? 'border-[#0f1116] ring-1 ring-[#0f1116]' : isSelected ? 'border-[#d5ea52] ring-1 ring-[#d5ea52]' : 'border-[#e6e9ef]'}`}
                     >
@@ -387,7 +402,9 @@ export default function MediaManagementPage() {
                             <input
                               type="checkbox"
                               checked={isSelected}
-                              onChange={(e) => toggleSelection(item.id, e as unknown as React.MouseEvent)}
+                              onChange={(e) =>
+                                toggleSelection(item.id, e as unknown as React.MouseEvent)
+                              }
                               onClick={(e) => e.stopPropagation()}
                               className="h-4 w-4 rounded border-[#d7dbe5] accent-[#0f1116] shadow-sm cursor-pointer"
                             />
@@ -405,7 +422,9 @@ export default function MediaManagementPage() {
 
       {/* Right Sidebar - Attachment Details */}
       {(activeMediaId || activeMedia) && (
-        <div className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[360px] bg-white shadow-2xl transition-transform duration-300 transform translate-x-0 border-l border-[#eef2f6] flex flex-col ${activeMediaId ? '' : 'translate-x-[100%]'}`}>
+        <div
+          className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[360px] bg-white shadow-2xl transition-transform duration-300 transform translate-x-0 border-l border-[#eef2f6] flex flex-col ${activeMediaId ? '' : 'translate-x-[100%]'}`}
+        >
           <div className="flex items-center justify-between border-b border-[#eef2f6] px-5 py-4 shrink-0">
             <h2 className="text-[1.1rem] font-medium text-[#0f1116]">Attachment details</h2>
             <button
@@ -415,13 +434,13 @@ export default function MediaManagementPage() {
               <MdClose size={20} />
             </button>
           </div>
-          
+
           {activeMedia ? (
             <div className="flex-1 overflow-y-auto no-scrollbar p-5">
               <div className="relative mb-5 aspect-video w-full overflow-hidden rounded-[14px] border border-[#e2e6ee] bg-gray-50">
-                <img 
-                  src={activeMedia.url} 
-                  alt={activeMedia.altText || activeMedia.title} 
+                <img
+                  src={activeMedia.url}
+                  alt={activeMedia.altText || activeMedia.title}
                   className="h-full w-full object-cover"
                 />
               </div>
@@ -435,10 +454,15 @@ export default function MediaManagementPage() {
                   <span>{formatBytes(activeMedia.size, { zeroAsDash: true })}</span>
                 </div>
                 <div className="pt-2 flex items-center gap-2">
-                  <a href={activeMedia.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[#1e4fd2] hover:underline">
+                  <a
+                    href={activeMedia.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[#1e4fd2] hover:underline"
+                  >
                     View original <MdOpenInNew size={14} />
                   </a>
-                  <button 
+                  <button
                     onClick={() => copyUrlToClipboard(activeMedia.url)}
                     className="inline-flex items-center gap-1.5 ml-3 text-gray-600 hover:text-[#0f1116]"
                   >
@@ -451,7 +475,9 @@ export default function MediaManagementPage() {
 
               <div className="space-y-4">
                 <label className="block">
-                  <span className="block text-[0.8rem] font-medium text-gray-600 mb-1.5">Alt text</span>
+                  <span className="block text-[0.8rem] font-medium text-gray-600 mb-1.5">
+                    Alt text
+                  </span>
                   <input
                     type="text"
                     value={draftDetails.altText}
@@ -461,11 +487,15 @@ export default function MediaManagementPage() {
                     placeholder="Describe the purpose of the image. Leave empty if decorative."
                     className="w-full rounded-[10px] border border-[#e1e5ee] px-3 py-2 text-[0.85rem] text-[#0f1116] placeholder:text-gray-400 focus:border-[#0f1116] focus:outline-none focus:ring-1 focus:ring-[#0f1116]/10"
                   />
-                  <p className="text-[0.7rem] text-gray-400 mt-1.5 leading-tight">Leave empty if the image is purely decorative.</p>
+                  <p className="text-[0.7rem] text-gray-400 mt-1.5 leading-tight">
+                    Leave empty if the image is purely decorative.
+                  </p>
                 </label>
 
                 <label className="block">
-                  <span className="block text-[0.8rem] font-medium text-gray-600 mb-1.5">Title</span>
+                  <span className="block text-[0.8rem] font-medium text-gray-600 mb-1.5">
+                    Title
+                  </span>
                   <input
                     type="text"
                     value={draftDetails.title}
@@ -517,10 +547,10 @@ export default function MediaManagementPage() {
           )}
         </div>
       )}
-      
+
       {/* Mobile Backdrop for Sidebar */}
       {activeMediaId && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-black/20 xl:hidden backdrop-blur-sm transition-opacity animate-in fade-in"
           onClick={() => setActiveMediaId(null)}
         />

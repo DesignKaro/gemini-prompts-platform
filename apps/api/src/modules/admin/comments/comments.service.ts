@@ -95,8 +95,8 @@ export class CommentsService {
         ...comment,
         targetTitle:
           comment.targetType === 'PROMPT'
-            ? promptMap.get(comment.targetId) ?? null
-            : postMap.get(comment.targetId) ?? null,
+            ? (promptMap.get(comment.targetId) ?? null)
+            : (postMap.get(comment.targetId) ?? null),
       })),
       total,
     };

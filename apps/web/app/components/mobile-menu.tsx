@@ -45,7 +45,7 @@ export function MobileMenu({ isOpen, onClose, navItems }: MobileMenuProps) {
         className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
-      
+
       <div className="relative z-50 flex h-full w-[min(88vw,320px)] flex-col bg-white shadow-xl transition-transform">
         <div className="flex items-center justify-between border-b border-[#e1e5ee] px-5 py-4">
           <span className="text-[1.1rem] font-medium text-[#111118]">Menu</span>

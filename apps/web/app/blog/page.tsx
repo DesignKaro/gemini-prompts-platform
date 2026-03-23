@@ -17,8 +17,7 @@ type PageProps = {
 
 export default async function BlogArchivePage({ searchParams }: PageProps) {
   const resolvedSearchParams = await searchParams;
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   const page = Math.max(1, Number.parseInt(resolvedSearchParams?.page ?? '1', 10) || 1);
   const skip = (page - 1) * PAGE_SIZE;
   const response = await getPostList({
@@ -77,8 +76,7 @@ export default async function BlogArchivePage({ searchParams }: PageProps) {
               Explore blog posts
             </h1>
             <p className="mt-4 max-w-[680px] text-[1.05rem] leading-[1.7] text-[#5f6773]">
-              A live archive of strategy, workflows, and prompt tooling — synced from the
-              dashboard.
+              A live archive of strategy, workflows, and prompt tooling — synced from the dashboard.
             </p>
           </div>
 

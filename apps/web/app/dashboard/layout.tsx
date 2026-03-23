@@ -25,7 +25,10 @@ import {
   MdSearch,
 } from 'react-icons/md';
 import brandLogo from '../../Assets/Branding/logo.svg';
-import { hasAnyPermission, hasDashboardAccess as userHasDashboardAccess } from '../../lib/utils/permissions';
+import {
+  hasAnyPermission,
+  hasDashboardAccess as userHasDashboardAccess,
+} from '../../lib/utils/permissions';
 
 type DashboardNavChild = {
   href: string;
@@ -52,7 +55,9 @@ function DashboardLink({
     if (!isDashboard) return;
     e.preventDefault();
     if (typeof document !== 'undefined' && 'startViewTransition' in document) {
-      (document as Document & { startViewTransition: (cb: () => void) => void }).startViewTransition(() => {
+      (
+        document as Document & { startViewTransition: (cb: () => void) => void }
+      ).startViewTransition(() => {
         router.push(href);
       });
     } else {
@@ -297,13 +302,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!canAccessCurrentRoute) {
       router.replace(defaultDashboardHref);
     }
-  }, [
-    canAccessCurrentRoute,
-    defaultDashboardHref,
-    hasDashboardAccess,
-    router,
-    sessionStatus,
-  ]);
+  }, [canAccessCurrentRoute, defaultDashboardHref, hasDashboardAccess, router, sessionStatus]);
 
   const displayName =
     profileSnapshot?.name?.trim() ||
@@ -556,12 +555,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const toggleMenu = (label: string) => {
-    setExpandedMenus(prev =>
-      prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]
+    setExpandedMenus((prev) =>
+      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label],
     );
   };
 
-  const pathSegments = pathname?.replace(/^\/dashboard\/?/, '').split('/').filter(Boolean) || [];
+  const pathSegments =
+    pathname
+      ?.replace(/^\/dashboard\/?/, '')
+      .split('/')
+      .filter(Boolean) || [];
   const breadcrumbLabels: Record<string, string> = {
     '': 'Overview',
     new: 'Create New',
@@ -578,9 +581,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     roles: 'Roles',
   };
   const breadcrumbs = useMemo(() => {
-    const items: { path: string; label: string }[] = [
-      { path: '/dashboard', label: 'Dashboard' },
-    ];
+    const items: { path: string; label: string }[] = [{ path: '/dashboard', label: 'Dashboard' }];
     let acc = '/dashboard';
     pathSegments.forEach((segment) => {
       acc += `/${segment}`;
@@ -614,20 +615,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex h-screen max-h-screen overflow-hidden bg-[#f7f9fc] font-medium font-poppins">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden dashboard-overlay-enter"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <aside className={`
+      <aside
+        className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-[#0f1116] text-white transition-transform duration-200 ease-out lg:transition-none lg:static lg:translate-x-0
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
+      `}
+      >
         <div className="flex h-full flex-col p-4">
-          <div className={`mb-8 flex items-center px-2 py-1 ${isDesktopSidebarCollapsed ? 'justify-between lg:justify-center' : 'justify-between'}`}>
-            <Link href="/" className={`flex items-center overflow-hidden transition-all duration-300 ${isDesktopSidebarCollapsed ? 'lg:w-0 lg:opacity-0' : 'w-[150px] opacity-100'}`}>
+          <div
+            className={`mb-8 flex items-center px-2 py-1 ${isDesktopSidebarCollapsed ? 'justify-between lg:justify-center' : 'justify-between'}`}
+          >
+            <Link
+              href="/"
+              className={`flex items-center overflow-hidden transition-all duration-300 ${isDesktopSidebarCollapsed ? 'lg:w-0 lg:opacity-0' : 'w-[150px] opacity-100'}`}
+            >
               <Image
                 src={brandLogo}
                 alt="Gemini Prompts"
@@ -638,7 +646,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               />
             </Link>
             {isDesktopSidebarCollapsed && (
-              <Link href="/" className="hidden lg:flex h-8 w-8 items-center justify-center rounded-lg bg-[#d5ea52] text-[#0f1116] font-bold text-xl shrink-0">
+              <Link
+                href="/"
+                className="hidden lg:flex h-8 w-8 items-center justify-center rounded-lg bg-[#d5ea52] text-[#0f1116] font-bold text-xl shrink-0"
+              >
                 G
               </Link>
             )}
@@ -659,14 +670,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <DashboardLink
                       href={item.href}
                       className={`flex items-center rounded-xl px-3 py-2.5 transition-colors ${
-                        isActive 
-                          ? 'bg-[#d5ea52] text-[#0f1116] font-medium' 
+                        isActive
+                          ? 'bg-[#d5ea52] text-[#0f1116] font-medium'
                           : 'text-gray-400 hover:bg-white/5 hover:text-white'
                       } ${isDesktopSidebarCollapsed ? 'justify-center lg:px-0' : 'gap-3'}`}
                       title={isDesktopSidebarCollapsed ? item.label : undefined}
                     >
-                      <div className="shrink-0 flex items-center justify-center w-5">{item.icon}</div>
-                      <span className={`whitespace-nowrap transition-all duration-300 text-[0.9rem] ${isDesktopSidebarCollapsed ? 'lg:w-0 lg:opacity-0 hidden lg:block' : 'opacity-100'}`}>
+                      <div className="shrink-0 flex items-center justify-center w-5">
+                        {item.icon}
+                      </div>
+                      <span
+                        className={`whitespace-nowrap transition-all duration-300 text-[0.9rem] ${isDesktopSidebarCollapsed ? 'lg:w-0 lg:opacity-0 hidden lg:block' : 'opacity-100'}`}
+                      >
                         {item.label}
                       </span>
                     </DashboardLink>
@@ -676,13 +691,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       className={`flex w-full items-center rounded-xl px-3 py-2.5 text-gray-400 transition-colors hover:bg-white/5 hover:text-white ${isDesktopSidebarCollapsed ? 'justify-center lg:px-0' : 'justify-between'}`}
                       title={isDesktopSidebarCollapsed ? item.label : undefined}
                     >
-                      <div className={`flex items-center ${isDesktopSidebarCollapsed ? 'justify-center' : 'gap-3'}`}>
-                        <div className="shrink-0 flex items-center justify-center w-5">{item.icon}</div>
-                        <span className={`whitespace-nowrap transition-all duration-300 text-[0.9rem] ${isDesktopSidebarCollapsed ? 'lg:w-0 lg:opacity-0 hidden lg:block' : 'opacity-100'}`}>
+                      <div
+                        className={`flex items-center ${isDesktopSidebarCollapsed ? 'justify-center' : 'gap-3'}`}
+                      >
+                        <div className="shrink-0 flex items-center justify-center w-5">
+                          {item.icon}
+                        </div>
+                        <span
+                          className={`whitespace-nowrap transition-all duration-300 text-[0.9rem] ${isDesktopSidebarCollapsed ? 'lg:w-0 lg:opacity-0 hidden lg:block' : 'opacity-100'}`}
+                        >
                           {item.label}
                         </span>
                       </div>
-                      <MdNavigateNext className={`shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''} ${isDesktopSidebarCollapsed ? 'hidden lg:hidden' : 'block'}`} />
+                      <MdNavigateNext
+                        className={`shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''} ${isDesktopSidebarCollapsed ? 'hidden lg:hidden' : 'block'}`}
+                      />
                     </button>
                   )}
 
@@ -694,7 +717,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           href={child.href}
                           className={`flex items-center gap-2 rounded-xl py-1.5 px-2 text-[0.85rem] transition-colors ${
                             isRouteActive(child.href)
-                              ? 'text-[#d5ea52] font-medium' 
+                              ? 'text-[#d5ea52] font-medium'
                               : 'text-gray-500 hover:text-white hover:bg-white/5'
                           }`}
                         >
@@ -708,14 +731,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {/* Tooltip for collapsed state */}
                   {isDesktopSidebarCollapsed && hasChildren && (
                     <div className="absolute left-[calc(100%+8px)] top-0 z-50 hidden w-48 rounded-xl border border-white/10 bg-[#1e222b] p-2 shadow-xl group-hover:lg:block">
-                      <p className="mb-2 px-2 text-[0.75rem] font-medium text-gray-400 uppercase tracking-wider">{item.label}</p>
+                      <p className="mb-2 px-2 text-[0.75rem] font-medium text-gray-400 uppercase tracking-wider">
+                        {item.label}
+                      </p>
                       {(item.children ?? []).map((child) => (
                         <DashboardLink
                           key={child.label}
                           href={child.href}
                           className={`flex items-center gap-2 rounded-lg px-2 py-2 text-[0.85rem] transition-colors ${
                             isRouteActive(child.href)
-                              ? 'bg-white/10 text-[#d5ea52] font-medium' 
+                              ? 'bg-white/10 text-[#d5ea52] font-medium'
                               : 'text-gray-300 hover:text-white hover:bg-white/5'
                           }`}
                         >
@@ -732,7 +757,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Sidebar Footer */}
           <div className="mt-auto border-t border-white/10 pt-4 flex flex-col gap-3">
-            <div className={`flex items-center px-2 py-1 ${isDesktopSidebarCollapsed ? 'justify-center lg:px-0' : 'gap-3'}`}>
+            <div
+              className={`flex items-center px-2 py-1 ${isDesktopSidebarCollapsed ? 'justify-center lg:px-0' : 'gap-3'}`}
+            >
               <button
                 type="button"
                 onClick={openProfileModal}
@@ -745,7 +772,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   displayName.slice(0, 1).toUpperCase()
                 )}
               </button>
-              <div className={`flex-1 overflow-hidden transition-all duration-300 ${isDesktopSidebarCollapsed ? 'w-0 opacity-0 lg:hidden' : 'opacity-100'}`}>
+              <div
+                className={`flex-1 overflow-hidden transition-all duration-300 ${isDesktopSidebarCollapsed ? 'w-0 opacity-0 lg:hidden' : 'opacity-100'}`}
+              >
                 <p className="truncate text-[0.85rem] font-medium">{displayName}</p>
                 <p className="truncate text-[0.7rem] text-gray-500">{roleLabel}</p>
               </div>
@@ -780,7 +809,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className="h-auto w-[120px] object-contain"
               />
             </Link>
-            <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[0.9rem] text-[#0f1116]">
+            <nav
+              aria-label="Breadcrumb"
+              className="flex items-center gap-1.5 text-[0.9rem] text-[#0f1116]"
+            >
               {breadcrumbs.map((item, i) => {
                 const isLast = i === breadcrumbs.length - 1;
                 return (
@@ -803,57 +835,82 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               })}
             </nav>
           </div>
-          
+
           <div className="flex items-center gap-3">
             {/* Global Search */}
             <div className="relative hidden md:block group">
-              <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#0f1116] transition-colors" size={18} />
+              <MdSearch
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#0f1116] transition-colors"
+                size={18}
+              />
               <input
                 type="text"
                 placeholder="Search... (Cmd+K)"
                 className="h-9 w-48 lg:w-64 rounded-full border border-[#e1e5ee] bg-gray-50/50 pl-10 pr-4 text-[0.85rem] text-[#0f1116] placeholder-gray-400 focus:border-[#0f1116] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#0f1116] transition-all"
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden lg:flex items-center gap-1">
-                <kbd className="rounded border border-gray-200 bg-white px-1.5 py-0.5 text-[0.6rem] font-medium text-gray-400 shadow-sm">⌘K</kbd>
+                <kbd className="rounded border border-gray-200 bg-white px-1.5 py-0.5 text-[0.6rem] font-medium text-gray-400 shadow-sm">
+                  ⌘K
+                </kbd>
               </div>
             </div>
             {canManageCategories &&
             pathname?.startsWith('/dashboard/categories') &&
             !pathname.includes('/trash') ? (
-              <DashboardLink href="/dashboard/categories/trash" className="hidden items-center gap-2 rounded-full border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] transition-colors hover:bg-gray-50 sm:flex">
+              <DashboardLink
+                href="/dashboard/categories/trash"
+                className="hidden items-center gap-2 rounded-full border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] transition-colors hover:bg-gray-50 sm:flex"
+              >
                 <MdDeleteOutline size={18} /> Trash
               </DashboardLink>
             ) : null}
-            {canManageTags && pathname?.startsWith('/dashboard/tags') && !pathname.includes('/trash') ? (
-              <DashboardLink href="/dashboard/tags/trash" className="hidden items-center gap-2 rounded-full border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] transition-colors hover:bg-gray-50 sm:flex">
+            {canManageTags &&
+            pathname?.startsWith('/dashboard/tags') &&
+            !pathname.includes('/trash') ? (
+              <DashboardLink
+                href="/dashboard/tags/trash"
+                className="hidden items-center gap-2 rounded-full border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] transition-colors hover:bg-gray-50 sm:flex"
+              >
                 <MdDeleteOutline size={18} /> Trash
               </DashboardLink>
             ) : null}
             {canModerateComments &&
             pathname?.startsWith('/dashboard/comments') &&
             !pathname.includes('/trash') ? (
-              <DashboardLink href="/dashboard/comments/trash" className="hidden items-center gap-2 rounded-full border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] transition-colors hover:bg-gray-50 sm:flex">
+              <DashboardLink
+                href="/dashboard/comments/trash"
+                className="hidden items-center gap-2 rounded-full border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] transition-colors hover:bg-gray-50 sm:flex"
+              >
                 <MdDeleteOutline size={18} /> Trash
               </DashboardLink>
             ) : null}
             {canManagePrompts &&
             pathname?.startsWith('/dashboard/content/prompts') &&
             !pathname.includes('/trash') ? (
-              <DashboardLink href="/dashboard/content/prompts/trash" className="hidden items-center gap-2 rounded-full border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] transition-colors hover:bg-gray-50 sm:flex">
+              <DashboardLink
+                href="/dashboard/content/prompts/trash"
+                className="hidden items-center gap-2 rounded-full border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] transition-colors hover:bg-gray-50 sm:flex"
+              >
                 <MdDeleteOutline size={18} /> Trash
               </DashboardLink>
             ) : null}
             {canManagePosts &&
             pathname?.startsWith('/dashboard/content/posts') &&
             !pathname.includes('/trash') ? (
-              <DashboardLink href="/dashboard/content/posts/trash" className="hidden items-center gap-2 rounded-full border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] transition-colors hover:bg-gray-50 sm:flex">
+              <DashboardLink
+                href="/dashboard/content/posts/trash"
+                className="hidden items-center gap-2 rounded-full border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] transition-colors hover:bg-gray-50 sm:flex"
+              >
                 <MdDeleteOutline size={18} /> Trash
               </DashboardLink>
             ) : null}
 
             {/* New Content */}
             {canCreateContent ? (
-              <DashboardLink href="/dashboard/content/new" className="hidden items-center gap-2 rounded-full bg-[#0f1116] px-4 py-2 text-[0.85rem] text-white transition-opacity hover:opacity-90 sm:flex">
+              <DashboardLink
+                href="/dashboard/content/new"
+                className="hidden items-center gap-2 rounded-full bg-[#0f1116] px-4 py-2 text-[0.85rem] text-white transition-opacity hover:opacity-90 sm:flex"
+              >
                 <MdPostAdd size={18} /> New Content
               </DashboardLink>
             ) : null}
@@ -928,7 +985,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
                     <label className="cursor-pointer text-[0.8rem] text-[#1e4fd2]">
                       Upload photo
-                      <input type="file" accept="image/*" className="sr-only" onChange={handleAvatarChange} />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={handleAvatarChange}
+                      />
                     </label>
                     <button
                       type="button"

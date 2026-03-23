@@ -179,7 +179,8 @@ async function main() {
     where: { slug: 'top-10-trending-wedding-image-prompts' },
     update: {
       title: 'Top 10 Trending Wedding Image Prompts',
-      description: 'A high-performing collection of wedding image prompts for Gemini and image models.',
+      description:
+        'A high-performing collection of wedding image prompts for Gemini and image models.',
       visibility: 'FREE',
       authorId: admin.id,
       categories: {
@@ -198,7 +199,8 @@ async function main() {
     create: {
       title: 'Top 10 Trending Wedding Image Prompts',
       slug: 'top-10-trending-wedding-image-prompts',
-      description: 'A high-performing collection of wedding image prompts for Gemini and image models.',
+      description:
+        'A high-performing collection of wedding image prompts for Gemini and image models.',
       visibility: 'FREE',
       authorId: admin.id,
       categories: {

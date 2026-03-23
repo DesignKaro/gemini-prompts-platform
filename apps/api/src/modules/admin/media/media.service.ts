@@ -35,10 +35,7 @@ export class MediaService {
   }) {
     const where: Prisma.MediaAssetWhereInput = {};
     if (options.search) {
-      where.OR = [
-        { title: { contains: options.search } },
-        { url: { contains: options.search } },
-      ];
+      where.OR = [{ title: { contains: options.search } }, { url: { contains: options.search } }];
     }
     if (options.status) {
       where.status = options.status;

@@ -87,11 +87,7 @@ export default function PostsManagementPage() {
       if (trimmedSearch) params.set('search', trimmedSearch);
       if (activeTab !== 'All') {
         const mappedStatus =
-          activeTab === 'Published'
-            ? 'PUBLISHED'
-            : activeTab === 'Draft'
-              ? 'DRAFT'
-              : 'SCHEDULED';
+          activeTab === 'Published' ? 'PUBLISHED' : activeTab === 'Draft' ? 'DRAFT' : 'SCHEDULED';
         params.set('status', mappedStatus);
       }
       params.set('sort', sortFilter);
@@ -150,17 +146,13 @@ export default function PostsManagementPage() {
 
   const toggleSelection = (id: string) => {
     setSelectedIds((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
     );
   };
 
   const handleBulkStatusChange = async (nextStatus: 'Published' | 'Draft' | 'Scheduled') => {
     const mappedStatus =
-      nextStatus === 'Published'
-        ? 'PUBLISHED'
-        : nextStatus === 'Draft'
-          ? 'DRAFT'
-          : 'SCHEDULED';
+      nextStatus === 'Published' ? 'PUBLISHED' : nextStatus === 'Draft' ? 'DRAFT' : 'SCHEDULED';
     try {
       await Promise.all(
         selectedIds.map((id) =>
@@ -207,7 +199,9 @@ export default function PostsManagementPage() {
       (activeTab === 'Scheduled' && p.status === 'SCHEDULED');
     const matchesSearch =
       p.title.toLowerCase().includes(search.toLowerCase()) ||
-      titleCase(p.postFormat ?? p.postType ?? '').toLowerCase().includes(search.toLowerCase());
+      titleCase(p.postFormat ?? p.postType ?? '')
+        .toLowerCase()
+        .includes(search.toLowerCase());
     return matchesTab && matchesSearch;
   });
 
@@ -223,7 +217,9 @@ export default function PostsManagementPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116]">Posts</h1>
-          <p className="text-[0.95rem] text-gray-500">Manage long-form posts, guides, and prompt collections.</p>
+          <p className="text-[0.95rem] text-gray-500">
+            Manage long-form posts, guides, and prompt collections.
+          </p>
         </div>
 
         <div className="flex flex-wrap gap-2 sm:gap-3">
@@ -238,7 +234,9 @@ export default function PostsManagementPage() {
             </button>
             {isFilterOpen && (
               <div className="absolute right-0 top-[calc(100%+6px)] z-20 w-52 rounded-[14px] border border-[#e2e6ee] bg-white p-3 shadow-xl">
-                <p className="mb-2 text-[0.75rem] font-medium uppercase tracking-wide text-gray-400">Sort by</p>
+                <p className="mb-2 text-[0.75rem] font-medium uppercase tracking-wide text-gray-400">
+                  Sort by
+                </p>
                 {[
                   { label: 'Latest updated', value: 'recent' },
                   { label: 'Most views', value: 'views' },
@@ -263,7 +261,10 @@ export default function PostsManagementPage() {
             <>
               <button
                 type="button"
-                onClick={() => { setIsSelectMode(false); setSelectedIds([]); }}
+                onClick={() => {
+                  setIsSelectMode(false);
+                  setSelectedIds([]);
+                }}
                 className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] shadow-sm hover:bg-gray-50 transition-colors"
               >
                 Cancel
@@ -283,7 +284,9 @@ export default function PostsManagementPage() {
                       <button
                         key={opt}
                         type="button"
-                        onClick={() => handleBulkStatusChange(opt as 'Published' | 'Draft' | 'Scheduled')}
+                        onClick={() =>
+                          handleBulkStatusChange(opt as 'Published' | 'Draft' | 'Scheduled')
+                        }
                         className="flex w-full items-center rounded-[10px] px-3 py-2 text-[0.82rem] hover:bg-gray-50 transition-colors text-left text-[#0f1116]"
                       >
                         Set {opt}
@@ -340,27 +343,29 @@ export default function PostsManagementPage() {
             />
           </div>
 
-        <div className="flex flex-wrap gap-2 text-[0.8rem]">
-          {STATUS_TABS.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`rounded-full px-3 py-1.5 transition-colors ${
-                activeTab === tab ? 'bg-[#0f1116] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+          <div className="flex flex-wrap gap-2 text-[0.8rem]">
+            {STATUS_TABS.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`rounded-full px-3 py-1.5 transition-colors ${
+                  activeTab === tab
+                    ? 'bg-[#0f1116] text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div className="mt-3 text-[0.8rem] text-gray-400">
-        {isLoading ? 'Loading posts…' : `Showing ${filtered.length} of ${total} posts`}
-      </div>
+        <div className="mt-3 text-[0.8rem] text-gray-400">
+          {isLoading ? 'Loading posts…' : `Showing ${filtered.length} of ${total} posts`}
+        </div>
 
-      {/* Table */}
+        {/* Table */}
         {filtered.length > 0 ? (
           <div className="mt-5 overflow-x-auto">
             <table className="w-full min-w-[640px] text-left border-collapse">
@@ -386,7 +391,10 @@ export default function PostsManagementPage() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filtered.map((post) => (
-                  <tr key={post.id} className={`group hover:bg-gray-50 transition-colors ${selectedIds.includes(post.id) ? 'bg-gray-50/50' : ''}`}>
+                  <tr
+                    key={post.id}
+                    className={`group hover:bg-gray-50 transition-colors ${selectedIds.includes(post.id) ? 'bg-gray-50/50' : ''}`}
+                  >
                     {isSelectMode && (
                       <td className="py-4 w-10">
                         <input
@@ -398,7 +406,9 @@ export default function PostsManagementPage() {
                       </td>
                     )}
                     <td className="py-4">
-                      <span className="text-[0.95rem] font-medium text-[#0f1116]">{post.title}</span>
+                      <span className="text-[0.95rem] font-medium text-[#0f1116]">
+                        {post.title}
+                      </span>
                     </td>
                     <td className="py-4 text-[0.85rem] text-gray-500">
                       {titleCase(post.postFormat ?? post.postType ?? 'Post')}
@@ -448,7 +458,9 @@ export default function PostsManagementPage() {
             <div className="max-w-sm">
               <h2 className="text-[1.1rem] font-medium text-[#0f1116]">No posts found</h2>
               <p className="mt-1 text-[0.85rem] text-gray-500">
-                {search ? `No posts match "${search}". Try a different search.` : 'No posts in this status category.'}
+                {search
+                  ? `No posts match "${search}". Try a different search.`
+                  : 'No posts in this status category.'}
               </p>
             </div>
             {!search && (

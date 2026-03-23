@@ -6,7 +6,13 @@ import { MdRestoreFromTrash, MdDeleteOutline, MdArticle } from 'react-icons/md';
 import { useAdminApi } from '../../../../components/dashboard/use-admin-api';
 import { formatRelativeTimeOrDash, titleCase } from '../../../../../lib/utils/format';
 
-type TrashedPost = { id: string; title: string; type: string; trashedAt: string; trashedAtISO: string };
+type TrashedPost = {
+  id: string;
+  title: string;
+  type: string;
+  trashedAt: string;
+  trashedAtISO: string;
+};
 
 type PostResponse = {
   items: Array<{
@@ -126,9 +132,7 @@ export default function PostsTrashPage() {
   const deleteSelected = async () => {
     try {
       await Promise.all(
-        Array.from(selected).map((id) =>
-          request(`/api/admin/posts/${id}`, { method: 'DELETE' }),
-        ),
+        Array.from(selected).map((id) => request(`/api/admin/posts/${id}`, { method: 'DELETE' })),
       );
       setItems((p) => p.filter((i) => !selected.has(i.id)));
     } catch (err) {
@@ -145,19 +149,35 @@ export default function PostsTrashPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116]">Post Trash</h1>
-          <p className="text-[0.95rem] text-gray-500">Recover or permanently delete trashed posts.</p>
+          <p className="text-[0.95rem] text-gray-500">
+            Recover or permanently delete trashed posts.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {isSelectMode ? (
-            <button type="button" onClick={() => { setIsSelectMode(false); setSelected(new Set()); }} className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] hover:bg-gray-50 transition-colors">
+            <button
+              type="button"
+              onClick={() => {
+                setIsSelectMode(false);
+                setSelected(new Set());
+              }}
+              className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] hover:bg-gray-50 transition-colors"
+            >
               Cancel
             </button>
           ) : (
-            <button type="button" onClick={() => setIsSelectMode(true)} className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] hover:bg-gray-50 transition-colors">
+            <button
+              type="button"
+              onClick={() => setIsSelectMode(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] hover:bg-gray-50 transition-colors"
+            >
               Select
             </button>
           )}
-          <Link href="/dashboard/content/posts" className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] hover:bg-gray-50 transition-colors">
+          <Link
+            href="/dashboard/content/posts"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] hover:bg-gray-50 transition-colors"
+          >
             Back to Posts
           </Link>
         </div>
@@ -172,14 +192,33 @@ export default function PostsTrashPage() {
       {isSelectMode && items.length > 0 && (
         <div className="rounded-[20px] border border-[#e2e6ee] bg-white px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <label className="flex items-center gap-2 text-[0.85rem] text-gray-600 cursor-pointer">
-            <input type="checkbox" checked={items.length > 0 && selected.size === items.length} onChange={() => setSelected(selected.size === items.length ? new Set() : new Set(items.map((i) => i.id)))} className="h-4 w-4 accent-[#0f1116]" />
+            <input
+              type="checkbox"
+              checked={items.length > 0 && selected.size === items.length}
+              onChange={() =>
+                setSelected(
+                  selected.size === items.length ? new Set() : new Set(items.map((i) => i.id)),
+                )
+              }
+              className="h-4 w-4 accent-[#0f1116]"
+            />
             Select all
           </label>
           <div className="flex gap-2">
-            <button type="button" onClick={restoreSelected} disabled={selected.size === 0} className="flex items-center gap-1.5 rounded-xl border border-[#e1e5ee] px-3 py-2 text-[0.8rem] text-gray-700 hover:bg-gray-50 disabled:opacity-40">
+            <button
+              type="button"
+              onClick={restoreSelected}
+              disabled={selected.size === 0}
+              className="flex items-center gap-1.5 rounded-xl border border-[#e1e5ee] px-3 py-2 text-[0.8rem] text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+            >
               <MdRestoreFromTrash size={15} /> Restore selected
             </button>
-            <button type="button" onClick={deleteSelected} disabled={selected.size === 0} className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-2 text-[0.8rem] text-white hover:bg-red-700 disabled:opacity-40">
+            <button
+              type="button"
+              onClick={deleteSelected}
+              disabled={selected.size === 0}
+              className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-2 text-[0.8rem] text-white hover:bg-red-700 disabled:opacity-40"
+            >
               <MdDeleteOutline size={15} /> Delete selected
             </button>
           </div>
@@ -200,32 +239,62 @@ export default function PostsTrashPage() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {items.map((item) => (
-                <tr key={item.id} className={`transition-colors ${selected.has(item.id) ? 'bg-[#f7f8fb]' : 'hover:bg-gray-50'}`}>
+                <tr
+                  key={item.id}
+                  className={`transition-colors ${selected.has(item.id) ? 'bg-[#f7f8fb]' : 'hover:bg-gray-50'}`}
+                >
                   {isSelectMode && (
                     <td className="px-5 py-4">
-                      <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggle(item.id)} className="h-4 w-4 accent-[#0f1116]" />
+                      <input
+                        type="checkbox"
+                        checked={selected.has(item.id)}
+                        onChange={() => toggle(item.id)}
+                        className="h-4 w-4 accent-[#0f1116]"
+                      />
                     </td>
                   )}
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-2">
                       <MdArticle size={16} className="text-gray-300 shrink-0" />
-                      <span className="text-[0.88rem] font-medium text-gray-400 line-through">{item.title}</span>
+                      <span className="text-[0.88rem] font-medium text-gray-400 line-through">
+                        {item.title}
+                      </span>
                     </div>
                   </td>
                   <td className="px-5 py-4 text-[0.82rem] text-gray-400">{item.type}</td>
                   <td className="px-5 py-4 text-[0.82rem] text-gray-400">{item.trashedAt}</td>
                   <td className="px-5 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button type="button" onClick={() => restore(item.id)} className="flex items-center gap-1 rounded-xl bg-[#0f1116] px-3 py-1.5 text-[0.78rem] font-medium text-white hover:opacity-90">
+                      <button
+                        type="button"
+                        onClick={() => restore(item.id)}
+                        className="flex items-center gap-1 rounded-xl bg-[#0f1116] px-3 py-1.5 text-[0.78rem] font-medium text-white hover:opacity-90"
+                      >
                         <MdRestoreFromTrash size={14} /> Restore
                       </button>
                       {confirmId === item.id ? (
                         <>
-                          <button type="button" onClick={() => deletePerm(item.id)} className="rounded-xl bg-red-600 px-3 py-1.5 text-[0.78rem] text-white hover:bg-red-700">Confirm</button>
-                          <button type="button" onClick={() => setConfirmId(null)} className="rounded-xl border px-3 py-1.5 text-[0.78rem] text-gray-500 hover:bg-gray-50">Cancel</button>
+                          <button
+                            type="button"
+                            onClick={() => deletePerm(item.id)}
+                            className="rounded-xl bg-red-600 px-3 py-1.5 text-[0.78rem] text-white hover:bg-red-700"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmId(null)}
+                            className="rounded-xl border px-3 py-1.5 text-[0.78rem] text-gray-500 hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
                         </>
                       ) : (
-                        <button type="button" onClick={() => setConfirmId(item.id)} className="flex items-center gap-1 rounded-xl border border-red-100 px-3 py-1.5 text-[0.78rem] text-red-600 hover:bg-red-50">
+                        <button
+                          type="button"
+                          onClick={() => setConfirmId(item.id)}
+                          className="flex items-center gap-1 rounded-xl border border-red-100 px-3 py-1.5 text-[0.78rem] text-red-600 hover:bg-red-50"
+                        >
                           <MdDeleteOutline size={14} /> Delete
                         </button>
                       )}
@@ -242,7 +311,12 @@ export default function PostsTrashPage() {
           <p className="text-[1rem] font-medium text-gray-400">
             {isLoading ? 'Loading trash…' : 'Post trash is empty'}
           </p>
-          <Link href="/dashboard/content/posts" className="text-[0.85rem] text-[#1e4fd2] hover:underline">Back to posts</Link>
+          <Link
+            href="/dashboard/content/posts"
+            className="text-[0.85rem] text-[#1e4fd2] hover:underline"
+          >
+            Back to posts
+          </Link>
         </div>
       )}
     </div>

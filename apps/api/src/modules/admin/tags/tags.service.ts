@@ -28,10 +28,7 @@ export class TagsService {
   }) {
     const where: Prisma.TagWhereInput = {};
     if (options.search) {
-      where.OR = [
-        { name: { contains: options.search } },
-        { slug: { contains: options.search } },
-      ];
+      where.OR = [{ name: { contains: options.search } }, { slug: { contains: options.search } }];
     }
     if (options.trash) {
       where.deletedAt = { not: null };

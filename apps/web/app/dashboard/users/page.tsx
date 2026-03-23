@@ -155,13 +155,9 @@ export default function UsersPage() {
     if (!search.trim()) return users;
     const q = search.toLowerCase();
     return users.filter((user) =>
-      [
-        user.name,
-        user.email,
-        user.handle,
-        user.role,
-        ...user.roles.map((role) => role.name),
-      ].some((value) => (value ?? '').toLowerCase().includes(q)),
+      [user.name, user.email, user.handle, user.role, ...user.roles.map((role) => role.name)].some(
+        (value) => (value ?? '').toLowerCase().includes(q),
+      ),
     );
   }, [search, users]);
 
@@ -198,10 +194,7 @@ export default function UsersPage() {
 
   const applyRoleSelection = async (user: UserItem, selection: string) => {
     if (!canManageUsers) return;
-    if (
-      selection === 'system:SUPERADMIN' &&
-      !isProtectedSuperadminEmail(user.email)
-    ) {
+    if (selection === 'system:SUPERADMIN' && !isProtectedSuperadminEmail(user.email)) {
       setLoadError(`Only ${PROTECTED_SUPERADMIN_EMAIL} can be assigned SUPERADMIN.`);
       return;
     }
@@ -256,9 +249,7 @@ export default function UsersPage() {
       const updated = await request<ApiUser>(`/api/admin/users/${user.id}/${nextAction}`, {
         method: 'PATCH',
       });
-      setUsers((prev) =>
-        prev.map((item) => (item.id === user.id ? mapUser(updated) : item)),
-      );
+      setUsers((prev) => prev.map((item) => (item.id === user.id ? mapUser(updated) : item)));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : (err as { message?: string }).message;
       setLoadError(message || 'Unable to update user status.');
@@ -316,10 +307,7 @@ export default function UsersPage() {
       setCreateError('Email is required.');
       return;
     }
-    if (
-      createForm.roleSelection === 'system:SUPERADMIN' &&
-      !isProtectedSuperadminEmail(email)
-    ) {
+    if (createForm.roleSelection === 'system:SUPERADMIN' && !isProtectedSuperadminEmail(email)) {
       setCreateError(`Only ${PROTECTED_SUPERADMIN_EMAIL} can be assigned SUPERADMIN.`);
       return;
     }

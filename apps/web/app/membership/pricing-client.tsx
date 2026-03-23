@@ -71,7 +71,9 @@ export default function MembershipPricing() {
               type="button"
               onClick={() => setCycle('monthly')}
               className={`h-10 rounded-full px-4 text-[0.9rem] font-medium transition-colors ${
-                cycle === 'monthly' ? 'bg-[#111111] text-white' : 'text-[#4b525e] hover:text-[#101010]'
+                cycle === 'monthly'
+                  ? 'bg-[#111111] text-white'
+                  : 'text-[#4b525e] hover:text-[#101010]'
               }`}
               aria-pressed={cycle === 'monthly'}
             >
@@ -81,7 +83,9 @@ export default function MembershipPricing() {
               type="button"
               onClick={() => setCycle('yearly')}
               className={`flex h-10 items-center gap-2 rounded-full px-4 text-[0.9rem] font-medium transition-colors ${
-                cycle === 'yearly' ? 'bg-[#111111] text-white' : 'text-[#4b525e] hover:text-[#101010]'
+                cycle === 'yearly'
+                  ? 'bg-[#111111] text-white'
+                  : 'text-[#4b525e] hover:text-[#101010]'
               }`}
               aria-pressed={cycle === 'yearly'}
             >
@@ -173,7 +177,8 @@ export default function MembershipPricing() {
                 Unlock everything
               </p>
               <p className="mt-2 max-w-[28rem] text-[0.98rem] leading-[1.65] text-white/72">
-                Members-only prompts, premium packs, and faster workflows — built for creators and teams.
+                Members-only prompts, premium packs, and faster workflows — built for creators and
+                teams.
               </p>
             </div>
             <div className="text-right">

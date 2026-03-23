@@ -142,7 +142,7 @@ export default function CommentsPage() {
         method: 'PATCH',
         body: JSON.stringify({ status: 'APPROVED' }),
       });
-      setComments((prev) => prev.map((c) => c.id === id ? { ...c, status: 'APPROVED' } : c));
+      setComments((prev) => prev.map((c) => (c.id === id ? { ...c, status: 'APPROVED' } : c)));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to approve comment.';
       setLoadError(message);
@@ -155,7 +155,7 @@ export default function CommentsPage() {
         method: 'PATCH',
         body: JSON.stringify({ status: 'TRASH' }),
       });
-      setComments((prev) => prev.map((c) => c.id === id ? { ...c, status: 'TRASH' } : c));
+      setComments((prev) => prev.map((c) => (c.id === id ? { ...c, status: 'TRASH' } : c)));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to move comment to trash.';
       setLoadError(message);
@@ -165,10 +165,13 @@ export default function CommentsPage() {
   const sendReply = async (id: string) => {
     if (!replyText.trim()) return;
     try {
-      const created = await request<CommentResponse['items'][number]>(`/api/admin/comments/${id}/reply`, {
-        method: 'POST',
-        body: JSON.stringify({ content: replyText.trim() }),
-      });
+      const created = await request<CommentResponse['items'][number]>(
+        `/api/admin/comments/${id}/reply`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ content: replyText.trim() }),
+        },
+      );
       const authorName = created.author?.name || created.author?.email || 'You';
       const initialsSource = authorName || created.author?.email || 'You';
       const initials = initialsSource
@@ -206,7 +209,9 @@ export default function CommentsPage() {
         method: 'PATCH',
         body: JSON.stringify({ content: editCommentText.trim() }),
       });
-      setComments((prev) => prev.map((c) => c.id === id ? { ...c, content: editCommentText.trim() } : c));
+      setComments((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, content: editCommentText.trim() } : c)),
+      );
       setEditingCommentId(null);
       setEditCommentText('');
     } catch (err) {
@@ -238,7 +243,9 @@ export default function CommentsPage() {
             }),
           ),
         );
-        setComments((prev) => prev.map((c) => selectedIds.has(c.id) ? { ...c, status: 'APPROVED' } : c));
+        setComments((prev) =>
+          prev.map((c) => (selectedIds.has(c.id) ? { ...c, status: 'APPROVED' } : c)),
+        );
       } else if (action === 'Move to Trash') {
         await Promise.all(
           Array.from(selectedIds).map((id) =>
@@ -248,7 +255,9 @@ export default function CommentsPage() {
             }),
           ),
         );
-        setComments((prev) => prev.map((c) => selectedIds.has(c.id) ? { ...c, status: 'TRASH' } : c));
+        setComments((prev) =>
+          prev.map((c) => (selectedIds.has(c.id) ? { ...c, status: 'TRASH' } : c)),
+        );
       } else if (action === 'Delete permanently') {
         await Promise.all(
           Array.from(selectedIds).map((id) =>
@@ -284,10 +293,7 @@ export default function CommentsPage() {
     return map;
   }, [comments]);
 
-  const rootComments = useMemo(
-    () => comments.filter((comment) => !comment.parentId),
-    [comments],
-  );
+  const rootComments = useMemo(() => comments.filter((comment) => !comment.parentId), [comments]);
 
   const filtered = rootComments.filter((c) => {
     const replies = replyMap.get(c.id) ?? [];
@@ -296,7 +302,9 @@ export default function CommentsPage() {
       (activeTab === 'Approved' && status === 'APPROVED') ||
       (activeTab === 'Trash' && status === 'TRASH');
     const matchesTab =
-      activeTab === 'All' || matchesStatus(c.status) || replies.some((reply) => matchesStatus(reply.status));
+      activeTab === 'All' ||
+      matchesStatus(c.status) ||
+      replies.some((reply) => matchesStatus(reply.status));
     const term = search.toLowerCase();
     const matchesSearch =
       c.authorName.toLowerCase().includes(term) ||
@@ -338,7 +346,9 @@ export default function CommentsPage() {
             </button>
             {isFilterOpen && (
               <div className="absolute right-0 top-[calc(100%+6px)] z-20 w-52 rounded-[14px] border border-[#e2e6ee] bg-white p-3 shadow-xl">
-                <p className="mb-2 text-[0.75rem] font-medium uppercase tracking-wide text-gray-400">Sort by</p>
+                <p className="mb-2 text-[0.75rem] font-medium uppercase tracking-wide text-gray-400">
+                  Sort by
+                </p>
                 {['Newest first', 'Oldest first', 'By prompt'].map((opt) => (
                   <button
                     key={opt}
@@ -357,7 +367,10 @@ export default function CommentsPage() {
             <>
               <button
                 type="button"
-                onClick={() => { setIsSelectMode(false); setSelectedIds(new Set()); }}
+                onClick={() => {
+                  setIsSelectMode(false);
+                  setSelectedIds(new Set());
+                }}
                 className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] shadow-sm hover:bg-gray-50 transition-colors"
               >
                 Cancel
@@ -428,7 +441,9 @@ export default function CommentsPage() {
                 type="button"
                 onClick={() => setActiveTab(tab)}
                 className={`rounded-full px-3 py-1.5 transition-colors ${
-                  activeTab === tab ? 'bg-[#0f1116] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  activeTab === tab
+                    ? 'bg-[#0f1116] text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 {tab}
@@ -451,7 +466,9 @@ export default function CommentsPage() {
                 (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
               );
               const defaultReplyIndex = (() => {
-                const pendingIndex = orderedReplies.findIndex((reply) => reply.status === 'PENDING');
+                const pendingIndex = orderedReplies.findIndex(
+                  (reply) => reply.status === 'PENDING',
+                );
                 return pendingIndex >= 0 ? pendingIndex : 0;
               })();
               const requestedReplyIndex = replyIndexByCommentId[comment.id] ?? defaultReplyIndex;
@@ -485,12 +502,14 @@ export default function CommentsPage() {
                       </div>
                       <div className="space-y-1 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-[0.9rem] font-medium text-[#0f1116]">{comment.authorName}</p>
+                          <p className="text-[0.9rem] font-medium text-[#0f1116]">
+                            {comment.authorName}
+                          </p>
                           <span className="text-[0.78rem] text-gray-500">
                             {formatRelativeTimeOrDash(comment.createdAt)}
                           </span>
                         </div>
-                        
+
                         {editingCommentId === comment.id ? (
                           <div className="mt-2 flex items-end gap-2">
                             <textarea
@@ -511,7 +530,10 @@ export default function CommentsPage() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => { setEditingCommentId(null); setEditCommentText(''); }}
+                                onClick={() => {
+                                  setEditingCommentId(null);
+                                  setEditCommentText('');
+                                }}
                                 className="flex items-center justify-center gap-1 rounded-xl border border-[#e1e5ee] px-3 py-2 text-[0.78rem] text-gray-500 hover:bg-gray-50 transition-colors"
                               >
                                 <MdClose size={14} />
@@ -524,7 +546,8 @@ export default function CommentsPage() {
                         )}
 
                         <p className="text-[0.8rem] text-[#6b7280]">
-                          On <span className="font-medium text-[#0f1116]">{comment.targetTitle}</span>
+                          On{' '}
+                          <span className="font-medium text-[#0f1116]">{comment.targetTitle}</span>
                         </p>
 
                         {/* Replies slider */}
@@ -567,7 +590,10 @@ export default function CommentsPage() {
                                     onClick={() =>
                                       setReplyIndexByCommentId((prev) => ({
                                         ...prev,
-                                        [comment.id]: Math.min(orderedReplies.length - 1, activeReplyIndex + 1),
+                                        [comment.id]: Math.min(
+                                          orderedReplies.length - 1,
+                                          activeReplyIndex + 1,
+                                        ),
                                       }))
                                     }
                                     disabled={activeReplyIndex >= orderedReplies.length - 1}
@@ -624,7 +650,10 @@ export default function CommentsPage() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => { setReplyingTo(null); setReplyText(''); }}
+                                onClick={() => {
+                                  setReplyingTo(null);
+                                  setReplyText('');
+                                }}
                                 className="flex items-center gap-1 rounded-xl border border-[#e1e5ee] px-3 py-2 text-[0.78rem] text-gray-500 hover:bg-gray-50 transition-colors"
                               >
                                 <MdClose size={14} />
@@ -658,8 +687,13 @@ export default function CommentsPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            if (replyingTo === comment.id) { setReplyingTo(null); setReplyText(''); }
-                            else { setReplyingTo(comment.id); setReplyText(''); }
+                            if (replyingTo === comment.id) {
+                              setReplyingTo(null);
+                              setReplyText('');
+                            } else {
+                              setReplyingTo(comment.id);
+                              setReplyText('');
+                            }
                           }}
                           className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1.5 text-[0.78rem] font-medium text-blue-700 hover:bg-blue-100 transition-colors"
                         >

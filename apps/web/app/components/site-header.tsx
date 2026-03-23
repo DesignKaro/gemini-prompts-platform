@@ -36,9 +36,31 @@ const navItems = [
     prefetch: true,
     icon: (
       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]">
-        <rect x="3" y="3" width="18" height="13" rx="2.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-        <path d="M7 8h10M7 12h6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        <path d="M8 17l-2 4h12l-2-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        <rect
+          x="3"
+          y="3"
+          width="18"
+          height="13"
+          rx="2.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M7 8h10M7 12h6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+        <path
+          d="M8 17l-2 4h12l-2-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinejoin="round"
+        />
       </svg>
     ),
   },
@@ -48,8 +70,20 @@ const navItems = [
     prefetch: true,
     icon: (
       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]">
-        <path d="M4 4h16v16H4z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-        <path d="M8 8h8M8 12h8M8 16h5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        <path
+          d="M4 4h16v16H4z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M8 8h8M8 12h8M8 16h5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
       </svg>
     ),
   },
@@ -59,8 +93,22 @@ const navItems = [
     prefetch: true,
     icon: (
       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]">
-        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-        <polyline points="16 7 22 7 22 13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        <polyline
+          points="22 7 13.5 15.5 8.5 10.5 2 17"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <polyline
+          points="16 7 22 7 22 13"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     ),
   },
@@ -70,8 +118,25 @@ const navItems = [
     prefetch: true,
     icon: (
       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]">
-        <rect x="2" y="5" width="20" height="14" rx="2.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-        <path d="M2 8l10 7 10-7" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        <rect
+          x="2"
+          y="5"
+          width="20"
+          height="14"
+          rx="2.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M2 8l10 7 10-7"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     ),
   },
@@ -85,7 +150,6 @@ const navItems = [
   //   ),
   // },
 ];
-
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -110,8 +174,7 @@ export function SiteHeader() {
     return process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:4000';
   }, []);
 
-  const headerName =
-    profileSnapshot?.name?.trim() || session?.user?.name?.trim() || displayName;
+  const headerName = profileSnapshot?.name?.trim() || session?.user?.name?.trim() || displayName;
 
   const headerAvatarBase = profileSnapshot?.avatarUrl || session?.user?.image || null;
   const headerAvatarSrc =
@@ -257,7 +320,9 @@ export function SiteHeader() {
                         </span>
                       )}
                     </span>
-                    <span className="hidden max-w-[110px] truncate text-[14px] md:block">{headerName}</span>
+                    <span className="hidden max-w-[110px] truncate text-[14px] md:block">
+                      {headerName}
+                    </span>
                     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 text-[#5b6272]">
                       <path
                         d={isProfileMenuOpen ? 'm6 14 6-6 6 6' : 'm6 10 6 6 6-6'}
@@ -294,7 +359,9 @@ export function SiteHeader() {
                         </span>
                         <div className="min-w-0">
                           <p className="truncate text-[0.9rem] text-[#141922]">{headerName}</p>
-                          <p className="truncate text-[0.76rem] text-[#778093]">{session.user.email}</p>
+                          <p className="truncate text-[0.76rem] text-[#778093]">
+                            {session.user.email}
+                          </p>
                         </div>
                       </div>
 
@@ -307,7 +374,14 @@ export function SiteHeader() {
                         >
                           <span className="text-[#556072]">
                             <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
-                              <circle cx="12" cy="8.1" r="3.3" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                              <circle
+                                cx="12"
+                                cy="8.1"
+                                r="3.3"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                              />
                               <path
                                 d="M5 19a7 7 0 0 1 14 0"
                                 fill="none"
@@ -328,8 +402,20 @@ export function SiteHeader() {
                           >
                             <span className="text-[#556072]">
                               <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
-                                <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" strokeWidth="1.8" />
-                                <path d="M12 8v8M8 12h8" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                                <circle
+                                  cx="12"
+                                  cy="12"
+                                  r="8.4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                />
+                                <path
+                                  d="M12 8v8M8 12h8"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                />
                               </svg>
                             </span>
                             <span>Dashboard</span>
@@ -351,7 +437,12 @@ export function SiteHeader() {
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                               />
-                              <path d="M8.5 8.5h7M8.5 11.5H14" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                              <path
+                                d="M8.5 8.5h7M8.5 11.5H14"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.6"
+                              />
                             </svg>
                           </span>
                           <span>Saved prompts</span>
@@ -367,7 +458,14 @@ export function SiteHeader() {
                         >
                           <span className="text-[#556072]">
                             <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
-                              <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                              <circle
+                                cx="12"
+                                cy="12"
+                                r="8.5"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                              />
                               <path
                                 d="M9.6 10a2.4 2.4 0 1 1 4.2 1.6c-.7.7-1.3 1-1.3 2"
                                 fill="none"
@@ -431,8 +529,21 @@ export function SiteHeader() {
                 className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#091216] text-white"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
-                  <circle cx="10.5" cy="10.5" r="5.2" fill="none" stroke="currentColor" strokeWidth="1.9" />
-                  <path d="m14.5 14.5 4.2 4.2" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                  <circle
+                    cx="10.5"
+                    cy="10.5"
+                    r="5.2"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.9"
+                  />
+                  <path
+                    d="m14.5 14.5 4.2 4.2"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.9"
+                    strokeLinecap="round"
+                  />
                 </svg>
               </button>
               <button
@@ -455,9 +566,17 @@ export function SiteHeader() {
           </div>
         </div>
       </header>
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} callbackUrl={callbackUrl} />
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        callbackUrl={callbackUrl}
+      />
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
-      <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} navItems={navItems} />
+      <MobileMenu
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        navItems={navItems}
+      />
     </>
   );
 }

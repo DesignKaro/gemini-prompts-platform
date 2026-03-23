@@ -3,8 +3,7 @@ import { getPostList } from '../../lib/public-content';
 const NEWSLETTER_TAG = 'newsletter';
 
 export default async function NewsletterPage() {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
 
   let response = await getPostList({
     take: 1,
@@ -71,8 +70,8 @@ export default async function NewsletterPage() {
               Weekly newsletter
             </h1>
             <p className="mt-4 max-w-[720px] text-[1.05rem] leading-[1.7] text-[#5f6773]">
-              Get a curated set of prompts, collections, and blog reads — once a week. Built
-              for creators and teams who want high-signal ideas without the noise.
+              Get a curated set of prompts, collections, and blog reads — once a week. Built for
+              creators and teams who want high-signal ideas without the noise.
             </p>
           </div>
 
@@ -176,7 +175,6 @@ export default async function NewsletterPage() {
             </div>
           </div>
         </section>
-
       </div>
     </main>
   );

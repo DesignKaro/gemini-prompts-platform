@@ -1,7 +1,10 @@
 import { notFound } from 'next/navigation';
 import { AuthorAvatar } from '../../components/author-avatar';
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:4000';
+const apiBaseUrl =
+  process.env.API_URL?.replace(/\/$/, '') ??
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ??
+  'http://localhost:4000';
 
 type PublicProfileResponse = {
   user: {
@@ -32,22 +35,34 @@ const formatPromptType = (value: string) =>
     .toLowerCase()
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
+async function getPublicProfile(handle: string) {
+  try {
+    const response = await fetch(
+      `${apiBaseUrl}/api/auth/profile/public/${encodeURIComponent(handle)}`,
+      { cache: 'no-store' },
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return (await response.json()) as PublicProfileResponse;
+  } catch {
+    return null;
+  }
+}
+
 export default async function PublicProfilePage({
   params,
 }: {
   params: Promise<{ handle: string }>;
 }) {
   const { handle } = await params;
-  const response = await fetch(
-    `${apiBaseUrl}/api/auth/profile/public/${encodeURIComponent(handle)}`,
-    { cache: 'no-store' },
-  );
+  const payload = await getPublicProfile(handle);
 
-  if (!response.ok) {
+  if (!payload) {
     notFound();
   }
-
-  const payload = (await response.json()) as PublicProfileResponse;
 
   return (
     <main className="homepage-headings w-full pb-20 pt-4">

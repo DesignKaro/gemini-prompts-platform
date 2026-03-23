@@ -115,7 +115,10 @@ function ManageMenu({
       <hr className="my-1 border-[#f0f2f6]" />
       <button
         type="button"
-        onClick={() => { onTrash(); onClose(); }}
+        onClick={() => {
+          onTrash();
+          onClose();
+        }}
         className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-[0.82rem] text-[#b94a4a] hover:bg-red-50 transition-colors"
       >
         <MdDeleteOutline size={15} />
@@ -143,7 +146,9 @@ export default function PromptsManagementPage() {
   const requestIdRef = useRef(0);
 
   // Bulk Action States
-  const [activeBulkAction, setActiveBulkAction] = useState<'category' | 'tags' | 'status' | null>(null);
+  const [activeBulkAction, setActiveBulkAction] = useState<'category' | 'tags' | 'status' | null>(
+    null,
+  );
   const [bulkMenuOpen, setBulkMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -175,11 +180,7 @@ export default function PromptsManagementPage() {
       if (trimmedSearch) params.set('search', trimmedSearch);
       if (activeTab !== 'All') {
         const mappedStatus =
-          activeTab === 'Published'
-            ? 'PUBLISHED'
-            : activeTab === 'Draft'
-              ? 'DRAFT'
-              : 'SCHEDULED';
+          activeTab === 'Published' ? 'PUBLISHED' : activeTab === 'Draft' ? 'DRAFT' : 'SCHEDULED';
         params.set('status', mappedStatus);
       }
       if (categoryFilter !== 'All') {
@@ -249,7 +250,8 @@ export default function PromptsManagementPage() {
       (activeTab === 'Scheduled' && p.status === 'SCHEDULED');
     const matchesCategory = categoryFilter === 'All' || p.categoryId === categoryFilter;
     const lowerSearch = search.toLowerCase();
-    const matchesSearch = p.title.toLowerCase().includes(lowerSearch) ||
+    const matchesSearch =
+      p.title.toLowerCase().includes(lowerSearch) ||
       p.categoryName.toLowerCase().includes(lowerSearch);
     return matchesTab && matchesSearch && matchesCategory;
   });
@@ -268,17 +270,13 @@ export default function PromptsManagementPage() {
 
   const toggleSelection = (id: string) => {
     setSelectedIds((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
     );
   };
 
   const handleBulkStatusChange = async (nextStatus: 'Published' | 'Draft' | 'Scheduled') => {
     const mappedStatus =
-      nextStatus === 'Published'
-        ? 'PUBLISHED'
-        : nextStatus === 'Draft'
-          ? 'DRAFT'
-          : 'SCHEDULED';
+      nextStatus === 'Published' ? 'PUBLISHED' : nextStatus === 'Draft' ? 'DRAFT' : 'SCHEDULED';
     try {
       await Promise.all(
         selectedIds.map((id) =>
@@ -355,14 +353,19 @@ export default function PromptsManagementPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116]">Prompt Management</h1>
+          <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116]">
+            Prompt Management
+          </h1>
           <p className="text-[0.95rem] text-gray-500">Manage, edit, and monitor your AI prompts.</p>
         </div>
         <div className="relative flex flex-wrap gap-2 sm:gap-3">
           {isSelectMode ? (
             <button
               type="button"
-              onClick={() => { setIsSelectMode(false); setSelectedIds([]); }}
+              onClick={() => {
+                setIsSelectMode(false);
+                setSelectedIds([]);
+              }}
               className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] shadow-sm hover:bg-gray-50 transition-colors"
             >
               Cancel
@@ -388,7 +391,9 @@ export default function PromptsManagementPage() {
             <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-[260px] rounded-[16px] border border-[#e2e6ee] bg-white p-4 shadow-xl">
               <div className="space-y-3">
                 <div>
-                  <p className="text-[0.75rem] font-medium uppercase tracking-wide text-gray-400">Category</p>
+                  <p className="text-[0.75rem] font-medium uppercase tracking-wide text-gray-400">
+                    Category
+                  </p>
                   <select
                     value={categoryFilter}
                     onChange={(event) => setCategoryFilter(event.target.value)}
@@ -403,10 +408,14 @@ export default function PromptsManagementPage() {
                   </select>
                 </div>
                 <div>
-                  <p className="text-[0.75rem] font-medium uppercase tracking-wide text-gray-400">Sort by</p>
+                  <p className="text-[0.75rem] font-medium uppercase tracking-wide text-gray-400">
+                    Sort by
+                  </p>
                   <select
                     value={sortFilter}
-                    onChange={(event) => setSortFilter(event.target.value as 'recent' | 'views' | 'az')}
+                    onChange={(event) =>
+                      setSortFilter(event.target.value as 'recent' | 'views' | 'az')
+                    }
                     className="mt-2 w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3 py-2 text-[0.85rem] text-gray-700"
                   >
                     <option value="recent">Recently uploaded</option>
@@ -415,7 +424,9 @@ export default function PromptsManagementPage() {
                   </select>
                 </div>
                 <div>
-                  <p className="text-[0.75rem] font-medium uppercase tracking-wide text-gray-400">Status</p>
+                  <p className="text-[0.75rem] font-medium uppercase tracking-wide text-gray-400">
+                    Status
+                  </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {STATUS_TABS.map((tab) => (
                       <button
@@ -545,11 +556,13 @@ export default function PromptsManagementPage() {
                 </button>
                 {bulkMenuOpen && activeBulkAction === 'status' && (
                   <div className="absolute left-0 mt-2 z-30 w-40 rounded-[12px] border border-[#e2e6ee] bg-white p-1.5 shadow-xl">
-                    {STATUS_TABS.filter(t => t !== 'All').map((status) => (
+                    {STATUS_TABS.filter((t) => t !== 'All').map((status) => (
                       <button
                         key={status}
                         type="button"
-                        onClick={() => handleBulkStatusChange(status as 'Published' | 'Draft' | 'Scheduled')}
+                        onClick={() =>
+                          handleBulkStatusChange(status as 'Published' | 'Draft' | 'Scheduled')
+                        }
                         className="block w-full rounded-md px-3 py-1.5 text-left text-[0.82rem] hover:bg-gray-50"
                       >
                         {status}
@@ -576,7 +589,10 @@ export default function PromptsManagementPage() {
       {sorted.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {sorted.map((prompt) => (
-            <div key={prompt.id} className="overflow-visible rounded-[24px] border border-[#e2e6ee] bg-white shadow-sm flex flex-col">
+            <div
+              key={prompt.id}
+              className="overflow-visible rounded-[24px] border border-[#e2e6ee] bg-white shadow-sm flex flex-col"
+            >
               <div className="px-4 pt-4">
                 <div
                   className="h-[160px] w-full rounded-[20px] bg-cover bg-center"
@@ -596,7 +612,9 @@ export default function PromptsManagementPage() {
                     {getStatusLabel(prompt.status, prompt.visibility)}
                   </span>
                 </div>
-                <h3 className="text-[1rem] font-medium text-[#0f1116] leading-snug">{prompt.title}</h3>
+                <h3 className="text-[1rem] font-medium text-[#0f1116] leading-snug">
+                  {prompt.title}
+                </h3>
 
                 <div className="mt-auto flex items-center justify-between border-t border-[#eef2f6] pt-3 text-[0.8rem] text-gray-500">
                   <label className="flex items-center gap-2">
@@ -615,7 +633,9 @@ export default function PromptsManagementPage() {
                   <div className="relative">
                     <button
                       type="button"
-                      onClick={() => setOpenMenuId((prev) => (prev === prompt.id ? null : prompt.id))}
+                      onClick={() =>
+                        setOpenMenuId((prev) => (prev === prompt.id ? null : prompt.id))
+                      }
                       className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[#1e4fd2] hover:bg-blue-50 transition-colors"
                     >
                       Manage

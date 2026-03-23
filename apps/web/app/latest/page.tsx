@@ -3,7 +3,8 @@ import { getPromptList } from '../../lib/public-content';
 
 export const metadata = {
   title: 'Latest Prompts — Gemini Prompts',
-  description: 'The most recently published prompts on Gemini Prompts. Updated daily with fresh prompt ideas for builders, creators, and teams.',
+  description:
+    'The most recently published prompts on Gemini Prompts. Updated daily with fresh prompt ideas for builders, creators, and teams.',
 };
 
 export default async function LatestPage() {

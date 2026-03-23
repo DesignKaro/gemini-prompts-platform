@@ -62,8 +62,7 @@ export default function AISummarizeWidget() {
       {/* Icons */}
       <div className="flex flex-wrap items-center justify-center gap-3 px-5 py-4">
         {AI_TOOLS.map((tool, index) => {
-          const align =
-            index === 0 ? 'left' : index === AI_TOOLS.length - 1 ? 'right' : 'center';
+          const align = index === 0 ? 'left' : index === AI_TOOLS.length - 1 ? 'right' : 'center';
           const tooltipPosition =
             align === 'left'
               ? 'left-0'
@@ -71,33 +70,31 @@ export default function AISummarizeWidget() {
                 ? 'right-0'
                 : 'left-1/2 -translate-x-1/2';
           const arrowPosition =
-            align === 'left'
-              ? 'left-5'
-              : align === 'right'
-                ? 'right-5'
-                : 'left-1/2';
+            align === 'left' ? 'left-5' : align === 'right' ? 'right-5' : 'left-1/2';
           const Icon = tool.Icon;
           return (
-          <div key={tool.id} className="group relative">
-            <button
-              type="button"
-              onClick={() => handleClick(tool.getUrl)}
-              className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-[#e6e9f2] bg-white text-[#374151] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-              style={{ color: tool.iconColor }}
-              aria-label={tool.label}
-            >
-              <Icon className="h-5 w-5" />
-            </button>
-            {/* Tooltip */}
-            <div
-              className={`pointer-events-none absolute bottom-[calc(100%+8px)] z-50 translate-y-1 whitespace-nowrap rounded-[8px] bg-[#111] px-2.5 py-1.5 text-[0.78rem] text-white opacity-0 shadow-lg transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 ${tooltipPosition}`}
-            >
-              {tool.label}
-              {/* Arrow */}
-              <span className={`absolute top-full border-4 border-transparent border-t-[#111] ${arrowPosition}`} />
+            <div key={tool.id} className="group relative">
+              <button
+                type="button"
+                onClick={() => handleClick(tool.getUrl)}
+                className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-[#e6e9f2] bg-white text-[#374151] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                style={{ color: tool.iconColor }}
+                aria-label={tool.label}
+              >
+                <Icon className="h-5 w-5" />
+              </button>
+              {/* Tooltip */}
+              <div
+                className={`pointer-events-none absolute bottom-[calc(100%+8px)] z-50 translate-y-1 whitespace-nowrap rounded-[8px] bg-[#111] px-2.5 py-1.5 text-[0.78rem] text-white opacity-0 shadow-lg transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 ${tooltipPosition}`}
+              >
+                {tool.label}
+                {/* Arrow */}
+                <span
+                  className={`absolute top-full border-4 border-transparent border-t-[#111] ${arrowPosition}`}
+                />
+              </div>
             </div>
-          </div>
-        );
+          );
         })}
       </div>
 

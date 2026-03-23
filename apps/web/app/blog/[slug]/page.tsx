@@ -124,8 +124,7 @@ export default async function BlogPostPage({ params }: PageProps) {
     notFound();
   }
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   const canonicalUrl = `${baseUrl}/blog/${encodeURIComponent(post.slug)}`;
   const categoryName = getPostCategoryName(post);
   const dateLabel = formatDisplayDate(post.publishedAt || post.updatedAt);
@@ -245,7 +244,9 @@ export default async function BlogPostPage({ params }: PageProps) {
 
               <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                 <span className="inline-flex h-10 items-center gap-2 rounded-full border border-[#d8dce2] bg-white px-3.5 text-[0.9rem] text-[#4b5563]">
-                  <span className="font-medium text-[#111827]">{post.viewCount.toLocaleString()}</span>
+                  <span className="font-medium text-[#111827]">
+                    {post.viewCount.toLocaleString()}
+                  </span>
                 </span>
                 <a
                   href="#comments"
@@ -253,7 +254,9 @@ export default async function BlogPostPage({ params }: PageProps) {
                   aria-label="Jump to comments"
                 >
                   <FaRegComment aria-hidden="true" className="h-[15px] w-[15px] text-[#6b7280]" />
-                  <span className="font-medium text-[#111827]">{post.commentCount.toLocaleString()}</span>
+                  <span className="font-medium text-[#111827]">
+                    {post.commentCount.toLocaleString()}
+                  </span>
                 </a>
                 <SocialShareMenu
                   shareUrl={canonicalUrl}
@@ -264,7 +267,11 @@ export default async function BlogPostPage({ params }: PageProps) {
 
             {post.image ? (
               <div className="mt-10 overflow-hidden rounded-[26px] border border-[#e6e9f2]">
-                <div role="img" aria-label={`${post.title} cover`} className="relative aspect-[16/9] w-full">
+                <div
+                  role="img"
+                  aria-label={`${post.title} cover`}
+                  className="relative aspect-[16/9] w-full"
+                >
                   <Image
                     src={post.image}
                     alt={`${post.title} cover`}
@@ -360,7 +367,10 @@ export default async function BlogPostPage({ params }: PageProps) {
 
               <div className="px-5 py-4">
                 {!post.isLocked && tableOfContents.length > 0 ? (
-                  <nav aria-label="Table of contents" className="no-scrollbar max-h-[280px] overflow-y-auto pr-1">
+                  <nav
+                    aria-label="Table of contents"
+                    className="no-scrollbar max-h-[280px] overflow-y-auto pr-1"
+                  >
                     <ol className="space-y-2.5">
                       {tableOfContents.map((heading, index) => (
                         <li key={`${heading.id}-${index}`}>

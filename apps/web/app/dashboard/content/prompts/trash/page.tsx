@@ -133,9 +133,7 @@ export default function PromptsTrashPage() {
   const deleteSelected = async () => {
     try {
       await Promise.all(
-        Array.from(selected).map((id) =>
-          request(`/api/admin/prompts/${id}`, { method: 'DELETE' }),
-        ),
+        Array.from(selected).map((id) => request(`/api/admin/prompts/${id}`, { method: 'DELETE' })),
       );
       setItems((p) => p.filter((i) => !selected.has(i.id)));
     } catch (err) {
@@ -152,19 +150,35 @@ export default function PromptsTrashPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116]">Prompt Trash</h1>
-          <p className="text-[0.95rem] text-gray-500">Recover or permanently delete trashed prompts.</p>
+          <p className="text-[0.95rem] text-gray-500">
+            Recover or permanently delete trashed prompts.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {isSelectMode ? (
-            <button type="button" onClick={() => { setIsSelectMode(false); setSelected(new Set()); }} className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] hover:bg-gray-50 transition-colors">
+            <button
+              type="button"
+              onClick={() => {
+                setIsSelectMode(false);
+                setSelected(new Set());
+              }}
+              className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] hover:bg-gray-50 transition-colors"
+            >
               Cancel
             </button>
           ) : (
-            <button type="button" onClick={() => setIsSelectMode(true)} className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] hover:bg-gray-50 transition-colors">
+            <button
+              type="button"
+              onClick={() => setIsSelectMode(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] hover:bg-gray-50 transition-colors"
+            >
               Select
             </button>
           )}
-          <Link href="/dashboard/content/prompts" className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] hover:bg-gray-50 transition-colors">
+          <Link
+            href="/dashboard/content/prompts"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] hover:bg-gray-50 transition-colors"
+          >
             Back to Prompts
           </Link>
         </div>
@@ -179,14 +193,33 @@ export default function PromptsTrashPage() {
       {isSelectMode && items.length > 0 && (
         <div className="rounded-[20px] border border-[#e2e6ee] bg-white px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <label className="flex items-center gap-2 text-[0.85rem] text-gray-600 cursor-pointer">
-            <input type="checkbox" checked={items.length > 0 && selected.size === items.length} onChange={() => setSelected(selected.size === items.length ? new Set() : new Set(items.map((i) => i.id)))} className="h-4 w-4 accent-[#0f1116]" />
+            <input
+              type="checkbox"
+              checked={items.length > 0 && selected.size === items.length}
+              onChange={() =>
+                setSelected(
+                  selected.size === items.length ? new Set() : new Set(items.map((i) => i.id)),
+                )
+              }
+              className="h-4 w-4 accent-[#0f1116]"
+            />
             Select all
           </label>
           <div className="flex gap-2">
-            <button type="button" onClick={restoreSelected} disabled={selected.size === 0} className="flex items-center gap-1.5 rounded-xl border border-[#e1e5ee] px-3 py-2 text-[0.8rem] text-gray-700 hover:bg-gray-50 disabled:opacity-40">
+            <button
+              type="button"
+              onClick={restoreSelected}
+              disabled={selected.size === 0}
+              className="flex items-center gap-1.5 rounded-xl border border-[#e1e5ee] px-3 py-2 text-[0.8rem] text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+            >
               <MdRestoreFromTrash size={15} /> Restore selected
             </button>
-            <button type="button" onClick={deleteSelected} disabled={selected.size === 0} className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-2 text-[0.8rem] text-white hover:bg-red-700 disabled:opacity-40">
+            <button
+              type="button"
+              onClick={deleteSelected}
+              disabled={selected.size === 0}
+              className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-2 text-[0.8rem] text-white hover:bg-red-700 disabled:opacity-40"
+            >
               <MdDeleteOutline size={15} /> Delete selected
             </button>
           </div>
@@ -196,29 +229,65 @@ export default function PromptsTrashPage() {
       {items.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((item) => (
-            <div key={item.id} className={`rounded-[24px] border bg-white p-5 shadow-sm transition-colors ${selected.has(item.id) ? 'border-[#0f1116]/20 bg-[#f7f8fb]' : 'border-[#e2e6ee]'}`}>
+            <div
+              key={item.id}
+              className={`rounded-[24px] border bg-white p-5 shadow-sm transition-colors ${selected.has(item.id) ? 'border-[#0f1116]/20 bg-[#f7f8fb]' : 'border-[#e2e6ee]'}`}
+            >
               <div className="flex items-start gap-3">
-                {isSelectMode && <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggle(item.id)} className="mt-1 h-4 w-4 accent-[#0f1116]" />}
+                {isSelectMode && (
+                  <input
+                    type="checkbox"
+                    checked={selected.has(item.id)}
+                    onChange={() => toggle(item.id)}
+                    className="mt-1 h-4 w-4 accent-[#0f1116]"
+                  />
+                )}
                 <div className="flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f1f3f8] text-gray-400">
                       <MdAutoAwesome size={16} />
                     </div>
-                    <span className="rounded-full bg-red-50 px-2 py-0.5 text-[0.7rem] text-red-500">Trashed</span>
+                    <span className="rounded-full bg-red-50 px-2 py-0.5 text-[0.7rem] text-red-500">
+                      Trashed
+                    </span>
                   </div>
-                  <h3 className="mt-2 text-[0.95rem] font-medium text-gray-400 line-through">{item.title}</h3>
-                  <p className="text-[0.78rem] text-gray-400 mt-0.5">{item.category} · {item.trashedAt}</p>
+                  <h3 className="mt-2 text-[0.95rem] font-medium text-gray-400 line-through">
+                    {item.title}
+                  </h3>
+                  <p className="text-[0.78rem] text-gray-400 mt-0.5">
+                    {item.category} · {item.trashedAt}
+                  </p>
                   <div className="mt-3 flex items-center gap-2">
-                    <button type="button" onClick={() => restore(item.id)} className="flex items-center gap-1.5 rounded-xl bg-[#0f1116] px-3 py-2 text-[0.78rem] font-medium text-white hover:opacity-90 transition-opacity">
+                    <button
+                      type="button"
+                      onClick={() => restore(item.id)}
+                      className="flex items-center gap-1.5 rounded-xl bg-[#0f1116] px-3 py-2 text-[0.78rem] font-medium text-white hover:opacity-90 transition-opacity"
+                    >
                       <MdRestoreFromTrash size={14} /> Restore
                     </button>
                     {confirmId === item.id ? (
                       <>
-                        <button type="button" onClick={() => deletePerm(item.id)} className="rounded-xl bg-red-600 px-3 py-2 text-[0.78rem] text-white hover:bg-red-700">Confirm</button>
-                        <button type="button" onClick={() => setConfirmId(null)} className="rounded-xl border px-3 py-2 text-[0.78rem] text-gray-500 hover:bg-gray-50">Cancel</button>
+                        <button
+                          type="button"
+                          onClick={() => deletePerm(item.id)}
+                          className="rounded-xl bg-red-600 px-3 py-2 text-[0.78rem] text-white hover:bg-red-700"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmId(null)}
+                          className="rounded-xl border px-3 py-2 text-[0.78rem] text-gray-500 hover:bg-gray-50"
+                        >
+                          Cancel
+                        </button>
                       </>
                     ) : (
-                      <button type="button" onClick={() => setConfirmId(item.id)} className="flex items-center gap-1.5 rounded-xl border border-red-100 px-3 py-2 text-[0.78rem] text-red-600 hover:bg-red-50">
+                      <button
+                        type="button"
+                        onClick={() => setConfirmId(item.id)}
+                        className="flex items-center gap-1.5 rounded-xl border border-red-100 px-3 py-2 text-[0.78rem] text-red-600 hover:bg-red-50"
+                      >
                         <MdDeleteOutline size={14} /> Delete
                       </button>
                     )}
@@ -234,7 +303,12 @@ export default function PromptsTrashPage() {
           <p className="text-[1rem] font-medium text-gray-400">
             {isLoading ? 'Loading trash…' : 'Prompt trash is empty'}
           </p>
-          <Link href="/dashboard/content/prompts" className="text-[0.85rem] text-[#1e4fd2] hover:underline">Back to prompts</Link>
+          <Link
+            href="/dashboard/content/prompts"
+            className="text-[0.85rem] text-[#1e4fd2] hover:underline"
+          >
+            Back to prompts
+          </Link>
         </div>
       )}
     </div>

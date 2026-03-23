@@ -610,7 +610,9 @@ function WatchReadListenPromptCard({ prompt }: { prompt: PublicPrompt }) {
 
           <div className="mt-4 flex items-center gap-2 text-[#6d7585]">
             <p className="text-[0.95rem] leading-none text-[#12151d]">{card.author}</p>
-            <span aria-hidden="true" className="text-[0.95rem] leading-none">•</span>
+            <span aria-hidden="true" className="text-[0.95rem] leading-none">
+              •
+            </span>
             <p className="text-[0.9rem] leading-none">{card.date}</p>
           </div>
 
@@ -723,7 +725,8 @@ export default function HomePageClient({
   const { sliderRef: categorySliderRef, dragHandlers: categoryDragHandlers } = useDragSlider();
   const { sliderRef: trendingAuthorsSliderRef, dragHandlers: trendingAuthorsDragHandlers } =
     useDragSlider();
-  const { sliderRef: recentlyUploadedSliderRef, dragHandlers: recentlyUploadedDragHandlers } = useDragSlider();
+  const { sliderRef: recentlyUploadedSliderRef, dragHandlers: recentlyUploadedDragHandlers } =
+    useDragSlider();
   const { data: session, status: sessionStatus, update } = useSession();
   const followedAuthorsRequestRef = useRef(0);
   const followedPromptsRequestRef = useRef(0);
@@ -743,9 +746,8 @@ export default function HomePageClient({
   const [watchReadListenPrompts, setWatchReadListenPrompts] = useState<PublicPrompt[]>(
     initialLatestPrompts?.items ?? [],
   );
-  const [isWatchReadListenLoadingInitial, setIsWatchReadListenLoadingInitial] = useState(
-    !initialLatestPrompts,
-  );
+  const [isWatchReadListenLoadingInitial, setIsWatchReadListenLoadingInitial] =
+    useState(!initialLatestPrompts);
   const [isWatchReadListenLoadingMore, setIsWatchReadListenLoadingMore] = useState(false);
   const [watchReadListenHasMore, setWatchReadListenHasMore] = useState(
     initialLatestPrompts
@@ -754,13 +756,13 @@ export default function HomePageClient({
       : true,
   );
   const [watchReadListenLoadError, setWatchReadListenLoadError] = useState<string | null>(null);
-  const [watchReadListenLoadMoreError, setWatchReadListenLoadMoreError] = useState<string | null>(null);
+  const [watchReadListenLoadMoreError, setWatchReadListenLoadMoreError] = useState<string | null>(
+    null,
+  );
   const [trendingAuthors, setTrendingAuthors] = useState<PublicAuthor[]>(
     initialTrendingAuthors?.items ?? [],
   );
-  const [isTrendingAuthorsLoading, setIsTrendingAuthorsLoading] = useState(
-    !initialTrendingAuthors,
-  );
+  const [isTrendingAuthorsLoading, setIsTrendingAuthorsLoading] = useState(!initialTrendingAuthors);
   const [trendingAuthorsLoadError, setTrendingAuthorsLoadError] = useState<string | null>(null);
   const [followedAuthors, setFollowedAuthors] = useState<FollowedAuthorSummary[]>([]);
   const [selectedFollowedAuthorIds, setSelectedFollowedAuthorIds] = useState<string[]>([]);
@@ -771,7 +773,9 @@ export default function HomePageClient({
   const [isFollowedPromptsLoadingMore, setIsFollowedPromptsLoadingMore] = useState(false);
   const [followedAuthorsError, setFollowedAuthorsError] = useState<string | null>(null);
   const [followedPromptsError, setFollowedPromptsError] = useState<string | null>(null);
-  const [followedPromptsLoadMoreError, setFollowedPromptsLoadMoreError] = useState<string | null>(null);
+  const [followedPromptsLoadMoreError, setFollowedPromptsLoadMoreError] = useState<string | null>(
+    null,
+  );
   const totalTestimonials = testimonials.length;
   const currentTestimonial = testimonials[activeTestimonial] ?? testimonials[0]!;
   const visibleFaqItems = faqItems.filter((item) => item.category === activeFaqCategory);
@@ -791,8 +795,7 @@ export default function HomePageClient({
     title: author.name,
     avatarUrl: author.avatarUrl,
     avatarUpdatedAt: author.avatarUpdatedAt,
-    articles:
-      author.totalCount ?? (author.promptCount ?? 0) + (author.postCount ?? 0),
+    articles: author.totalCount ?? (author.promptCount ?? 0) + (author.postCount ?? 0),
   }));
   const displayRecentPosts =
     homeContent?.latestPosts?.map((post) => ({
@@ -847,7 +850,13 @@ export default function HomePageClient({
 
     try {
       const data = await getHomeContent();
-      setHomeContent(data);
+      if (data) {
+        setHomeContent(data);
+        return;
+      }
+
+      setHomeContent(null);
+      setHomeContentLoadError('Could not load homepage content right now.');
     } catch {
       setHomeContent(null);
       setHomeContentLoadError('Could not load homepage content right now.');
@@ -890,13 +899,7 @@ export default function HomePageClient({
   }, [initialTrendingAuthors, loadTrendingAuthors]);
 
   const loadWatchReadListenPrompts = useCallback(
-    async ({
-      append,
-      skip,
-    }: {
-      append: boolean;
-      skip: number;
-    }) => {
+    async ({ append, skip }: { append: boolean; skip: number }) => {
       const requestId = ++watchReadListenRequestRef.current;
       const take = append ? watchReadListenLoadMoreTake : watchReadListenInitialTake;
 
@@ -1043,15 +1046,7 @@ export default function HomePageClient({
   }, [getSessionAccessToken, sessionStatus]);
 
   const fetchFollowedPromptsPage = useCallback(
-    async ({
-      append,
-      skip,
-      take,
-    }: {
-      append: boolean;
-      skip: number;
-      take: number;
-    }) => {
+    async ({ append, skip, take }: { append: boolean; skip: number; take: number }) => {
       if (sessionStatus !== 'authenticated') {
         return;
       }
@@ -1481,9 +1476,7 @@ export default function HomePageClient({
       <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <div className="page-container-wide">
           <div className="flex items-center justify-between gap-4">
-            <h2
-              className="section-heading-medium text-[1.65rem] leading-[1.06] tracking-[-0.05em] text-[#101010] sm:text-[2.25rem] lg:text-[2.5rem]"
-            >
+            <h2 className="section-heading-medium text-[1.65rem] leading-[1.06] tracking-[-0.05em] text-[#101010] sm:text-[2.25rem] lg:text-[2.5rem]">
               Top trending topics
             </h2>
             <div className="hidden items-center gap-3 sm:flex">
@@ -1920,7 +1913,9 @@ export default function HomePageClient({
                         {isFollowedPromptsLoadingMore ? 'Loading...' : 'Load more'}
                       </button>
                     ) : (
-                      <p className="text-[0.9rem] text-[#667284]">You have reached the latest prompts.</p>
+                      <p className="text-[0.9rem] text-[#667284]">
+                        You have reached the latest prompts.
+                      </p>
                     )}
 
                     {followedPromptsLoadMoreError ? (
@@ -1958,15 +1953,13 @@ export default function HomePageClient({
             />
 
             <div className="rounded-[28px] bg-[#f4f3ef] p-5 sm:rounded-[32px] sm:p-8 lg:rounded-[34px] lg:p-10">
-              <h2
-                className="section-heading-medium text-[2rem] leading-[0.96] tracking-[-0.07em] text-[#080808] sm:text-[2.25rem] lg:text-[2.5rem]"
-              >
+              <h2 className="section-heading-medium text-[2rem] leading-[0.96] tracking-[-0.07em] text-[#080808] sm:text-[2.25rem] lg:text-[2.5rem]">
                 Why Choose Us
               </h2>
               <p className="mt-4 max-w-[36rem] text-[0.98rem] leading-7 text-[#5d636c] sm:mt-5 sm:text-[1.08rem] sm:leading-8">
-                We pride ourselves on offering products that meet the highest standards
-                of quality. Each item is carefully selected, tested, and crafted to ensure
-                durability and customer satisfaction.
+                We pride ourselves on offering products that meet the highest standards of quality.
+                Each item is carefully selected, tested, and crafted to ensure durability and
+                customer satisfaction.
               </p>
 
               <div className="mt-7 divide-y divide-[#d8d4ca] sm:mt-8">
@@ -2063,9 +2056,7 @@ export default function HomePageClient({
       <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <div className="page-container-wide">
           <div className="flex items-center justify-between gap-4">
-            <h2
-              className="section-heading-medium text-[1.65rem] leading-[1.06] tracking-[-0.05em] text-[#101010] sm:text-[2.25rem] lg:text-[2.5rem]"
-            >
+            <h2 className="section-heading-medium text-[1.65rem] leading-[1.06] tracking-[-0.05em] text-[#101010] sm:text-[2.25rem] lg:text-[2.5rem]">
               Top trending authors
             </h2>
             <div className="hidden items-center gap-3 sm:flex">
@@ -2249,14 +2240,12 @@ export default function HomePageClient({
       <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <div className="page-container-wide overflow-hidden rounded-[30px] bg-[#d5ea52] px-6 py-8 sm:px-10 sm:py-10 lg:grid lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:px-12 lg:py-12">
           <div className="relative z-10 max-w-[34rem]">
-            <h2
-              className="section-heading-medium max-w-[11ch] text-[2.25rem] leading-[0.96] tracking-[-0.07em] text-[#0f0f0f] sm:text-[2.6rem] lg:text-[4rem]"
-            >
+            <h2 className="section-heading-medium max-w-[11ch] text-[2.25rem] leading-[0.96] tracking-[-0.07em] text-[#0f0f0f] sm:text-[2.6rem] lg:text-[4rem]">
               Best Prompt Packs Curated For You
             </h2>
             <p className="mt-6 max-w-[26rem] text-[1rem] leading-8 text-[#2a3010] sm:text-[1.08rem]">
-              For creators who want faster ideation, stronger outputs, and a polished starting
-              point for every launch.
+              For creators who want faster ideation, stronger outputs, and a polished starting point
+              for every launch.
             </p>
             <Link
               href="/latest"
@@ -2559,14 +2548,12 @@ export default function HomePageClient({
           </div>
 
           <div className="mx-auto mt-10 max-w-[42rem] px-6 text-center sm:mt-12">
-            <h2
-              className="section-heading-medium text-[2rem] leading-[1.05] tracking-[-0.06em] text-[#101010] sm:text-[2.25rem] lg:text-[2.5rem]"
-            >
+            <h2 className="section-heading-medium text-[2rem] leading-[1.05] tracking-[-0.06em] text-[#101010] sm:text-[2.25rem] lg:text-[2.5rem]">
               You will find yourself among us
             </h2>
             <p className="mx-auto mt-5 max-w-[29rem] text-[1.03rem] leading-8 text-[#5f6773] sm:text-[1.12rem]">
-              Dive into a dynamic community where creators and buyers seamlessly merge through
-              bold ideas, visual inspiration, and trusted prompt craft.
+              Dive into a dynamic community where creators and buyers seamlessly merge through bold
+              ideas, visual inspiration, and trusted prompt craft.
             </p>
             <Link
               href="/membership"
@@ -2577,12 +2564,12 @@ export default function HomePageClient({
           </div>
 
           <div className="community-strip mt-10 sm:mt-12">
-            <div className="community-track community-track-reverse" style={{ animationDuration: '44s' }}>
+            <div
+              className="community-track community-track-reverse"
+              style={{ animationDuration: '44s' }}
+            >
               {[0, 1].map((groupIndex) => (
-                <div
-                  key={`community-bottom-${groupIndex}`}
-                  className="community-row"
-                >
+                <div key={`community-bottom-${groupIndex}`} className="community-row">
                   {communityBottomCards.map((card, index) => (
                     <div
                       key={`bottom-${groupIndex}-${card.src}-${index}`}
@@ -2742,13 +2729,16 @@ export default function HomePageClient({
               Questions? Look here.
             </h2>
             <p className="mx-auto mt-4 max-w-[46rem] text-[0.98rem] leading-7 text-[#7a8191] sm:text-[1.05rem]">
-              Can&apos;t find an answer? Call us at (855) 692-5326 or email contact@geminiprompts.com.
+              Can&apos;t find an answer? Call us at (855) 692-5326 or email
+              contact@geminiprompts.com.
             </p>
           </div>
 
           <div className="mt-8 grid gap-8 lg:grid-cols-[230px_1fr] lg:gap-10">
             <aside className="rounded-[18px] border border-[#eceff4] bg-[#fafbfd] p-4 sm:p-5">
-              <p className="text-[1.1rem] leading-none text-[#161b24] sm:text-[1.18rem]">Table of Contents</p>
+              <p className="text-[1.1rem] leading-none text-[#161b24] sm:text-[1.18rem]">
+                Table of Contents
+              </p>
               <div className="mt-4 flex flex-col gap-2">
                 {homeFaqCategories.map((category: string) => {
                   const isActive = activeFaqCategory === category;

@@ -29,9 +29,7 @@ type PageProps = {
 };
 
 function humanizeVariable(key: string) {
-  return key
-    .replace(/[_-]+/g, ' ')
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+  return key.replace(/[_-]+/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function extractTemplateVariables(template: string) {
@@ -86,8 +84,7 @@ export default async function PromptDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   const canonicalUrl = `${baseUrl}/prompt/${encodeURIComponent(prompt.slug)}`;
   const promptText = prompt.isLocked ? '' : stripHtml(prompt.content || prompt.description || '');
   const categoryName = getPromptCategoryName(prompt);
@@ -188,10 +185,7 @@ export default async function PromptDetailPage({ params }: PageProps) {
             </p>
 
             <div className="mt-7 flex flex-wrap items-center justify-between gap-4">
-              <Link
-                href={`/author/${prompt.author.slug}`}
-                className="flex items-center gap-3"
-              >
+              <Link href={`/author/${prompt.author.slug}`} className="flex items-center gap-3">
                 <AuthorAvatar
                   name={prompt.author.name}
                   avatarUrl={prompt.author.avatarUrl}
@@ -231,7 +225,11 @@ export default async function PromptDetailPage({ params }: PageProps) {
 
             {prompt.image ? (
               <div className="mt-10 overflow-hidden rounded-[26px] border border-[#e6e9f2]">
-                <div role="img" aria-label={`${prompt.title} cover`} className="relative aspect-[16/9] w-full">
+                <div
+                  role="img"
+                  aria-label={`${prompt.title} cover`}
+                  className="relative aspect-[16/9] w-full"
+                >
                   <Image
                     src={prompt.image}
                     alt={`${prompt.title} cover`}
@@ -337,7 +335,8 @@ export default async function PromptDetailPage({ params }: PageProps) {
                 Unlock premium prompts and member-only updates.
               </h3>
               <p className="mt-3 text-[0.92rem] leading-[1.6] text-[#495521]">
-                Get access to exclusive prompt packs, deeper variants, and fresh releases every week.
+                Get access to exclusive prompt packs, deeper variants, and fresh releases every
+                week.
               </p>
               <Link
                 href="/membership"

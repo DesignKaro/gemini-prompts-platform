@@ -3,6 +3,7 @@
 This repository is scaffolded for building an AI Prompt Sharing and Membership Platform with a headless architecture.
 
 ## Stack Direction
+
 - Frontend: Next.js + TypeScript + TailwindCSS
 - Backend: NestJS (or Express) + TypeScript
 - ORM: Prisma
@@ -13,6 +14,7 @@ This repository is scaffolded for building an AI Prompt Sharing and Membership P
 - Cache: Redis
 
 ## Current Status
+
 - Project directory structure created
 - Monorepo tooling foundation completed (npm workspaces + Next.js + NestJS + Prisma setup)
 - Prisma schema expanded for prompts, collabs, submissions, memberships, and engagement
@@ -23,15 +25,18 @@ This repository is scaffolded for building an AI Prompt Sharing and Membership P
 - Step-by-step implementation phases available at `docs/phases/IMPLEMENTATION_PHASES.md`
 
 ## Quick Navigation
+
 - Architecture and folder map: `docs/architecture/PROJECT_STRUCTURE.md`
 - Build plan by phase: `docs/phases/IMPLEMENTATION_PHASES.md`
 - DB setup: `db/create_database_and_user.sql`
-- Env template (root): `.env.mysql.example`
+- Runtime envs: `apps/api/.env` and `apps/web/.env`
 
 ## Next Immediate Step
+
 Apply `db/migrations/0001_init.sql` to your remote MySQL database, run seed data, then move to **Phase 3: Auth + RBAC**.
 
 ## Local Setup
+
 1. Install dependencies:
    - `npm install --include-workspace-root`
 2. Run both apps in development:
@@ -42,8 +47,9 @@ Apply `db/migrations/0001_init.sql` to your remote MySQL database, run seed data
    - `npm run build`
 
 ## Google Login Setup (Web)
-1. Copy `apps/web/.env.example` to `apps/web/.env.local`.
-2. Fill these values:
+
+1. Update `apps/web/.env`.
+2. Ensure these values are set:
    - `NEXTAUTH_URL=http://localhost:30001`
    - `NEXTAUTH_SECRET=<long-random-secret>`
    - `AUTH_API_URL=http://127.0.0.1:4000`
@@ -57,8 +63,9 @@ Apply `db/migrations/0001_init.sql` to your remote MySQL database, run seed data
 Security note: if a client secret has ever been shared in chat/screenshots, rotate/regenerate it in Google Cloud and use the new secret in your local env.
 
 ## API Auth Setup
-1. Copy `apps/api/.env.example` to `apps/api/.env`.
-2. Fill these auth-specific values:
+
+1. Update `apps/api/.env`.
+2. Ensure these auth-specific values are set:
    - `JWT_SECRET=<long-random-secret>`
    - `JWT_ACCESS_TTL_SECONDS=900`
    - `REFRESH_TOKEN_TTL_DAYS=30`

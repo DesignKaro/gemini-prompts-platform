@@ -3,8 +3,7 @@ import { AnimatedCounter } from '../components/animated-counter';
 import { AuthorAvatar } from '../components/author-avatar';
 import { getAuthorList, type PublicAuthor } from '../../lib/public-content';
 export default async function AboutPage() {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   let trendingAuthors: PublicAuthor[] = [];
 
   try {
@@ -123,9 +122,9 @@ export default async function AboutPage() {
               Prompts that help you ship.
             </h1>
             <p className="mt-4 max-w-[42rem] text-[1.05rem] leading-[1.75] text-[#5f6773]">
-              Gemini Prompts is a curated library of high-signal prompts and practical
-              workflows. We focus on prompts that produce clear outputs — specs, briefs,
-              reviews, launch copy, and creator-ready scripts.
+              Gemini Prompts is a curated library of high-signal prompts and practical workflows. We
+              focus on prompts that produce clear outputs — specs, briefs, reviews, launch copy, and
+              creator-ready scripts.
             </p>
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -170,9 +169,7 @@ export default async function AboutPage() {
               <h2 className="text-[1.55rem] leading-[1.05] tracking-[-0.04em] text-[#111118]">
                 {card.title}
               </h2>
-              <p className="mt-4 text-[1.02rem] leading-[1.7] text-[#5f6773]">
-                {card.description}
-              </p>
+              <p className="mt-4 text-[1.02rem] leading-[1.7] text-[#5f6773]">{card.description}</p>
               <div className="mt-auto pt-7">
                 <Link
                   href={card.href}
@@ -215,8 +212,8 @@ export default async function AboutPage() {
                 </span>
               </h2>
               <p className="mt-3 max-w-[46rem] text-[1.05rem] leading-[1.7] text-[#4b525e]">
-                Clear prompts, clear outputs. We publish workflows that are easy to adapt,
-                easy to share, and easy to ship with.
+                Clear prompts, clear outputs. We publish workflows that are easy to adapt, easy to
+                share, and easy to ship with.
               </p>
             </div>
             <div className="rounded-full border border-[#d8dbe3] bg-white/70 px-5 py-2.5 text-[0.95rem] font-medium text-[#111118] shadow-sm backdrop-blur-md">
@@ -230,13 +227,13 @@ export default async function AboutPage() {
                 'from-[#15a0ff]/10 to-[#6f63ff]/10 border-[#15a0ff]/20',
                 'from-[#6f63ff]/10 to-[#ec5b7f]/10 border-[#6f63ff]/20',
                 'from-[#ec5b7f]/10 to-[#f5cc4b]/10 border-[#ec5b7f]/20',
-                'from-[#22a66f]/10 to-[#15a0ff]/10 border-[#22a66f]/20'
+                'from-[#22a66f]/10 to-[#15a0ff]/10 border-[#22a66f]/20',
               ];
               const textColors = [
                 'text-[#15a0ff]',
                 'text-[#6f63ff]',
                 'text-[#ec5b7f]',
-                'text-[#22a66f]'
+                'text-[#22a66f]',
               ];
 
               return (
@@ -262,8 +259,7 @@ export default async function AboutPage() {
                 Our principles
               </h2>
               <p className="mt-3 max-w-[46rem] text-[1.02rem] leading-[1.7] text-[#5f6773]">
-                We keep prompts actionable, the UI clean, and the workflows respectful of
-                your time.
+                We keep prompts actionable, the UI clean, and the workflows respectful of your time.
               </p>
             </div>
             <Link
@@ -338,9 +334,7 @@ export default async function AboutPage() {
           </div>
 
           {trendingAuthors.length === 0 ? (
-            <p className="mt-4 text-[0.95rem] text-[#6a7280]">
-              No authors available right now.
-            </p>
+            <p className="mt-4 text-[0.95rem] text-[#6a7280]">No authors available right now.</p>
           ) : null}
 
           <div className="mt-8 flex justify-center">

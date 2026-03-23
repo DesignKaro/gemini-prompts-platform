@@ -24,8 +24,7 @@ const CHECK = (
 export default function MembershipPage() {
   const sectionSpacing = 'mt-12 sm:mt-14 lg:mt-16';
   const sectionSubSpacing = 'mt-8 sm:mt-10';
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
 
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
@@ -134,7 +133,8 @@ export default function MembershipPage() {
     },
     {
       title: 'Quality rubric',
-      description: 'Every premium prompt includes constraints, examples, and a checklist to reduce fluff.',
+      description:
+        'Every premium prompt includes constraints, examples, and a checklist to reduce fluff.',
       icon: (
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
           <path
@@ -322,7 +322,17 @@ export default function MembershipPage() {
       a: 'Currently we’re web-only with a mobile-optimized experience. A native mobile app is in development for premium members.',
       icon: (
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
-          <rect x="5" y="2" width="14" height="20" rx="2" ry="2" fill="none" stroke="currentColor" strokeWidth="2" />
+          <rect
+            x="5"
+            y="2"
+            width="14"
+            height="20"
+            rx="2"
+            ry="2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
           <line x1="12" y1="18" x2="12" y2="18" stroke="currentColor" strokeWidth="2" />
         </svg>
       ),
@@ -345,7 +355,17 @@ export default function MembershipPage() {
       a: 'We accept all major credit cards, PayPal, and wire transfers for enterprise accounts. All payments are processed securely.',
       icon: (
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
-          <rect x="1" y="4" width="22" height="16" rx="2" ry="2" fill="none" stroke="currentColor" strokeWidth="2" />
+          <rect
+            x="1"
+            y="4"
+            width="22"
+            height="16"
+            rx="2"
+            ry="2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
           <line x1="1" y1="10" x2="23" y2="10" stroke="currentColor" strokeWidth="2" />
         </svg>
       ),
@@ -466,7 +486,9 @@ export default function MembershipPage() {
             Start free, then upgrade when you want exclusive packs and deeper workflows.
           </p>
 
-          <div className={`${sectionSubSpacing} overflow-hidden rounded-[10px] border border-[#e6e9f2] bg-white`}>
+          <div
+            className={`${sectionSubSpacing} overflow-hidden rounded-[10px] border border-[#e6e9f2] bg-white`}
+          >
             {/* Mobile stacked comparison */}
             <div className="divide-y divide-[#eef1f6] sm:hidden">
               {comparisonRows.map((row) => (
@@ -533,7 +555,9 @@ export default function MembershipPage() {
                   {item.icon}
                 </div>
                 <div>
-                  <p className="text-[1.03rem] font-medium leading-[1.4] text-[#0b0f18]">{item.q}</p>
+                  <p className="text-[1.03rem] font-medium leading-[1.4] text-[#0b0f18]">
+                    {item.q}
+                  </p>
                   <p className="mt-2 text-[0.92rem] leading-[1.75] text-[#5f6773]">{item.a}</p>
                 </div>
               </div>
@@ -599,7 +623,11 @@ export default function MembershipPage() {
                 </div>
 
                 <p className="mt-4 text-[0.85rem] text-white/60">
-                  Questions? <Link href="/contact" className="underline underline-offset-4">Contact us</Link>.
+                  Questions?{' '}
+                  <Link href="/contact" className="underline underline-offset-4">
+                    Contact us
+                  </Link>
+                  .
                 </p>
               </div>
             </div>

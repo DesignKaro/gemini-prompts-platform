@@ -3,7 +3,8 @@ import { getPromptList } from '../../lib/public-content';
 
 export const metadata = {
   title: 'Trending Prompts — Gemini Prompts',
-  description: 'The most-liked and talked-about prompts right now. Curated weekly for builders, creators, and teams.',
+  description:
+    'The most-liked and talked-about prompts right now. Curated weekly for builders, creators, and teams.',
 };
 
 export default async function TrendingPage() {

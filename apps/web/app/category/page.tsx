@@ -16,8 +16,7 @@ export const metadata = {
 
 export default async function CategoriesArchivePage({ searchParams }: PageProps) {
   const resolvedSearchParams = await searchParams;
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   const page = Math.max(1, Number.parseInt(resolvedSearchParams?.page ?? '1', 10) || 1);
   const skip = (page - 1) * PAGE_SIZE;
 
@@ -69,8 +68,8 @@ export default async function CategoriesArchivePage({ searchParams }: PageProps)
               Explore every category
             </h1>
             <p className="mt-4 max-w-[620px] text-[1.05rem] leading-[1.7] text-[#5f6773]">
-              Browse the live catalog of categories and dive into curated collections of prompts
-              and posts.
+              Browse the live catalog of categories and dive into curated collections of prompts and
+              posts.
             </p>
           </div>
           <div className="rounded-full bg-[#f1f4f8] px-4 py-2 text-[0.95rem] text-[#4b525e]">
@@ -93,12 +92,8 @@ export default async function CategoriesArchivePage({ searchParams }: PageProps)
                   })`,
                 }}
               />
-              <h2 className="mt-5 text-[1.2rem] font-medium text-[#141414]">
-                {category.name}
-              </h2>
-              <p className="mt-2 text-[0.95rem] text-[#6a7280]">
-                {category.totalCount} items
-              </p>
+              <h2 className="mt-5 text-[1.2rem] font-medium text-[#141414]">{category.name}</h2>
+              <p className="mt-2 text-[0.95rem] text-[#6a7280]">{category.totalCount} items</p>
               <Link
                 href={`/category/${category.slug}`}
                 className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#d8dce2] px-4 py-2 text-[0.9rem] text-[#101010] transition-colors duration-300 hover:border-[#101010] hover:bg-[#101010] hover:text-white"

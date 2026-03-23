@@ -64,8 +64,7 @@ async function flushStatusQueue(authKey: string) {
   const promptIds = Array.from(promptIdSet);
   queuedPromptIds.delete(authKey);
   const resolverMap =
-    queuedResolvers.get(authKey) ??
-    new Map<string, Array<(status: InteractionState) => void>>();
+    queuedResolvers.get(authKey) ?? new Map<string, Array<(status: InteractionState) => void>>();
   const accessToken = queuedTokens.get(authKey) ?? null;
 
   let statusMap = new Map<string, InteractionState>();
@@ -205,7 +204,7 @@ export function usePromptInteractions({
     void queueStatusFetch(
       authKey,
       promptId,
-      sessionStatus === 'authenticated' ? session?.apiAccessToken ?? null : null,
+      sessionStatus === 'authenticated' ? (session?.apiAccessToken ?? null) : null,
     ).then((status) => {
       if (isCancelled) return;
       setLikedByIp(status.likedByIp);
@@ -216,55 +215,44 @@ export function usePromptInteractions({
     return () => {
       isCancelled = true;
     };
-  }, [
-    authKey,
-    promptId,
-    session?.apiAccessToken,
-    sessionStatus,
-    syncAnonymousStatus,
-    syncStatus,
-  ]);
+  }, [authKey, promptId, session?.apiAccessToken, sessionStatus, syncAnonymousStatus, syncStatus]);
 
   const redirectToSignIn = useCallback(() => {
-    const callbackUrl =
-      typeof window !== 'undefined' ? window.location.href : '/';
+    const callbackUrl = typeof window !== 'undefined' ? window.location.href : '/';
     void signIn(undefined, { callbackUrl });
   }, []);
 
-  const getAccessToken = useCallback(
-    async (required: boolean) => {
-      const currentSessionStatus = sessionStatusRef.current;
-      if (currentSessionStatus !== 'authenticated') {
-        return null;
-      }
+  const getAccessToken = useCallback(async (required: boolean) => {
+    const currentSessionStatus = sessionStatusRef.current;
+    if (currentSessionStatus !== 'authenticated') {
+      return null;
+    }
 
-      const currentSession = sessionRef.current;
-      let accessToken = currentSession?.apiAccessToken ?? null;
+    const currentSession = sessionRef.current;
+    let accessToken = currentSession?.apiAccessToken ?? null;
 
-      if (accessToken && !isAccessTokenExpired(currentSession?.apiAccessTokenExpiresAt)) {
+    if (accessToken && !isAccessTokenExpired(currentSession?.apiAccessTokenExpiresAt)) {
+      return accessToken;
+    }
+
+    const shouldAttemptRefresh = Boolean(
+      accessToken || currentSession?.apiAccessTokenExpiresAt || required,
+    );
+
+    if (updateRef.current && shouldAttemptRefresh) {
+      const refreshed = await refreshSession(updateRef.current).catch(() => null);
+      accessToken = refreshed?.apiAccessToken ?? null;
+      if (accessToken) {
         return accessToken;
       }
+    }
 
-      const shouldAttemptRefresh = Boolean(
-        accessToken || currentSession?.apiAccessTokenExpiresAt || required,
-      );
+    if (required) {
+      return null;
+    }
 
-      if (updateRef.current && shouldAttemptRefresh) {
-        const refreshed = await refreshSession(updateRef.current).catch(() => null);
-        accessToken = refreshed?.apiAccessToken ?? null;
-        if (accessToken) {
-          return accessToken;
-        }
-      }
-
-      if (required) {
-        return null;
-      }
-
-      return accessToken;
-    },
-    [],
-  );
+    return accessToken;
+  }, []);
 
   const getRequiredAccessToken = useCallback(async () => {
     if (sessionStatus !== 'authenticated') {

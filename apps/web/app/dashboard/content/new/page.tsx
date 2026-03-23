@@ -3,12 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { FaCloudArrowUp } from 'react-icons/fa6';
-import {
-  MdClose,
-  MdSchedule,
-  MdCheckCircle,
-  MdError,
-} from 'react-icons/md';
+import { MdClose, MdSchedule, MdCheckCircle, MdError } from 'react-icons/md';
 import { useRouter, useSearchParams } from 'next/navigation';
 import RichTextEditor from '../../../components/rich-text-editor';
 import { useAdminApi } from '../../../components/dashboard/use-admin-api';
@@ -129,8 +124,15 @@ export default function CreateContentPage() {
 
   useEffect(() => {
     if (hasSetTypeFromUrl) return;
-    if (typeParam === 'prompt') { setPostType('Prompt'); setHasSetTypeFromUrl(true); return; }
-    if (typeParam === 'post') { setPostType('Post'); setHasSetTypeFromUrl(true); }
+    if (typeParam === 'prompt') {
+      setPostType('Prompt');
+      setHasSetTypeFromUrl(true);
+      return;
+    }
+    if (typeParam === 'post') {
+      setPostType('Post');
+      setHasSetTypeFromUrl(true);
+    }
   }, [hasSetTypeFromUrl, typeParam]);
 
   // Auto-generate slug from title
@@ -180,10 +182,11 @@ export default function CreateContentPage() {
       setBody(payload.content ?? '');
       setFeaturedImage(payload.featuredImageUrl ?? null);
       const categoryNames = Array.from(
-        new Set([
-          payload.primaryCategory?.name,
-          ...(payload.categories?.map((c) => c.name) ?? []),
-        ].filter(Boolean) as string[]),
+        new Set(
+          [payload.primaryCategory?.name, ...(payload.categories?.map((c) => c.name) ?? [])].filter(
+            Boolean,
+          ) as string[],
+        ),
       );
       setCategories(categoryNames);
       setPrimaryCategory(payload.primaryCategory?.name ?? categoryNames[0] ?? null);
@@ -221,10 +224,11 @@ export default function CreateContentPage() {
       setBody(payload.content ?? '');
       setFeaturedImage(payload.featuredImageUrl ?? null);
       const categoryNames = Array.from(
-        new Set([
-          payload.primaryCategory?.name,
-          ...(payload.categories?.map((c) => c.name) ?? []),
-        ].filter(Boolean) as string[]),
+        new Set(
+          [payload.primaryCategory?.name, ...(payload.categories?.map((c) => c.name) ?? [])].filter(
+            Boolean,
+          ) as string[],
+        ),
       );
       setCategories(categoryNames);
       setPrimaryCategory(payload.primaryCategory?.name ?? categoryNames[0] ?? null);
@@ -291,10 +295,16 @@ export default function CreateContentPage() {
 
   const addTags = (raw: string) => {
     if (!raw.trim()) return;
-    const nextTags = raw.split(',').map((t) => t.trim()).filter((t) => t.length > 0);
+    const nextTags = raw
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
     setTags((current) => {
       const unique = new Set(current);
-      for (const tag of nextTags) { if (unique.size >= MAX_TAGS) break; unique.add(tag); }
+      for (const tag of nextTags) {
+        if (unique.size >= MAX_TAGS) break;
+        unique.add(tag);
+      }
       return Array.from(unique);
     });
   };
@@ -317,7 +327,10 @@ export default function CreateContentPage() {
   const handleTagKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       event.preventDefault();
-      if (tagsInput.trim()) { addTags(tagsInput); setTagsInput(''); }
+      if (tagsInput.trim()) {
+        addTags(tagsInput);
+        setTagsInput('');
+      }
     }
     if (event.key === 'Backspace' && !tagsInput && tags.length > 0) {
       setTags((current) => current.slice(0, -1));
@@ -345,12 +358,15 @@ export default function CreateContentPage() {
   const removeCategory = (catToRemove: string) => {
     const next = categories.filter((c) => c !== catToRemove);
     setCategories(next);
-    if (catToRemove === primaryCategory) setPrimaryCategory(next.length > 0 ? (next[0] ?? null) : null);
+    if (catToRemove === primaryCategory)
+      setPrimaryCategory(next.length > 0 ? (next[0] ?? null) : null);
   };
 
   const handleCategoryKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && categoryInput.trim()) { e.preventDefault(); addCategory(categoryInput.trim()); }
-    else if (e.key === 'Backspace' && !categoryInput && categories.length > 0) {
+    if (e.key === 'Enter' && categoryInput.trim()) {
+      e.preventDefault();
+      addCategory(categoryInput.trim());
+    } else if (e.key === 'Backspace' && !categoryInput && categories.length > 0) {
       const last = categories[categories.length - 1];
       if (last) removeCategory(last);
     } else if (e.key === 'Escape') setIsCategoryDropdownOpen(false);
@@ -377,7 +393,10 @@ export default function CreateContentPage() {
 
   const handleSave = async (targetStatus: Status) => {
     const err = validate(targetStatus);
-    if (err && (targetStatus === 'Published' || targetStatus === 'Private' || targetStatus === 'Scheduled')) {
+    if (
+      err &&
+      (targetStatus === 'Published' || targetStatus === 'Private' || targetStatus === 'Scheduled')
+    ) {
       setValidationError(err);
       return;
     }
@@ -390,17 +409,18 @@ export default function CreateContentPage() {
     const normalizedSlug = slug.trim() || generateSlug(trimmedTitle);
 
     const resolveStatus = () => {
-      if (targetStatus === 'Private') return { status: 'PUBLISHED' as ApiPromptStatus, visibility: 'EXCLUSIVE' as ApiVisibility };
-      if (targetStatus === 'Published') return { status: 'PUBLISHED' as ApiPromptStatus, visibility };
-      if (targetStatus === 'Scheduled') return { status: 'SCHEDULED' as ApiPromptStatus, visibility };
+      if (targetStatus === 'Private')
+        return { status: 'PUBLISHED' as ApiPromptStatus, visibility: 'EXCLUSIVE' as ApiVisibility };
+      if (targetStatus === 'Published')
+        return { status: 'PUBLISHED' as ApiPromptStatus, visibility };
+      if (targetStatus === 'Scheduled')
+        return { status: 'SCHEDULED' as ApiPromptStatus, visibility };
       return { status: 'DRAFT' as ApiPromptStatus, visibility };
     };
 
     const { status: apiStatus, visibility: apiVisibility } = resolveStatus();
     const scheduledAtValue =
-      targetStatus === 'Scheduled' && scheduledAt
-        ? new Date(scheduledAt).toISOString()
-        : null;
+      targetStatus === 'Scheduled' && scheduledAt ? new Date(scheduledAt).toISOString() : null;
 
     const resolveCategoryIds = async (names: string[]) => {
       const trimmed = names.map((name) => name.trim()).filter(Boolean);
@@ -443,11 +463,11 @@ export default function CreateContentPage() {
 
       const primaryName = primaryCategory || trimmed[0] || null;
       const primaryId = primaryName
-        ? updatedOptions.find(
+        ? (updatedOptions.find(
             (cat) =>
               cat.name.toLowerCase() === primaryName.toLowerCase() ||
               cat.slug === generateSlug(primaryName),
-          )?.id ?? null
+          )?.id ?? null)
         : null;
 
       return { ids, primaryId };
@@ -604,8 +624,12 @@ export default function CreateContentPage() {
     <div className="mx-auto max-w-[1200px] pb-28">
       {/* Page header */}
       <div className="mb-6 flex flex-col gap-1">
-        <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116]">Create New Content</h1>
-        <p className="text-[0.95rem] text-gray-500">Draft a new prompt, post, or guide for the marketplace.</p>
+        <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116]">
+          Create New Content
+        </h1>
+        <p className="text-[0.95rem] text-gray-500">
+          Draft a new prompt, post, or guide for the marketplace.
+        </p>
       </div>
 
       {loadError && (
@@ -620,7 +644,11 @@ export default function CreateContentPage() {
         <div className="mb-4 flex items-center gap-3 rounded-[14px] border border-red-100 bg-red-50 px-4 py-3 text-[0.88rem] text-red-700">
           <MdError size={18} className="shrink-0" />
           {validationError}
-          <button type="button" onClick={() => setValidationError(null)} className="ml-auto text-red-400 hover:text-red-600">
+          <button
+            type="button"
+            onClick={() => setValidationError(null)}
+            className="ml-auto text-red-400 hover:text-red-600"
+          >
             <MdClose size={16} />
           </button>
         </div>
@@ -643,7 +671,11 @@ export default function CreateContentPage() {
           <button
             type="button"
             onClick={() => setPublishResult(null)}
-            className={status !== 'Draft' ? 'text-green-400 hover:text-green-600' : 'ml-auto text-green-400 hover:text-green-600'}
+            className={
+              status !== 'Draft'
+                ? 'text-green-400 hover:text-green-600'
+                : 'ml-auto text-green-400 hover:text-green-600'
+            }
           >
             <MdClose size={16} />
           </button>
@@ -685,7 +717,12 @@ export default function CreateContentPage() {
                   handleFile(e.dataTransfer.files?.[0]);
                 }}
               >
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleFile(e.target.files?.[0])}
+                />
                 <div className="space-y-2">
                   <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-[#d9dde6] text-[#7a8292]">
                     <FaCloudArrowUp className="h-4 w-4" />
@@ -757,7 +794,9 @@ export default function CreateContentPage() {
         <aside className="rounded-[24px] border border-[#e2e6ee] bg-white p-5 sm:p-6 lg:sticky lg:top-6">
           <div>
             <h3 className="text-[1.1rem] text-[#0f1116]">Post options</h3>
-            <p className="mt-1 text-[0.82rem] text-[#7a8292]">Configure settings before publishing.</p>
+            <p className="mt-1 text-[0.82rem] text-[#7a8292]">
+              Configure settings before publishing.
+            </p>
           </div>
 
           <div className="mt-6 space-y-6">
@@ -777,7 +816,8 @@ export default function CreateContentPage() {
               <p className="text-[0.78rem] text-[#7a8292]">
                 Link preview:{' '}
                 <span className="text-[#1e4fd2] break-all">
-                  /{primaryCategory?.toLowerCase().replace(/[^a-z0-9-]/g, '-') || 'category'}/{slug || 'your-slug'}
+                  /{primaryCategory?.toLowerCase().replace(/[^a-z0-9-]/g, '-') || 'category'}/
+                  {slug || 'your-slug'}
                 </span>
               </p>
             </div>
@@ -846,7 +886,10 @@ export default function CreateContentPage() {
                   <span
                     key={cat}
                     title={primaryCategory === cat ? 'Primary Category' : 'Click to set as Primary'}
-                    onClick={(e) => { e.stopPropagation(); setPrimaryCategory(cat); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPrimaryCategory(cat);
+                    }}
                     className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.8rem] font-medium border cursor-pointer transition-colors ${
                       primaryCategory === cat
                         ? 'bg-blue-100 text-blue-800 border-blue-200'
@@ -857,7 +900,10 @@ export default function CreateContentPage() {
                     {cat}
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); removeCategory(cat); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeCategory(cat);
+                      }}
                       className={`hover:text-blue-900 focus:outline-none transition-colors ${primaryCategory === cat ? 'text-blue-500' : 'text-blue-400'}`}
                     >
                       &times;
@@ -867,7 +913,10 @@ export default function CreateContentPage() {
                 <input
                   type="text"
                   value={categoryInput}
-                  onChange={(e) => { setCategoryInput(e.target.value); setIsCategoryDropdownOpen(true); }}
+                  onChange={(e) => {
+                    setCategoryInput(e.target.value);
+                    setIsCategoryDropdownOpen(true);
+                  }}
                   onFocus={() => setIsCategoryDropdownOpen(true)}
                   onBlur={() => setTimeout(() => setIsCategoryDropdownOpen(false), 200)}
                   onKeyDown={handleCategoryKeyDown}
@@ -879,38 +928,39 @@ export default function CreateContentPage() {
               {isCategoryDropdownOpen && (
                 <div className="absolute top-[100%] left-0 w-full mt-1 bg-white border border-gray-200 rounded-[12px] shadow-lg overflow-hidden z-50">
                   <ul className="max-h-[200px] overflow-y-auto pt-1">
-                    {filteredCategories.length > 0 ? (
-                      filteredCategories.map((cat) => (
-                        <li
-                          key={cat}
-                          className="px-4 py-2.5 text-[0.85rem] text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors"
-                          onClick={() => addCategory(cat)}
-                        >
-                          {cat}
-                        </li>
-                      ))
-                    ) : (
-                      categoryInput.trim() === '' && (
-                        <li className="px-4 py-3 text-[0.85rem] text-gray-500 italic text-center">
-                          Start typing to search or create
-                        </li>
-                      )
-                    )}
+                    {filteredCategories.length > 0
+                      ? filteredCategories.map((cat) => (
+                          <li
+                            key={cat}
+                            className="px-4 py-2.5 text-[0.85rem] text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors"
+                            onClick={() => addCategory(cat)}
+                          >
+                            {cat}
+                          </li>
+                        ))
+                      : categoryInput.trim() === '' && (
+                          <li className="px-4 py-3 text-[0.85rem] text-gray-500 italic text-center">
+                            Start typing to search or create
+                          </li>
+                        )}
                   </ul>
-                  {categoryInput.trim() && !filteredCategories.find((c) => c.toLowerCase() === categoryInput.trim().toLowerCase()) && (
-                    <div
-                      className="px-4 py-3 bg-blue-50/50 border-t border-gray-100 text-[0.85rem] text-blue-700 cursor-pointer hover:bg-blue-50 transition-colors font-medium flex items-center gap-2"
-                      onClick={() => addCategory(categoryInput.trim())}
-                    >
-                      <span className="bg-blue-100 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-[0.9rem] leading-none">+</span>
-                      Add &ldquo;{categoryInput}&rdquo;
-                    </div>
-                  )}
+                  {categoryInput.trim() &&
+                    !filteredCategories.find(
+                      (c) => c.toLowerCase() === categoryInput.trim().toLowerCase(),
+                    ) && (
+                      <div
+                        className="px-4 py-3 bg-blue-50/50 border-t border-gray-100 text-[0.85rem] text-blue-700 cursor-pointer hover:bg-blue-50 transition-colors font-medium flex items-center gap-2"
+                        onClick={() => addCategory(categoryInput.trim())}
+                      >
+                        <span className="bg-blue-100 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-[0.9rem] leading-none">
+                          +
+                        </span>
+                        Add &ldquo;{categoryInput}&rdquo;
+                      </div>
+                    )}
                 </div>
               )}
-              <p className="text-[0.78rem] text-[#7a8292]">
-                Multiple categories allowed. Max 15.
-              </p>
+              <p className="text-[0.78rem] text-[#7a8292]">Multiple categories allowed. Max 15.</p>
             </div>
 
             {/* Post type */}
@@ -921,7 +971,11 @@ export default function CreateContentPage() {
                 onChange={(e) => setPostType(e.target.value as typeof postType)}
                 className="w-full rounded-[12px] border border-[#e1e5ee] px-3.5 py-2.5 text-[0.9rem]"
               >
-                {optionPostTypes.map((o) => <option key={o} value={o}>{o}</option>)}
+                {optionPostTypes.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -933,7 +987,11 @@ export default function CreateContentPage() {
                 onChange={(e) => setPostFormat(e.target.value as typeof postFormat)}
                 className="w-full rounded-[12px] border border-[#e1e5ee] px-3.5 py-2.5 text-[0.9rem]"
               >
-                {optionPostFormats.map((o) => <option key={o} value={o}>{o}</option>)}
+                {optionPostFormats.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -1016,14 +1074,20 @@ export default function CreateContentPage() {
       {isPreviewOpen && (
         <div
           className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-black/60 p-6"
-          onClick={(e) => { if (e.target === e.currentTarget) setIsPreviewOpen(false); }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsPreviewOpen(false);
+          }}
         >
           <div className="my-6 w-full max-w-[860px] rounded-[28px] bg-white shadow-2xl overflow-hidden">
             {/* Preview header */}
             <div className="flex items-center justify-between border-b border-[#eef2f6] px-6 py-4">
               <div>
-                <span className="text-[0.8rem] font-medium uppercase tracking-widest text-gray-400">Preview</span>
-                <p className="text-[0.85rem] text-gray-500 mt-0.5">This is how your content will look live</p>
+                <span className="text-[0.8rem] font-medium uppercase tracking-widest text-gray-400">
+                  Preview
+                </span>
+                <p className="text-[0.85rem] text-gray-500 mt-0.5">
+                  This is how your content will look live
+                </p>
               </div>
               <button
                 type="button"
@@ -1068,7 +1132,10 @@ export default function CreateContentPage() {
               {tags.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
                   {tags.map((tag) => (
-                    <span key={tag} className="rounded-full bg-[#f1f3f8] px-3 py-1 text-[0.75rem] text-[#4b5563]">
+                    <span
+                      key={tag}
+                      className="rounded-full bg-[#f1f3f8] px-3 py-1 text-[0.75rem] text-[#4b5563]"
+                    >
                       #{tag}
                     </span>
                   ))}

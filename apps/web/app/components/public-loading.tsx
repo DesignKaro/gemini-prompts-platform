@@ -97,7 +97,10 @@ export function PublicHeroContentLoading() {
 
         <div className="grid gap-6 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
-            <div key={`hero-card-${index}`} className="space-y-4 rounded-[24px] border border-[#e6e9f2] p-6">
+            <div
+              key={`hero-card-${index}`}
+              className="space-y-4 rounded-[24px] border border-[#e6e9f2] p-6"
+            >
               <Skeleton className="h-8 w-32" />
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-[90%]" />
@@ -127,8 +130,15 @@ export function PublicDirectoryLoading({ cards = 8, circles = false }: Directory
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: cards }).map((_, index) => (
-            <div key={`directory-card-${index}`} className="rounded-[24px] border border-[#e6e9f2] p-6">
-              <Skeleton className={circles ? 'mx-auto h-[120px] w-[120px] rounded-full' : 'h-14 w-14 rounded-full'} />
+            <div
+              key={`directory-card-${index}`}
+              className="rounded-[24px] border border-[#e6e9f2] p-6"
+            >
+              <Skeleton
+                className={
+                  circles ? 'mx-auto h-[120px] w-[120px] rounded-full' : 'h-14 w-14 rounded-full'
+                }
+              />
               <Skeleton className={`mt-5 h-6 ${circles ? 'mx-auto w-32' : 'w-36'}`} />
               <Skeleton className={`mt-3 h-4 ${circles ? 'mx-auto w-24' : 'w-40'}`} />
               <Skeleton className={`mt-6 h-10 rounded-full ${circles ? 'mx-auto w-36' : 'w-32'}`} />
@@ -210,7 +220,10 @@ export function ContactLoading() {
             <Skeleton className="mt-4 h-5 w-[min(38rem,95%)]" />
             <div className="mt-8 grid gap-6 sm:grid-cols-2">
               {Array.from({ length: 4 }).map((_, index) => (
-                <div key={`contact-card-${index}`} className="rounded-[24px] border border-[#e6e9f2] p-6">
+                <div
+                  key={`contact-card-${index}`}
+                  className="rounded-[24px] border border-[#e6e9f2] p-6"
+                >
                   <Skeleton className="h-10 w-10 rounded-full" />
                   <Skeleton className="mt-4 h-6 w-24" />
                   <Skeleton className="mt-3 h-4 w-[90%]" />
@@ -247,7 +260,10 @@ export function MembershipLoading() {
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
-            <div key={`membership-card-${index}`} className="rounded-[24px] border border-[#e6e9f2] p-6">
+            <div
+              key={`membership-card-${index}`}
+              className="rounded-[24px] border border-[#e6e9f2] p-6"
+            >
               <Skeleton className="h-9 w-9 rounded-full" />
               <Skeleton className="mt-4 h-6 w-32" />
               <Skeleton className="mt-3 h-4 w-[95%]" />
@@ -318,7 +334,10 @@ export function AuthorDetailLoading() {
           <Skeleton className="h-4 w-56" />
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={`author-prompt-${index}`} className="h-[280px] w-full rounded-[24px]" />
+              <Skeleton
+                key={`author-prompt-${index}`}
+                className="h-[280px] w-full rounded-[24px]"
+              />
             ))}
           </div>
         </section>
@@ -359,7 +378,10 @@ export function CategoryDetailLoading() {
           <Skeleton className="h-4 w-72" />
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={`category-prompt-${index}`} className="h-[280px] w-full rounded-[24px]" />
+              <Skeleton
+                key={`category-prompt-${index}`}
+                className="h-[280px] w-full rounded-[24px]"
+              />
             ))}
           </div>
         </section>
@@ -369,7 +391,10 @@ export function CategoryDetailLoading() {
           <Skeleton className="h-4 w-64" />
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, index) => (
-              <Skeleton key={`category-post-${index}`} className="h-[300px] w-full rounded-[24px]" />
+              <Skeleton
+                key={`category-post-${index}`}
+                className="h-[300px] w-full rounded-[24px]"
+              />
             ))}
           </div>
         </section>
@@ -403,7 +428,10 @@ export function PublicProfileLoading() {
             <Skeleton className="mt-2 h-4 w-72" />
             <div className="mt-6 space-y-4">
               {Array.from({ length: 3 }).map((_, index) => (
-                <div key={`public-profile-row-${index}`} className="flex items-center gap-4 rounded-[20px] border border-[#e2e6ee] p-4">
+                <div
+                  key={`public-profile-row-${index}`}
+                  className="flex items-center gap-4 rounded-[20px] border border-[#e2e6ee] p-4"
+                >
                   <Skeleton className="h-20 w-28 rounded-[16px]" />
                   <div className="flex-1 space-y-3">
                     <Skeleton className="h-6 w-32 rounded-full" />
@@ -534,7 +562,10 @@ export function HomePageLoading() {
               </div>
               <div className="mt-8 space-y-5">
                 {Array.from({ length: 4 }).map((_, index) => (
-                  <div key={`accordion-skeleton-${index}`} className="flex items-center justify-between border-b border-[#d8d4ca] pb-4">
+                  <div
+                    key={`accordion-skeleton-${index}`}
+                    className="flex items-center justify-between border-b border-[#d8d4ca] pb-4"
+                  >
                     <Skeleton className="h-8 w-52" />
                     <Skeleton className="h-8 w-8 rounded-full" />
                   </div>
@@ -545,7 +576,10 @@ export function HomePageLoading() {
 
           <div className="mt-5 grid gap-5 md:grid-cols-2 xl:mt-6 xl:grid-cols-[repeat(3,minmax(0,1fr))_1.45fr] xl:gap-6">
             {Array.from({ length: 4 }).map((_, index) => (
-              <div key={`benefit-skeleton-${index}`} className="min-h-[280px] rounded-[24px] bg-[#f7f7f7] p-5 sm:min-h-[320px] sm:rounded-[28px] sm:p-8">
+              <div
+                key={`benefit-skeleton-${index}`}
+                className="min-h-[280px] rounded-[24px] bg-[#f7f7f7] p-5 sm:min-h-[320px] sm:rounded-[28px] sm:p-8"
+              >
                 <Skeleton className="h-10 w-36" />
                 <Skeleton className="mt-8 h-4 w-[90%]" />
                 <Skeleton className="mt-3 h-4 w-[78%]" />
@@ -602,7 +636,10 @@ export function HomePageLoading() {
           </div>
           <div className="no-scrollbar mt-6 flex gap-4 overflow-x-auto pb-2 sm:mt-7 sm:gap-5">
             {Array.from({ length: 4 }).map((_, index) => (
-              <div key={`more-posts-skeleton-${index}`} className="w-[260px] shrink-0 sm:w-[320px] lg:w-[calc((100%-2.5rem)/3)]">
+              <div
+                key={`more-posts-skeleton-${index}`}
+                className="w-[260px] shrink-0 sm:w-[320px] lg:w-[calc((100%-2.5rem)/3)]"
+              >
                 <Skeleton className="aspect-[16/9] w-full rounded-[20px]" />
                 <Skeleton className="mt-4 h-6 w-[92%]" />
                 <Skeleton className="mt-2 h-6 w-[72%]" />
@@ -624,7 +661,10 @@ export function HomePageLoading() {
           </div>
           <div className="mt-4 flex flex-wrap gap-2.5">
             {Array.from({ length: 14 }).map((_, index) => (
-              <Skeleton key={`home-tag-skeleton-${index}`} className="h-[42px] w-[120px] rounded-full" />
+              <Skeleton
+                key={`home-tag-skeleton-${index}`}
+                className="h-[42px] w-[120px] rounded-full"
+              />
             ))}
           </div>
         </div>
@@ -662,7 +702,10 @@ export function HomePageLoading() {
         <div className="page-container-wide overflow-hidden rounded-[34px] bg-[#f2f3f5] py-10 sm:py-12 lg:py-14">
           <div className="no-scrollbar flex gap-3 overflow-x-auto px-5">
             {Array.from({ length: 12 }).map((_, index) => (
-              <Skeleton key={`community-top-skeleton-${index}`} className="h-[80px] w-[80px] shrink-0 rounded-[22px] sm:h-[96px] sm:w-[96px]" />
+              <Skeleton
+                key={`community-top-skeleton-${index}`}
+                className="h-[80px] w-[80px] shrink-0 rounded-[22px] sm:h-[96px] sm:w-[96px]"
+              />
             ))}
           </div>
           <div className="mx-auto mt-10 max-w-[42rem] px-6 text-center sm:mt-12">
@@ -672,7 +715,10 @@ export function HomePageLoading() {
           </div>
           <div className="no-scrollbar mt-10 flex gap-3 overflow-x-auto px-5 sm:mt-12">
             {Array.from({ length: 12 }).map((_, index) => (
-              <Skeleton key={`community-bottom-skeleton-${index}`} className="h-[80px] w-[80px] shrink-0 rounded-[22px] sm:h-[96px] sm:w-[96px]" />
+              <Skeleton
+                key={`community-bottom-skeleton-${index}`}
+                className="h-[80px] w-[80px] shrink-0 rounded-[22px] sm:h-[96px] sm:w-[96px]"
+              />
             ))}
           </div>
         </div>
@@ -683,7 +729,10 @@ export function HomePageLoading() {
           <Skeleton className="h-12 w-[280px]" />
           <div className="mt-7 grid gap-5 lg:grid-cols-2">
             {Array.from({ length: 4 }).map((_, index) => (
-              <div key={`watch-read-listen-home-skeleton-${index}`} className="rounded-[20px] border border-[#dfe2e8] bg-white p-4 sm:p-5 lg:p-6">
+              <div
+                key={`watch-read-listen-home-skeleton-${index}`}
+                className="rounded-[20px] border border-[#dfe2e8] bg-white p-4 sm:p-5 lg:p-6"
+              >
                 <div className="grid gap-4 sm:grid-cols-[1fr_220px] sm:items-stretch">
                   <div className="flex flex-col">
                     <div className="flex gap-2">
@@ -719,7 +768,10 @@ export function HomePageLoading() {
               <Skeleton className="h-6 w-40" />
               <div className="mt-4 space-y-2">
                 {Array.from({ length: 5 }).map((_, index) => (
-                  <Skeleton key={`faq-cat-skeleton-${index}`} className="h-10 w-full rounded-[10px]" />
+                  <Skeleton
+                    key={`faq-cat-skeleton-${index}`}
+                    className="h-10 w-full rounded-[10px]"
+                  />
                 ))}
               </div>
             </aside>

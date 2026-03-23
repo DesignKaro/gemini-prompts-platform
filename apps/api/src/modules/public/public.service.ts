@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   CommentStatus,
@@ -75,6 +75,7 @@ const BASE_USER_PERMISSIONS = new Set(['prompts:read', 'posts:read', 'comments:r
 
 @Injectable()
 export class PublicService {
+  private readonly logger = new Logger(PublicService.name);
   private readonly mediaRefPrefix = 'media:';
   private readonly interactionIpSecret: string;
   private readonly viewDedupWindowMs = 24 * 60 * 60 * 1000;
@@ -96,11 +97,7 @@ export class PublicService {
       .replace(/^-+|-+$/g, '');
   }
 
-  private resolveAuthorSlug(author: {
-    id?: string;
-    handle?: string | null;
-    name?: string | null;
-  }) {
+  private resolveAuthorSlug(author: { id?: string; handle?: string | null; name?: string | null }) {
     if (author.handle) return author.handle;
     if (author.name) return this.slugify(author.name);
     return author.id ?? 'author';
@@ -355,9 +352,7 @@ export class PublicService {
   private normalizePromptIds(promptIds: string[]) {
     return Array.from(
       new Set(
-        promptIds
-          .map((promptId) => promptId.trim())
-          .filter((promptId) => promptId.length > 0),
+        promptIds.map((promptId) => promptId.trim()).filter((promptId) => promptId.length > 0),
       ),
     );
   }
@@ -425,13 +420,11 @@ export class PublicService {
     return createHmac('sha256', this.interactionIpSecret).update(ipAddress).digest('hex');
   }
 
-  private createViewerHash(
-    identity: {
-      ipAddress: string;
-      userAgent?: string;
-      userId?: string;
-    },
-  ): string {
+  private createViewerHash(identity: {
+    ipAddress: string;
+    userAgent?: string;
+    userId?: string;
+  }): string {
     const normalizedUserAgent = (identity.userAgent ?? '').trim().toLowerCase().slice(0, 256);
     const seed = identity.userId
       ? `user:${identity.userId}`
@@ -450,10 +443,60 @@ export class PublicService {
   }
 
   private isUniqueConstraintError(error: unknown): error is Prisma.PrismaClientKnownRequestError {
-    return (
+    return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
+  }
+
+  private isDatabaseUnavailableError(error: unknown) {
+    if (error instanceof Prisma.PrismaClientInitializationError) {
+      return true;
+    }
+
+    if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2002'
+      ['P1001', 'P1002', 'P1008', 'P1017', 'P2024'].includes(error.code)
+    ) {
+      return true;
+    }
+
+    const message = error instanceof Error ? error.message : String(error);
+    return (
+      message.includes("Can't reach database server") ||
+      message.includes('Prisma connect timeout') ||
+      message.includes('Connection pool timeout') ||
+      message.includes('Server has closed the connection')
     );
+  }
+
+  private formatDatabaseErrorMessage(error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    const normalized = message.replace(/\s+/g, ' ').trim();
+    const connectivityMessage = normalized.match(
+      /Can't reach database server.*|Prisma connect timeout.*|Connection pool timeout.*/i,
+    );
+    return connectivityMessage?.[0] ?? normalized;
+  }
+
+  private async withDatabaseReadFallback<T>(
+    operation: string,
+    fallback: T,
+    read: () => Promise<T>,
+  ): Promise<T> {
+    try {
+      return await read();
+    } catch (error) {
+      if (!this.isDatabaseUnavailableError(error)) {
+        throw error;
+      }
+
+      if (process.env.NODE_ENV === 'production') {
+        throw error;
+      }
+
+      this.logger.warn(
+        `Database unavailable while serving ${operation}. Returning fallback response. ${this.formatDatabaseErrorMessage(error)}`,
+      );
+      return fallback;
+    }
   }
 
   private publicPromptWindow(now: Date): Prisma.PromptWhereInput {
@@ -610,7 +653,9 @@ export class PublicService {
     return { AND: filters };
   }
 
-  private getPromptOrderBy(sort?: PromptListOptions['sort']): Prisma.PromptOrderByWithRelationInput[] {
+  private getPromptOrderBy(
+    sort?: PromptListOptions['sort'],
+  ): Prisma.PromptOrderByWithRelationInput[] {
     if (sort === 'popular') {
       return [{ likeCount: 'desc' }, { viewCount: 'desc' }, { publishedAt: 'desc' }];
     }
@@ -759,88 +804,94 @@ export class PublicService {
   }
 
   async getPrompts(options: PromptListOptions, viewer?: PublicViewer) {
-    const { skip, take } = normalizePagination(options.skip, options.take);
-    const includeTags = options.includeTags ?? false;
-    const resolvedAuthorIds = Array.from(
-      new Set(
-        (options.authorIds ?? [])
-          .map((authorId) => authorId.trim())
-          .filter((authorId) => authorId.length > 0),
-      ),
-    );
-    let resolvedOptions: PromptListOptions = {
-      ...options,
-      authorIds: resolvedAuthorIds.length > 0 ? resolvedAuthorIds : undefined,
-    };
+    return this.withDatabaseReadFallback(
+      'GET /api/public/prompts',
+      { items: [], total: 0 },
+      async () => {
+        const { skip, take } = normalizePagination(options.skip, options.take);
+        const includeTags = options.includeTags ?? false;
+        const resolvedAuthorIds = Array.from(
+          new Set(
+            (options.authorIds ?? [])
+              .map((authorId) => authorId.trim())
+              .filter((authorId) => authorId.length > 0),
+          ),
+        );
+        let resolvedOptions: PromptListOptions = {
+          ...options,
+          authorIds: resolvedAuthorIds.length > 0 ? resolvedAuthorIds : undefined,
+        };
 
-    if (
-      (!resolvedOptions.authorIds || resolvedOptions.authorIds.length === 0) &&
-      resolvedOptions.authorSlug &&
-      !resolvedOptions.authorId
-    ) {
-      const authorId = await this.resolveAuthorIdBySlug(resolvedOptions.authorSlug);
-      if (!authorId) {
-        return { items: [], total: 0 };
-      }
-      resolvedOptions = {
-        ...options,
-        authorSlug: undefined,
-        authorId,
-      };
-    }
+        if (
+          (!resolvedOptions.authorIds || resolvedOptions.authorIds.length === 0) &&
+          resolvedOptions.authorSlug &&
+          !resolvedOptions.authorId
+        ) {
+          const authorId = await this.resolveAuthorIdBySlug(resolvedOptions.authorSlug);
+          if (!authorId) {
+            return { items: [], total: 0 };
+          }
+          resolvedOptions = {
+            ...options,
+            authorSlug: undefined,
+            authorId,
+          };
+        }
 
-    const where = this.buildPublicPromptWhere(resolvedOptions, viewer);
-    const promptSelect: Prisma.PromptSelect = {
-      id: true,
-      slug: true,
-      title: true,
-      description: true,
-      promptType: true,
-      visibility: true,
-      featuredImageUrl: true,
-      publishedAt: true,
-      updatedAt: true,
-      viewCount: true,
-      likeCount: true,
-      saveCount: true,
-      author: {
-        select: {
+        const where = this.buildPublicPromptWhere(resolvedOptions, viewer);
+        const promptSelect: Prisma.PromptSelect = {
           id: true,
-          name: true,
-          handle: true,
-          avatarUrl: true,
-          avatarUpdatedAt: true,
-        },
+          slug: true,
+          title: true,
+          description: true,
+          promptType: true,
+          visibility: true,
+          featuredImageUrl: true,
+          publishedAt: true,
+          updatedAt: true,
+          viewCount: true,
+          likeCount: true,
+          saveCount: true,
+          author: {
+            select: {
+              id: true,
+              name: true,
+              handle: true,
+              avatarUrl: true,
+              avatarUpdatedAt: true,
+            },
+          },
+          primaryCategory: { select: { id: true, name: true, slug: true } },
+          categories: { select: { id: true, name: true, slug: true } },
+          ...(includeTags ? { tags: { select: { id: true, name: true, slug: true } } } : {}),
+        };
+
+        const [items, total] = await this.prisma.$transaction([
+          this.prisma.prompt.findMany({
+            where,
+            skip,
+            take,
+            orderBy: this.getPromptOrderBy(options.sort),
+            select: promptSelect,
+          }),
+          this.prisma.prompt.count({ where }),
+        ]);
+
+        const hydratedWithImages = await this.hydrateMediaRefs(items, 'featuredImageUrl');
+        const hydrated = await this.hydrateAuthorAvatarRefs(hydratedWithImages);
+        const commentCounts = await this.getCommentCounts(
+          CommentTargetType.PROMPT,
+          hydrated.map((item) => item.id),
+        );
+
+        return {
+          items: hydrated.map((prompt) =>
+            this.toPromptSummary(prompt, commentCounts.get(prompt.id) ?? 0, viewer),
+          ),
+          total,
+        };
       },
-      primaryCategory: { select: { id: true, name: true, slug: true } },
-      categories: { select: { id: true, name: true, slug: true } },
-      ...(includeTags ? { tags: { select: { id: true, name: true, slug: true } } } : {}),
-    };
-
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.prompt.findMany({
-        where,
-        skip,
-        take,
-        orderBy: this.getPromptOrderBy(options.sort),
-        select: promptSelect,
-      }),
-      this.prisma.prompt.count({ where }),
-    ]);
-
-    const hydratedWithImages = await this.hydrateMediaRefs(items, 'featuredImageUrl');
-    const hydrated = await this.hydrateAuthorAvatarRefs(hydratedWithImages);
-    const commentCounts = await this.getCommentCounts(
-      CommentTargetType.PROMPT,
-      hydrated.map((item) => item.id),
     );
-
-    return {
-      items: hydrated.map((prompt) =>
-        this.toPromptSummary(prompt, commentCounts.get(prompt.id) ?? 0, viewer),
-      ),
-      total,
-    };
   }
 
   async getPrompt(slug: string, viewer?: PublicViewer) {
@@ -875,16 +926,19 @@ export class PublicService {
     const hydratedPromptImage = await this.hydrateSingleMediaRef(prompt, 'featuredImageUrl');
     const hydratedPrompt = await this.hydrateSingleAuthorAvatarRef(hydratedPromptImage);
     const commentCountMap = await this.getCommentCounts(CommentTargetType.PROMPT, [prompt.id]);
-    const baseCategory =
-      prompt.primaryCategory?.slug ?? prompt.categories[0]?.slug ?? null;
+    const baseCategory = prompt.primaryCategory?.slug ?? prompt.categories[0]?.slug ?? null;
     const isLocked = this.isContentLocked(prompt.visibility, viewer);
 
-    const relatedResponse = await this.getPrompts({
-      take: 3,
-      categorySlug: baseCategory ?? undefined,
-      visibility: prompt.visibility === PromptVisibility.EXCLUSIVE ? PromptVisibility.EXCLUSIVE : undefined,
-      sort: 'trending',
-    }, viewer);
+    const relatedResponse = await this.getPrompts(
+      {
+        take: 3,
+        categorySlug: baseCategory ?? undefined,
+        visibility:
+          prompt.visibility === PromptVisibility.EXCLUSIVE ? PromptVisibility.EXCLUSIVE : undefined,
+        sort: 'trending',
+      },
+      viewer,
+    );
 
     return {
       ...this.toPromptSummary(hydratedPrompt, commentCountMap.get(prompt.id) ?? 0, viewer),
@@ -929,12 +983,7 @@ export class PublicService {
     let viewCount = 0;
 
     await this.prisma.$transaction(async (tx) => {
-      const prompt = await this.findPublicPromptSnapshot(
-        promptId,
-        tx,
-        undefined,
-        'published',
-      );
+      const prompt = await this.findPublicPromptSnapshot(promptId, tx, undefined, 'published');
       viewCount = prompt.viewCount;
 
       const existingView = await tx.promptView.findUnique({
@@ -1021,95 +1070,108 @@ export class PublicService {
     userId?: string,
   ): Promise<PromptInteractionStatusResponse> {
     const uniquePromptIds = this.normalizePromptIds(promptIds).slice(0, 100);
-
-    if (uniquePromptIds.length === 0) {
-      return { items: [] };
-    }
-
-    const publicPromptWhere = this.buildPublicPromptWhere({}, undefined, 'published');
-    const publicPromptFilters = Array.isArray(publicPromptWhere.AND)
-      ? publicPromptWhere.AND
-      : [];
-
-    const publicPrompts = await this.prisma.prompt.findMany({
-      where: {
-        AND: [...publicPromptFilters, { id: { in: uniquePromptIds } }],
-      },
-      select: { id: true },
-    });
-
-    const publicPromptIds = publicPrompts.map((prompt) => prompt.id);
-    const publicPromptIdSet = new Set(publicPromptIds);
-    const ipHash = ipAddress?.trim() ? this.createIpHash(ipAddress.trim()) : null;
-
-    let userLikes: Array<{ promptId: string }> = [];
-    let ipLikes: Array<{ promptId: string }> = [];
-    let userSaves: Array<{ promptId: string }> = [];
-
-    if (ipHash && userId) {
-      [userLikes, ipLikes, userSaves] = await this.prisma.$transaction([
-        this.prisma.promptLike.findMany({
-          where: {
-            promptId: { in: publicPromptIds },
-            userId,
-          },
-          select: { promptId: true },
-        }),
-        this.prisma.promptLikeIp.findMany({
-          where: {
-            promptId: { in: publicPromptIds },
-            ipHash,
-          },
-          select: { promptId: true },
-        }),
-        this.prisma.savedPrompt.findMany({
-          where: {
-            promptId: { in: publicPromptIds },
-            userId,
-          },
-          select: { promptId: true },
-        }),
-      ]);
-    } else if (ipHash) {
-      ipLikes = await this.prisma.promptLikeIp.findMany({
-        where: {
-          promptId: { in: publicPromptIds },
-          ipHash,
-        },
-        select: { promptId: true },
-      });
-    } else if (userId) {
-      [userLikes, userSaves] = await this.prisma.$transaction([
-        this.prisma.promptLike.findMany({
-          where: {
-            promptId: { in: publicPromptIds },
-            userId,
-          },
-          select: { promptId: true },
-        }),
-        this.prisma.savedPrompt.findMany({
-          where: {
-            promptId: { in: publicPromptIds },
-            userId,
-          },
-          select: { promptId: true },
-        }),
-      ]);
-    }
-
-    const userLikeSet = new Set(userLikes.map((item) => item.promptId));
-    const ipLikeSet = new Set(ipLikes.map((item) => item.promptId));
-    const userSaveSet = new Set(userSaves.map((item) => item.promptId));
-
-    return {
+    const fallback = {
       items: uniquePromptIds.map((promptId) => ({
         promptId,
-        likedByIp: publicPromptIdSet.has(promptId)
-          ? userLikeSet.has(promptId) || ipLikeSet.has(promptId)
-          : false,
-        savedByUser: publicPromptIdSet.has(promptId) ? userSaveSet.has(promptId) : false,
+        likedByIp: false,
+        savedByUser: false,
       })),
     };
+
+    if (uniquePromptIds.length === 0) {
+      return fallback;
+    }
+
+    return this.withDatabaseReadFallback(
+      'POST /api/public/prompts/interactions/status',
+      fallback,
+      async () => {
+        const publicPromptWhere = this.buildPublicPromptWhere({}, undefined, 'published');
+        const publicPromptFilters = Array.isArray(publicPromptWhere.AND)
+          ? publicPromptWhere.AND
+          : [];
+
+        const publicPrompts = await this.prisma.prompt.findMany({
+          where: {
+            AND: [...publicPromptFilters, { id: { in: uniquePromptIds } }],
+          },
+          select: { id: true },
+        });
+
+        const publicPromptIds = publicPrompts.map((prompt) => prompt.id);
+        const publicPromptIdSet = new Set(publicPromptIds);
+        const ipHash = ipAddress?.trim() ? this.createIpHash(ipAddress.trim()) : null;
+
+        let userLikes: Array<{ promptId: string }> = [];
+        let ipLikes: Array<{ promptId: string }> = [];
+        let userSaves: Array<{ promptId: string }> = [];
+
+        if (ipHash && userId) {
+          [userLikes, ipLikes, userSaves] = await this.prisma.$transaction([
+            this.prisma.promptLike.findMany({
+              where: {
+                promptId: { in: publicPromptIds },
+                userId,
+              },
+              select: { promptId: true },
+            }),
+            this.prisma.promptLikeIp.findMany({
+              where: {
+                promptId: { in: publicPromptIds },
+                ipHash,
+              },
+              select: { promptId: true },
+            }),
+            this.prisma.savedPrompt.findMany({
+              where: {
+                promptId: { in: publicPromptIds },
+                userId,
+              },
+              select: { promptId: true },
+            }),
+          ]);
+        } else if (ipHash) {
+          ipLikes = await this.prisma.promptLikeIp.findMany({
+            where: {
+              promptId: { in: publicPromptIds },
+              ipHash,
+            },
+            select: { promptId: true },
+          });
+        } else if (userId) {
+          [userLikes, userSaves] = await this.prisma.$transaction([
+            this.prisma.promptLike.findMany({
+              where: {
+                promptId: { in: publicPromptIds },
+                userId,
+              },
+              select: { promptId: true },
+            }),
+            this.prisma.savedPrompt.findMany({
+              where: {
+                promptId: { in: publicPromptIds },
+                userId,
+              },
+              select: { promptId: true },
+            }),
+          ]);
+        }
+
+        const userLikeSet = new Set(userLikes.map((item) => item.promptId));
+        const ipLikeSet = new Set(ipLikes.map((item) => item.promptId));
+        const userSaveSet = new Set(userSaves.map((item) => item.promptId));
+
+        return {
+          items: uniquePromptIds.map((promptId) => ({
+            promptId,
+            likedByIp: publicPromptIdSet.has(promptId)
+              ? userLikeSet.has(promptId) || ipLikeSet.has(promptId)
+              : false,
+            savedByUser: publicPromptIdSet.has(promptId) ? userSaveSet.has(promptId) : false,
+          })),
+        };
+      },
+    );
   }
 
   async likePrompt(
@@ -1132,12 +1194,7 @@ export class PublicService {
     let likeCount = 0;
 
     await this.prisma.$transaction(async (tx) => {
-      const prompt = await this.findPublicPromptSnapshot(
-        promptId,
-        tx,
-        undefined,
-        'published',
-      );
+      const prompt = await this.findPublicPromptSnapshot(promptId, tx, undefined, 'published');
       likeCount = prompt.likeCount;
 
       if (userId) {
@@ -1716,14 +1773,14 @@ export class PublicService {
           }),
           ipHash
             ? tx.commentLikeIp.findUnique({
-              where: {
-                commentId_ipHash: {
-                  commentId: comment.id,
-                  ipHash,
+                where: {
+                  commentId_ipHash: {
+                    commentId: comment.id,
+                    ipHash,
+                  },
                 },
-              },
-              select: { commentId: true },
-            })
+                select: { commentId: true },
+              })
             : Promise.resolve(null),
         ]);
 
@@ -2011,75 +2068,81 @@ export class PublicService {
   }
 
   async getPosts(options: PostListOptions, viewer?: PublicViewer) {
-    const { skip, take } = normalizePagination(options.skip, options.take);
-    const includeContent = options.includeContent ?? false;
-    const includeTags = options.includeTags ?? false;
-    let resolvedOptions = options;
+    return this.withDatabaseReadFallback(
+      'GET /api/public/posts',
+      { items: [], total: 0 },
+      async () => {
+        const { skip, take } = normalizePagination(options.skip, options.take);
+        const includeContent = options.includeContent ?? false;
+        const includeTags = options.includeTags ?? false;
+        let resolvedOptions = options;
 
-    if (options.authorSlug && !options.authorId) {
-      const authorId = await this.resolveAuthorIdBySlug(options.authorSlug);
-      if (!authorId) {
-        return { items: [], total: 0 };
-      }
-      resolvedOptions = {
-        ...options,
-        authorSlug: undefined,
-        authorId,
-      };
-    }
+        if (options.authorSlug && !options.authorId) {
+          const authorId = await this.resolveAuthorIdBySlug(options.authorSlug);
+          if (!authorId) {
+            return { items: [], total: 0 };
+          }
+          resolvedOptions = {
+            ...options,
+            authorSlug: undefined,
+            authorId,
+          };
+        }
 
-    const where = this.buildPublicPostWhere(resolvedOptions, viewer);
-    const postSelect: Prisma.PostSelect = {
-      id: true,
-      slug: true,
-      title: true,
-      excerpt: true,
-      postType: true,
-      postFormat: true,
-      visibility: true,
-      featuredImageUrl: true,
-      publishedAt: true,
-      updatedAt: true,
-      viewCount: true,
-      ...(includeContent ? { content: true } : {}),
-      author: {
-        select: {
+        const where = this.buildPublicPostWhere(resolvedOptions, viewer);
+        const postSelect: Prisma.PostSelect = {
           id: true,
-          name: true,
-          handle: true,
-          avatarUrl: true,
-          avatarUpdatedAt: true,
-        },
+          slug: true,
+          title: true,
+          excerpt: true,
+          postType: true,
+          postFormat: true,
+          visibility: true,
+          featuredImageUrl: true,
+          publishedAt: true,
+          updatedAt: true,
+          viewCount: true,
+          ...(includeContent ? { content: true } : {}),
+          author: {
+            select: {
+              id: true,
+              name: true,
+              handle: true,
+              avatarUrl: true,
+              avatarUpdatedAt: true,
+            },
+          },
+          primaryCategory: { select: { id: true, name: true, slug: true } },
+          categories: { select: { id: true, name: true, slug: true } },
+          ...(includeTags ? { tags: { select: { id: true, name: true, slug: true } } } : {}),
+        };
+
+        const [items, total] = await this.prisma.$transaction([
+          this.prisma.post.findMany({
+            where,
+            skip,
+            take,
+            orderBy: this.getPostOrderBy(options.sort),
+            select: postSelect,
+          }),
+          this.prisma.post.count({ where }),
+        ]);
+
+        const hydratedWithImages = await this.hydrateMediaRefs(items, 'featuredImageUrl');
+        const hydrated = await this.hydrateAuthorAvatarRefs(hydratedWithImages);
+        const commentCounts = await this.getCommentCounts(
+          CommentTargetType.POST,
+          hydrated.map((item) => item.id),
+        );
+
+        return {
+          items: hydrated.map((post) =>
+            this.toPostSummary(post, commentCounts.get(post.id) ?? 0, viewer),
+          ),
+          total,
+        };
       },
-      primaryCategory: { select: { id: true, name: true, slug: true } },
-      categories: { select: { id: true, name: true, slug: true } },
-      ...(includeTags ? { tags: { select: { id: true, name: true, slug: true } } } : {}),
-    };
-
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.post.findMany({
-        where,
-        skip,
-        take,
-        orderBy: this.getPostOrderBy(options.sort),
-        select: postSelect,
-      }),
-      this.prisma.post.count({ where }),
-    ]);
-
-    const hydratedWithImages = await this.hydrateMediaRefs(items, 'featuredImageUrl');
-    const hydrated = await this.hydrateAuthorAvatarRefs(hydratedWithImages);
-    const commentCounts = await this.getCommentCounts(
-      CommentTargetType.POST,
-      hydrated.map((item) => item.id),
     );
-
-    return {
-      items: hydrated.map((post) =>
-        this.toPostSummary(post, commentCounts.get(post.id) ?? 0, viewer),
-      ),
-      total,
-    };
   }
 
   async getPost(slug: string, viewer?: PublicViewer) {
@@ -2114,16 +2177,19 @@ export class PublicService {
     const hydratedPostImage = await this.hydrateSingleMediaRef(post, 'featuredImageUrl');
     const hydratedPost = await this.hydrateSingleAuthorAvatarRef(hydratedPostImage);
     const commentCountMap = await this.getCommentCounts(CommentTargetType.POST, [post.id]);
-    const baseCategory =
-      post.primaryCategory?.slug ?? post.categories[0]?.slug ?? null;
+    const baseCategory = post.primaryCategory?.slug ?? post.categories[0]?.slug ?? null;
     const isLocked = this.isContentLocked(post.visibility, viewer);
 
-    const relatedResponse = await this.getPosts({
-      take: 3,
-      categorySlug: baseCategory ?? undefined,
-      visibility: post.visibility === PromptVisibility.EXCLUSIVE ? PromptVisibility.EXCLUSIVE : undefined,
-      sort: 'popular',
-    }, viewer);
+    const relatedResponse = await this.getPosts(
+      {
+        take: 3,
+        categorySlug: baseCategory ?? undefined,
+        visibility:
+          post.visibility === PromptVisibility.EXCLUSIVE ? PromptVisibility.EXCLUSIVE : undefined,
+        sort: 'popular',
+      },
+      viewer,
+    );
 
     return {
       ...this.toPostSummary(hydratedPost, commentCountMap.get(post.id) ?? 0, viewer),
@@ -2146,12 +2212,7 @@ export class PublicService {
     }
 
     if (this.isAutomatedUserAgent(userAgent)) {
-      const post = await this.findPublicPostSnapshot(
-        postId,
-        this.prisma,
-        undefined,
-        'published',
-      );
+      const post = await this.findPublicPostSnapshot(postId, this.prisma, undefined, 'published');
       return {
         counted: false,
         viewCount: post.viewCount,
@@ -2168,12 +2229,7 @@ export class PublicService {
     let viewCount = 0;
 
     await this.prisma.$transaction(async (tx) => {
-      const post = await this.findPublicPostSnapshot(
-        postId,
-        tx,
-        undefined,
-        'published',
-      );
+      const post = await this.findPublicPostSnapshot(postId, tx, undefined, 'published');
       viewCount = post.viewCount;
 
       const existingView = await tx.postView.findUnique({
@@ -2247,58 +2303,66 @@ export class PublicService {
   }
 
   async getCategories(options: TaxonomyListOptions, viewer?: PublicViewer) {
-    const take = Number.isFinite(options.take) ? Math.max(1, Math.min(options.take ?? 48, 100)) : 48;
-    const publicPromptWhere = this.buildPublicPromptWhere({}, viewer);
-    const publicPostWhere = this.buildPublicPostWhere({}, viewer);
+    return this.withDatabaseReadFallback(
+      'GET /api/public/categories',
+      { items: [], total: 0 },
+      async () => {
+        const take = Number.isFinite(options.take)
+          ? Math.max(1, Math.min(options.take ?? 48, 100))
+          : 48;
+        const publicPromptWhere = this.buildPublicPromptWhere({}, viewer);
+        const publicPostWhere = this.buildPublicPostWhere({}, viewer);
 
-    const categories = await this.prisma.category.findMany({
-      where: {
-        deletedAt: null,
-      },
-      take,
-      orderBy:
-        options.sort === 'popular'
-          ? [{ sortOrder: 'asc' }, { name: 'asc' }]
-          : [{ sortOrder: 'asc' }, { name: 'asc' }],
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        imageUrl: true,
-      },
-    });
+        const categories = await this.prisma.category.findMany({
+          where: {
+            deletedAt: null,
+          },
+          take,
+          orderBy:
+            options.sort === 'popular'
+              ? [{ sortOrder: 'asc' }, { name: 'asc' }]
+              : [{ sortOrder: 'asc' }, { name: 'asc' }],
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            imageUrl: true,
+          },
+        });
 
-    const hydrated = await this.hydrateMediaRefs(categories, 'imageUrl');
-    const { promptCountMap, postCountMap } = await this.getCategoryUsageMaps(
-      hydrated.map((category) => category.id),
-      publicPromptWhere,
-      publicPostWhere,
+        const hydrated = await this.hydrateMediaRefs(categories, 'imageUrl');
+        const { promptCountMap, postCountMap } = await this.getCategoryUsageMaps(
+          hydrated.map((category) => category.id),
+          publicPromptWhere,
+          publicPostWhere,
+        );
+
+        const mapped = hydrated.map((category) => {
+          const promptCount = promptCountMap.get(category.id) ?? 0;
+          const postCount = postCountMap.get(category.id) ?? 0;
+          return {
+            id: category.id,
+            name: category.name,
+            slug: category.slug,
+            description: category.description,
+            imageUrl: category.imageUrl,
+            promptCount,
+            postCount,
+            totalCount: promptCount + postCount,
+          };
+        });
+
+        if (options.sort === 'popular') {
+          mapped.sort((a, b) => b.totalCount - a.totalCount || a.name.localeCompare(b.name));
+        }
+
+        return {
+          items: mapped,
+          total: mapped.length,
+        };
+      },
     );
-
-    const mapped = hydrated.map((category) => {
-      const promptCount = promptCountMap.get(category.id) ?? 0;
-      const postCount = postCountMap.get(category.id) ?? 0;
-      return {
-        id: category.id,
-        name: category.name,
-        slug: category.slug,
-        description: category.description,
-        imageUrl: category.imageUrl,
-        promptCount,
-        postCount,
-        totalCount: promptCount + postCount,
-      };
-    });
-
-    if (options.sort === 'popular') {
-      mapped.sort((a, b) => b.totalCount - a.totalCount || a.name.localeCompare(b.name));
-    }
-
-    return {
-      items: mapped,
-      total: mapped.length,
-    };
   }
 
   private async getCategoryUsageMaps(
@@ -2438,44 +2502,52 @@ export class PublicService {
   }
 
   async getTags(options: TaxonomyListOptions, viewer?: PublicViewer) {
-    const take = Number.isFinite(options.take) ? Math.max(1, Math.min(options.take ?? 100, 200)) : 100;
-    const publicPromptWhere = this.buildPublicPromptWhere({}, viewer);
-    const publicPostWhere = this.buildPublicPostWhere({}, viewer);
+    return this.withDatabaseReadFallback(
+      'GET /api/public/tags',
+      { items: [], total: 0 },
+      async () => {
+        const take = Number.isFinite(options.take)
+          ? Math.max(1, Math.min(options.take ?? 100, 200))
+          : 100;
+        const publicPromptWhere = this.buildPublicPromptWhere({}, viewer);
+        const publicPostWhere = this.buildPublicPostWhere({}, viewer);
 
-    const tags = await this.prisma.tag.findMany({
-      where: {
-        deletedAt: null,
-      },
-      take,
-      orderBy: options.sort === 'name' ? [{ name: 'asc' }] : [{ name: 'asc' }],
-      include: {
-        _count: {
-          select: {
-            prompts: { where: publicPromptWhere },
-            posts: { where: publicPostWhere },
+        const tags = await this.prisma.tag.findMany({
+          where: {
+            deletedAt: null,
           },
-        },
+          take,
+          orderBy: options.sort === 'name' ? [{ name: 'asc' }] : [{ name: 'asc' }],
+          include: {
+            _count: {
+              select: {
+                prompts: { where: publicPromptWhere },
+                posts: { where: publicPostWhere },
+              },
+            },
+          },
+        });
+
+        const mapped = tags.map((tag) => ({
+          id: tag.id,
+          name: tag.name,
+          slug: tag.slug,
+          color: tag.color,
+          promptCount: tag._count.prompts,
+          postCount: tag._count.posts,
+          usage: tag._count.prompts + tag._count.posts,
+        }));
+
+        if (options.sort === 'popular') {
+          mapped.sort((a, b) => b.usage - a.usage || a.name.localeCompare(b.name));
+        }
+
+        return {
+          items: mapped,
+          total: mapped.length,
+        };
       },
-    });
-
-    const mapped = tags.map((tag) => ({
-      id: tag.id,
-      name: tag.name,
-      slug: tag.slug,
-      color: tag.color,
-      promptCount: tag._count.prompts,
-      postCount: tag._count.posts,
-      usage: tag._count.prompts + tag._count.posts,
-    }));
-
-    if (options.sort === 'popular') {
-      mapped.sort((a, b) => b.usage - a.usage || a.name.localeCompare(b.name));
-    }
-
-    return {
-      items: mapped,
-      total: mapped.length,
-    };
+    );
   }
 
   async getTag(slug: string, viewer?: PublicViewer) {
@@ -2513,50 +2585,55 @@ export class PublicService {
   }
 
   async getAuthors(options: TaxonomyListOptions, viewer?: PublicViewer) {
-    const take = Number.isFinite(options.take) ? Math.max(1, Math.min(options.take ?? 48, 100)) : 48;
-    const publicPromptWhere = this.buildPublicPromptWhere({}, viewer);
-    const publicPostWhere = this.buildPublicPostWhere({}, viewer);
+    return this.withDatabaseReadFallback(
+      'GET /api/public/authors',
+      { items: [], total: 0 },
+      async () => {
+        const take = Number.isFinite(options.take)
+          ? Math.max(1, Math.min(options.take ?? 48, 100))
+          : 48;
+        const publicPromptWhere = this.buildPublicPromptWhere({}, viewer);
+        const publicPostWhere = this.buildPublicPostWhere({}, viewer);
 
-    const authors = await this.prisma.user.findMany({
-      where: {
-        handle: { not: null },
-        suspendedAt: null,
-        OR: [
-          { prompts: { some: publicPromptWhere } },
-          { posts: { some: publicPostWhere } },
-        ],
-      },
-      take,
-      orderBy: options.sort === 'name' ? [{ name: 'asc' }] : [{ createdAt: 'desc' }],
-      include: {
-        _count: {
-          select: {
-            prompts: { where: publicPromptWhere },
-            posts: { where: publicPostWhere },
-            followers: true,
+        const authors = await this.prisma.user.findMany({
+          where: {
+            handle: { not: null },
+            suspendedAt: null,
+            OR: [{ prompts: { some: publicPromptWhere } }, { posts: { some: publicPostWhere } }],
           },
-        },
+          take,
+          orderBy: options.sort === 'name' ? [{ name: 'asc' }] : [{ createdAt: 'desc' }],
+          include: {
+            _count: {
+              select: {
+                prompts: { where: publicPromptWhere },
+                posts: { where: publicPostWhere },
+                followers: true,
+              },
+            },
+          },
+        });
+
+        const hydratedAuthors = await this.hydrateMediaRefs(authors, 'avatarUrl');
+
+        const mapped = hydratedAuthors.map((author) => ({
+          ...this.toAuthorSummary(author),
+          promptCount: author._count.prompts,
+          postCount: author._count.posts,
+          followerCount: author._count.followers,
+          totalCount: author._count.prompts + author._count.posts,
+        }));
+
+        if (options.sort === 'popular') {
+          mapped.sort((a, b) => b.totalCount - a.totalCount || a.name.localeCompare(b.name));
+        }
+
+        return {
+          items: mapped,
+          total: mapped.length,
+        };
       },
-    });
-
-    const hydratedAuthors = await this.hydrateMediaRefs(authors, 'avatarUrl');
-
-    const mapped = hydratedAuthors.map((author) => ({
-      ...this.toAuthorSummary(author),
-      promptCount: author._count.prompts,
-      postCount: author._count.posts,
-      followerCount: author._count.followers,
-      totalCount: author._count.prompts + author._count.posts,
-    }));
-
-    if (options.sort === 'popular') {
-      mapped.sort((a, b) => b.totalCount - a.totalCount || a.name.localeCompare(b.name));
-    }
-
-    return {
-      items: mapped,
-      total: mapped.length,
-    };
+    );
   }
 
   async getAuthor(slug: string, viewer?: PublicViewer) {
@@ -2655,13 +2732,14 @@ export class PublicService {
   }
 
   async getHome(viewer?: PublicViewer) {
-    const [categories, latestPrompts, trendingPrompts, latestPosts, popularTags] = await Promise.all([
-      this.getCategories({ take: 12, sort: 'popular' }, viewer),
-      this.getPrompts({ take: 8, sort: 'latest' }, viewer),
-      this.getPrompts({ take: 8, sort: 'trending' }, viewer),
-      this.getPosts({ take: 6, sort: 'latest', includeTags: true }, viewer),
-      this.getTags({ take: 20, sort: 'popular' }, viewer),
-    ]);
+    const [categories, latestPrompts, trendingPrompts, latestPosts, popularTags] =
+      await Promise.all([
+        this.getCategories({ take: 12, sort: 'popular' }, viewer),
+        this.getPrompts({ take: 8, sort: 'latest' }, viewer),
+        this.getPrompts({ take: 8, sort: 'trending' }, viewer),
+        this.getPosts({ take: 6, sort: 'latest', includeTags: true }, viewer),
+        this.getTags({ take: 20, sort: 'popular' }, viewer),
+      ]);
 
     return {
       categories: categories.items,

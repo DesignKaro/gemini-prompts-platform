@@ -17,8 +17,7 @@ type PageProps = {
 
 export default async function CategoryDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   const category = await getCategoryDetail(slug);
 
   if (!category) {
@@ -39,7 +38,12 @@ export default async function CategoryDetailPage({ params }: PageProps) {
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: `${baseUrl}/` },
       { '@type': 'ListItem', position: 2, name: 'Categories', item: `${baseUrl}/category` },
-      { '@type': 'ListItem', position: 3, name: category.name, item: `${baseUrl}/category/${category.slug}` },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: category.name,
+        item: `${baseUrl}/category/${category.slug}`,
+      },
     ],
   };
 

@@ -9,11 +9,7 @@ type ContentViewTrackerProps = {
   delayMs?: number;
 };
 
-export function ContentViewTracker({
-  target,
-  contentId,
-  delayMs = 1200,
-}: ContentViewTrackerProps) {
+export function ContentViewTracker({ target, contentId, delayMs = 1200 }: ContentViewTrackerProps) {
   const hasTrackedRef = useRef(false);
 
   useEffect(() => {
@@ -22,14 +18,17 @@ export function ContentViewTracker({
     }
 
     hasTrackedRef.current = true;
-    const timeoutId = window.setTimeout(() => {
-      if (target === 'prompt') {
-        void trackPromptView(contentId);
-        return;
-      }
+    const timeoutId = window.setTimeout(
+      () => {
+        if (target === 'prompt') {
+          void trackPromptView(contentId);
+          return;
+        }
 
-      void trackPostView(contentId);
-    }, Math.max(0, delayMs));
+        void trackPostView(contentId);
+      },
+      Math.max(0, delayMs),
+    );
 
     return () => {
       window.clearTimeout(timeoutId);

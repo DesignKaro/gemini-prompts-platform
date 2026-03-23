@@ -25,8 +25,7 @@ const BLOG_PAGE_SIZE = 6;
 export default async function AuthorDetailPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
   const resolvedSearchParams = await searchParams;
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   const author = await getAuthorDetail(slug);
 
   if (!author) {
@@ -60,7 +59,12 @@ export default async function AuthorDetailPage({ params, searchParams }: PagePro
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: `${baseUrl}/` },
       { '@type': 'ListItem', position: 2, name: 'Authors', item: `${baseUrl}/author` },
-      { '@type': 'ListItem', position: 3, name: author.name, item: `${baseUrl}/author/${author.slug}` },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: author.name,
+        item: `${baseUrl}/author/${author.slug}`,
+      },
     ],
   };
 
@@ -112,9 +116,7 @@ export default async function AuthorDetailPage({ params, searchParams }: PagePro
         <section className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h2 className="text-[1.4rem] text-[#0f1116] sm:text-[1.6rem]">
-                Prompt library
-              </h2>
+              <h2 className="text-[1.4rem] text-[#0f1116] sm:text-[1.6rem]">Prompt library</h2>
               <p className="mt-1 text-[0.92rem] text-[#6a7280]">
                 Public prompt packs shared by this creator.
               </p>
@@ -141,19 +143,21 @@ export default async function AuthorDetailPage({ params, searchParams }: PagePro
 
           {promptTotalPages > 1 ? (
             <div className="flex flex-wrap items-center gap-2">
-              {Array.from({ length: promptTotalPages }, (_, index) => index + 1).map((pageNumber) => (
-                <Link
-                  key={`prompt-page-${pageNumber}`}
-                  href={`/author/${author.slug}?promptPage=${pageNumber}${blogPage > 1 ? `&blogPage=${blogPage}` : ''}`}
-                  className={`h-9 w-9 rounded-full border text-center text-[0.9rem] leading-[2.2rem] ${
-                    pageNumber === promptPage
-                      ? 'border-[#111111] bg-[#111111] text-white'
-                      : 'border-[#d8dce2] text-[#101010] hover:border-[#101010]'
-                  }`}
-                >
-                  {pageNumber}
-                </Link>
-              ))}
+              {Array.from({ length: promptTotalPages }, (_, index) => index + 1).map(
+                (pageNumber) => (
+                  <Link
+                    key={`prompt-page-${pageNumber}`}
+                    href={`/author/${author.slug}?promptPage=${pageNumber}${blogPage > 1 ? `&blogPage=${blogPage}` : ''}`}
+                    className={`h-9 w-9 rounded-full border text-center text-[0.9rem] leading-[2.2rem] ${
+                      pageNumber === promptPage
+                        ? 'border-[#111111] bg-[#111111] text-white'
+                        : 'border-[#d8dce2] text-[#101010] hover:border-[#101010]'
+                    }`}
+                  >
+                    {pageNumber}
+                  </Link>
+                ),
+              )}
             </div>
           ) : null}
         </section>
@@ -161,9 +165,7 @@ export default async function AuthorDetailPage({ params, searchParams }: PagePro
         <section className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h2 className="text-[1.4rem] text-[#0f1116] sm:text-[1.6rem]">
-                Blog posts
-              </h2>
+              <h2 className="text-[1.4rem] text-[#0f1116] sm:text-[1.6rem]">Blog posts</h2>
               <p className="mt-1 text-[0.92rem] text-[#6a7280]">
                 Long-form posts and guides from this author.
               </p>
@@ -205,9 +207,7 @@ export default async function AuthorDetailPage({ params, searchParams }: PagePro
                     </div>
                   </Link>
                   <div className="flex flex-1 flex-col px-5 py-5">
-                    <h3 className="text-[1.15rem] leading-[1.3] text-[#0b0f18]">
-                      {post.title}
-                    </h3>
+                    <h3 className="text-[1.15rem] leading-[1.3] text-[#0b0f18]">{post.title}</h3>
                     <div className="mt-4 flex flex-wrap items-center gap-2 text-[0.9rem] text-[#6b7382]">
                       <span>{formatDisplayDate(post.publishedAt || post.updatedAt)}</span>
                     </div>

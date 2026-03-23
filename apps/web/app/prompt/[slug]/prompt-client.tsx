@@ -2,13 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import {
-  FaBookmark,
-  FaHeart,
-  FaRegBookmark,
-  FaRegHeart,
-  FaReply,
-} from 'react-icons/fa6';
+import { FaBookmark, FaHeart, FaRegBookmark, FaRegHeart, FaReply } from 'react-icons/fa6';
 import { LuCheck, LuCopy, LuLink } from 'react-icons/lu';
 import { AuthorAvatar } from '../../components/author-avatar';
 import { SocialShareMenu } from '../../components/social-share-menu';
@@ -90,7 +84,11 @@ export function PromptPrimaryActions({
           className={actionButtonClassName}
           title={copied ? 'Copied!' : 'Copy prompt'}
         >
-          {copied ? <LuCheck className="h-[18px] w-[18px] text-green-600" /> : <LuCopy className="h-[18px] w-[18px]" />}
+          {copied ? (
+            <LuCheck className="h-[18px] w-[18px] text-green-600" />
+          ) : (
+            <LuCopy className="h-[18px] w-[18px]" />
+          )}
           <span className="sr-only">{copied ? 'Copied' : 'Copy prompt'}</span>
         </button>
 
@@ -99,9 +97,7 @@ export function PromptPrimaryActions({
           onClick={() => void toggleSavePrompt()}
           disabled={savePending}
           className={`${actionButtonClassName} disabled:cursor-not-allowed disabled:opacity-80 ${
-            savedByUser
-              ? 'border-[#c3cad4] bg-[#e3e8ef]'
-              : ''
+            savedByUser ? 'border-[#c3cad4] bg-[#e3e8ef]' : ''
           }`}
           aria-pressed={savedByUser}
           title={savedByUser ? 'Saved' : 'Save'}
@@ -124,14 +120,15 @@ export function PromptPrimaryActions({
           className={actionButtonClassName}
           title={linkCopied ? 'Link copied!' : 'Copy link'}
         >
-          {linkCopied ? <LuCheck className="h-[18px] w-[18px] text-green-600" /> : <LuLink className="h-[18px] w-[18px]" />}
+          {linkCopied ? (
+            <LuCheck className="h-[18px] w-[18px] text-green-600" />
+          ) : (
+            <LuLink className="h-[18px] w-[18px]" />
+          )}
           <span className="sr-only">{linkCopied ? 'Link copied' : 'Copy link'}</span>
         </button>
 
-        <SocialShareMenu
-          shareUrl={shareUrl}
-          shareText={`Check out ${title} on Gemini Prompts.`}
-        />
+        <SocialShareMenu shareUrl={shareUrl} shareText={`Check out ${title} on Gemini Prompts.`} />
       </div>
     </div>
   );
@@ -161,8 +158,8 @@ export function PromptVariableComposer({
         <div>
           <p className="text-[0.92rem] font-medium text-[#0b0f18]">Customize</p>
           <p className="mt-2 max-w-[46rem] text-[1.02rem] leading-[1.75] text-[#3f4550]">
-            Fill a few fields and copy a ready-to-run version of the prompt. Leave anything blank
-            to keep the placeholder.
+            Fill a few fields and copy a ready-to-run version of the prompt. Leave anything blank to
+            keep the placeholder.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -310,22 +307,16 @@ export function PromptCommentsSection({
   const [openReplyFor, setOpenReplyFor] = useState<string | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [replySubmittingFor, setReplySubmittingFor] = useState<string | null>(null);
-  const [likePendingByCommentId, setLikePendingByCommentId] = useState<Record<string, boolean>>(
-    {},
-  );
+  const [likePendingByCommentId, setLikePendingByCommentId] = useState<Record<string, boolean>>({});
   const [feedback, setFeedback] = useState<string | null>(null);
-  const {
-    isAuthenticated,
-    redirectToSignIn,
-    getRequiredAccessToken,
-    getOptionalAccessToken,
-  } = usePromptInteractions({
-    promptId,
-    initialLikeCount: 0,
-    initialSaveCount: 0,
-    initialCommentCount,
-    syncStatus: false,
-  });
+  const { isAuthenticated, redirectToSignIn, getRequiredAccessToken, getOptionalAccessToken } =
+    usePromptInteractions({
+      promptId,
+      initialLikeCount: 0,
+      initialSaveCount: 0,
+      initialCommentCount,
+      syncStatus: false,
+    });
 
   useEffect(() => {
     let isCancelled = false;
@@ -370,11 +361,7 @@ export function PromptCommentsSection({
     setFeedback(null);
 
     try {
-      await createPromptComment(
-        promptId,
-        { content: normalizedContent },
-        accessToken,
-      );
+      await createPromptComment(promptId, { content: normalizedContent }, accessToken);
       setContent('');
       setFeedback('Comment submitted for moderation.');
       setReloadNonce((value) => value + 1);
@@ -383,9 +370,7 @@ export function PromptCommentsSection({
         redirectToSignIn();
         return;
       }
-      setFeedback(
-        error instanceof Error ? error.message : 'Unable to submit comment right now.',
-      );
+      setFeedback(error instanceof Error ? error.message : 'Unable to submit comment right now.');
     } finally {
       setSubmitting(false);
     }
@@ -433,9 +418,7 @@ export function PromptCommentsSection({
         redirectToSignIn();
         return;
       }
-      setFeedback(
-        error instanceof Error ? error.message : 'Unable to submit reply right now.',
-      );
+      setFeedback(error instanceof Error ? error.message : 'Unable to submit reply right now.');
     } finally {
       setReplySubmittingFor(null);
     }
@@ -489,9 +472,7 @@ export function PromptCommentsSection({
     <section id="comments" className="scroll-mt-24">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-[1.55rem] font-medium tracking-[-0.02em] text-[#0b0f18]">
-            Comments
-          </h2>
+          <h2 className="text-[1.55rem] font-medium tracking-[-0.02em] text-[#0b0f18]">Comments</h2>
           <p className="mt-2 text-[1rem] leading-[1.75] text-[#5f6773]">
             {totalComments} approved comments.
           </p>
@@ -501,7 +482,10 @@ export function PromptCommentsSection({
       <div className="mt-5 rounded-[20px] border border-[#e6e9f2] bg-white p-5 sm:p-6">
         {isAuthenticated ? (
           <div>
-            <label htmlFor="prompt-comment-input" className="text-[0.9rem] font-medium text-[#0f1118]">
+            <label
+              htmlFor="prompt-comment-input"
+              className="text-[0.9rem] font-medium text-[#0f1118]"
+            >
               Add comment
             </label>
             <textarea
@@ -529,9 +513,7 @@ export function PromptCommentsSection({
           </div>
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-[0.94rem] text-[#4b5563]">
-              Sign in to write a comment.
-            </p>
+            <p className="text-[0.94rem] text-[#4b5563]">Sign in to write a comment.</p>
             <button
               type="button"
               onClick={() => redirectToSignIn()}
@@ -542,9 +524,7 @@ export function PromptCommentsSection({
           </div>
         )}
 
-        {feedback ? (
-          <p className="mt-3 text-[0.85rem] text-[#4b5563]">{feedback}</p>
-        ) : null}
+        {feedback ? <p className="mt-3 text-[0.85rem] text-[#4b5563]">{feedback}</p> : null}
       </div>
 
       <div className="mt-6 space-y-4">
@@ -554,7 +534,10 @@ export function PromptCommentsSection({
           </div>
         ) : comments.length > 0 ? (
           comments.map((comment) => (
-            <article key={comment.id} className="rounded-[20px] border border-[#e6e9f2] bg-[#f7f8fb] p-5 sm:p-6">
+            <article
+              key={comment.id}
+              className="rounded-[20px] border border-[#e6e9f2] bg-[#f7f8fb] p-5 sm:p-6"
+            >
               <div className="flex items-center gap-3">
                 <AuthorAvatar
                   name={comment.author?.name ?? 'Anonymous'}
@@ -577,7 +560,9 @@ export function PromptCommentsSection({
                     </p>
                   )}
                   <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                    <p className="text-[0.82rem] text-[#6b7280]">{formatCommentDate(comment.createdAt)}</p>
+                    <p className="text-[0.82rem] text-[#6b7280]">
+                      {formatCommentDate(comment.createdAt)}
+                    </p>
                     {comment.status === 'PENDING' ? (
                       <span className="inline-flex rounded-full bg-[#fff4d8] px-2 py-0.5 text-[0.72rem] font-medium text-[#8a6b1f]">
                         Pending review
@@ -599,7 +584,9 @@ export function PromptCommentsSection({
                       <button
                         type="button"
                         onClick={() => {
-                          setOpenReplyFor((current) => (current === comment.id ? null : comment.id));
+                          setOpenReplyFor((current) =>
+                            current === comment.id ? null : comment.id,
+                          );
                         }}
                         className="inline-flex items-center gap-1.5 text-[#4b5563] transition-colors hover:text-[#111827]"
                       >
@@ -798,10 +785,7 @@ export function PromptMobileBar({
         >
           {copied ? 'Copied' : 'Copy prompt'}
         </button>
-        <SocialShareMenu
-          shareUrl={shareUrl}
-          shareText={`Check out ${title} on Gemini Prompts.`}
-        />
+        <SocialShareMenu shareUrl={shareUrl} shareText={`Check out ${title} on Gemini Prompts.`} />
       </div>
     </div>
   );

@@ -95,9 +95,7 @@ const googleClientId = optionalEnv('GOOGLE_CLIENT_ID');
 const googleClientSecret = optionalEnv('GOOGLE_CLIENT_SECRET');
 const nextAuthSecret =
   optionalEnv('NEXTAUTH_SECRET') ||
-  (process.env.NODE_ENV === 'development'
-    ? 'dev-only-insecure-secret-change-in-env'
-    : undefined);
+  (process.env.NODE_ENV === 'development' ? 'dev-only-insecure-secret-change-in-env' : undefined);
 const authApiUrl = optionalEnv('AUTH_API_URL');
 
 if (process.env.NODE_ENV === 'development' && (!googleClientId || !googleClientSecret)) {
@@ -162,7 +160,10 @@ async function authFetch(url: string, body: Record<string, unknown>): Promise<Re
   }
 }
 
-async function authApiRequest(path: string, body: Record<string, unknown>): Promise<ApiAuthResponse> {
+async function authApiRequest(
+  path: string,
+  body: Record<string, unknown>,
+): Promise<ApiAuthResponse> {
   let lastError: AuthApiError | null = null;
 
   try {
@@ -326,38 +327,38 @@ const authConfig: NextAuthConfig = {
           return user;
         } catch (error) {
           console.error('[auth] Credentials authorize failed:', error);
-        if (error instanceof AuthApiError) {
-          if (!error.status) {
-            throw new AuthServiceUnavailableSigninError();
-          }
-
-          if (error.status === 404 || error.status >= 500) {
-            throw new AuthServiceUnavailableSigninError();
-          }
-
-          const normalizedMessage = error.message.toLowerCase();
-          if (isSignup) {
-            if (error.status === 409 || normalizedMessage.includes('already exists')) {
-              throw new EmailAlreadyExistsSigninError();
+          if (error instanceof AuthApiError) {
+            if (!error.status) {
+              throw new AuthServiceUnavailableSigninError();
             }
-            if (error.status === 400 && normalizedMessage.includes('email')) {
+
+            if (error.status === 404 || error.status >= 500) {
+              throw new AuthServiceUnavailableSigninError();
+            }
+
+            const normalizedMessage = error.message.toLowerCase();
+            if (isSignup) {
+              if (error.status === 409 || normalizedMessage.includes('already exists')) {
+                throw new EmailAlreadyExistsSigninError();
+              }
+              if (error.status === 400 && normalizedMessage.includes('email')) {
+                throw new InvalidEmailSigninError();
+              }
+              if (error.status === 400 && normalizedMessage.includes('password')) {
+                throw new WeakPasswordSigninError();
+              }
+            }
+
+            if (!isSignup && error.status === 401) {
+              throw new InvalidCredentialsSigninError();
+            }
+
+            if (!isSignup && error.status === 400 && normalizedMessage.includes('email')) {
               throw new InvalidEmailSigninError();
             }
-            if (error.status === 400 && normalizedMessage.includes('password')) {
-              throw new WeakPasswordSigninError();
-            }
-          }
 
-          if (!isSignup && error.status === 401) {
-            throw new InvalidCredentialsSigninError();
+            throw new AuthUnknownSigninError();
           }
-
-          if (!isSignup && error.status === 400 && normalizedMessage.includes('email')) {
-            throw new InvalidEmailSigninError();
-          }
-
-          throw new AuthUnknownSigninError();
-        }
 
           throw new AuthUnknownSigninError();
         }
@@ -404,7 +405,9 @@ const authConfig: NextAuthConfig = {
 
       if (account?.provider === 'google') {
         const idToken = isNonEmptyString(account.id_token) ? account.id_token : undefined;
-        const accessToken = isNonEmptyString(account.access_token) ? account.access_token : undefined;
+        const accessToken = isNonEmptyString(account.access_token)
+          ? account.access_token
+          : undefined;
 
         if (user) {
           token.sub = user.id ?? token.sub;
@@ -451,7 +454,9 @@ const authConfig: NextAuthConfig = {
         try {
           const auth = await exchangeGoogleWithApi({
             idToken: isNonEmptyString(token.googleIdToken) ? token.googleIdToken : undefined,
-            accessToken: isNonEmptyString(token.googleAccessToken) ? token.googleAccessToken : undefined,
+            accessToken: isNonEmptyString(token.googleAccessToken)
+              ? token.googleAccessToken
+              : undefined,
           });
           return mergeTokenFromApiResponse(token, auth);
         } catch (error) {

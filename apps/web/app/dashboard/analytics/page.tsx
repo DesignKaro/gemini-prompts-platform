@@ -1,7 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { MdAttachMoney, MdVisibility, MdGroup, MdTrendingUp, MdArrowDropDown } from 'react-icons/md';
+import {
+  MdAttachMoney,
+  MdVisibility,
+  MdGroup,
+  MdTrendingUp,
+  MdArrowDropDown,
+} from 'react-icons/md';
 import { StatCard } from '../../components/dashboard/stat-card';
 import { useAdminApi } from '../../components/dashboard/use-admin-api';
 
@@ -64,7 +70,14 @@ function SparklineChart({ data }: { data: number[] }) {
         </linearGradient>
       </defs>
       <path d={fillD} fill="url(#chartGrad)" />
-      <path d={pathD} fill="none" stroke="#d5ea52" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d={pathD}
+        fill="none"
+        stroke="#d5ea52"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -145,8 +158,12 @@ export default function AnalyticsPage() {
     <div className="space-y-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116] sm:text-[2rem]">Analytics</h1>
-          <p className="text-[0.95rem] text-gray-500">Understand how your prompts and posts perform over time.</p>
+          <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116] sm:text-[2rem]">
+            Analytics
+          </h1>
+          <p className="text-[0.95rem] text-gray-500">
+            Understand how your prompts and posts perform over time.
+          </p>
         </div>
         <button
           type="button"
@@ -194,7 +211,9 @@ export default function AnalyticsPage() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-[1.1rem] font-medium text-[#0f1116]">Performance overview</h2>
-              <p className="text-[0.8rem] text-gray-400 mt-1">Revenue and views over the selected period.</p>
+              <p className="text-[0.8rem] text-gray-400 mt-1">
+                Revenue and views over the selected period.
+              </p>
             </div>
 
             {/* Date range picker */}
@@ -214,9 +233,14 @@ export default function AnalyticsPage() {
                     <button
                       key={r}
                       type="button"
-                      onClick={() => { setDateRange(r); setIsDateOpen(false); }}
+                      onClick={() => {
+                        setDateRange(r);
+                        setIsDateOpen(false);
+                      }}
                       className={`flex w-full items-center rounded-[8px] px-3 py-2 text-[0.82rem] transition-colors ${
-                        dateRange === r ? 'bg-[#0f1116] text-white' : 'text-[#0f1116] hover:bg-gray-50'
+                        dateRange === r
+                          ? 'bg-[#0f1116] text-white'
+                          : 'text-[#0f1116] hover:bg-gray-50'
                       }`}
                     >
                       {r}
@@ -242,7 +266,9 @@ export default function AnalyticsPage() {
         {/* Traffic sources */}
         <section className="rounded-[30px] border border-[#eef2f6] bg-white p-6 shadow-sm sm:p-8">
           <h2 className="text-[1.1rem] font-medium text-[#0f1116]">Traffic sources</h2>
-          <p className="text-[0.8rem] text-gray-400 mt-1">Where visitors are discovering your content.</p>
+          <p className="text-[0.8rem] text-gray-400 mt-1">
+            Where visitors are discovering your content.
+          </p>
           <div className="mt-6 flex flex-col gap-5">
             {trafficSources.length > 0 ? (
               trafficSources.map((source) => (
@@ -252,7 +278,10 @@ export default function AnalyticsPage() {
                     <span className="font-medium text-[#0f1116]">{source.value}%</span>
                   </div>
                   <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
-                    <div className={`h-full rounded-full ${source.color}`} style={{ width: `${source.value}%` }} />
+                    <div
+                      className={`h-full rounded-full ${source.color}`}
+                      style={{ width: `${source.value}%` }}
+                    />
                   </div>
                 </div>
               ))
@@ -269,7 +298,9 @@ export default function AnalyticsPage() {
       <section className="rounded-[30px] border border-[#eef2f6] bg-white p-6 shadow-sm sm:p-8">
         <div>
           <h2 className="text-[1.1rem] font-medium text-[#0f1116]">Top performing prompts</h2>
-          <p className="text-[0.8rem] text-gray-400 mt-1">Ranked by views over the last {dateRange}.</p>
+          <p className="text-[0.8rem] text-gray-400 mt-1">
+            Ranked by views over the last {dateRange}.
+          </p>
         </div>
         <div className="mt-6 overflow-x-auto">
           <table className="w-full min-w-[640px] text-left">
@@ -284,11 +315,16 @@ export default function AnalyticsPage() {
               {(overview?.topPrompts ?? []).length > 0 ? (
                 (overview?.topPrompts ?? []).map((prompt) => {
                   const totalViews = totals?.promptViews ?? 0;
-                  const share = totalViews > 0 ? Math.round((prompt.viewCount / totalViews) * 100) : 0;
+                  const share =
+                    totalViews > 0 ? Math.round((prompt.viewCount / totalViews) * 100) : 0;
                   return (
                     <tr key={prompt.id} className="group hover:bg-gray-50 transition-colors">
-                      <td className="py-4 text-[0.92rem] font-medium text-[#0f1116]">{prompt.title}</td>
-                      <td className="py-4 text-[0.85rem] text-gray-600">{prompt.viewCount.toLocaleString()}</td>
+                      <td className="py-4 text-[0.92rem] font-medium text-[#0f1116]">
+                        {prompt.title}
+                      </td>
+                      <td className="py-4 text-[0.85rem] text-gray-600">
+                        {prompt.viewCount.toLocaleString()}
+                      </td>
                       <td className="py-4 text-right text-[0.85rem] text-gray-600">{share}%</td>
                     </tr>
                   );

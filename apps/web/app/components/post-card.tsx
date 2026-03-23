@@ -25,7 +25,10 @@ export function PostCardUI({
   const TitleTag = titleTag as ElementType;
 
   return (
-    <article className={className ? `flex h-full flex-col ${className}` : 'flex h-full flex-col'} data-post-card>
+    <article
+      className={className ? `flex h-full flex-col ${className}` : 'flex h-full flex-col'}
+      data-post-card
+    >
       <Link
         href={href}
         className="group flex h-full flex-col rounded-[20px] bg-white p-2.5 transition-colors duration-300 hover:bg-[#f2f4f7]"

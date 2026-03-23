@@ -100,22 +100,16 @@ export function BlogCommentsSection({
   const [openReplyFor, setOpenReplyFor] = useState<string | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [replySubmittingFor, setReplySubmittingFor] = useState<string | null>(null);
-  const [likePendingByCommentId, setLikePendingByCommentId] = useState<Record<string, boolean>>(
-    {},
-  );
+  const [likePendingByCommentId, setLikePendingByCommentId] = useState<Record<string, boolean>>({});
   const [feedback, setFeedback] = useState<string | null>(null);
-  const {
-    isAuthenticated,
-    redirectToSignIn,
-    getRequiredAccessToken,
-    getOptionalAccessToken,
-  } = usePromptInteractions({
-    promptId: postId,
-    initialLikeCount: 0,
-    initialSaveCount: 0,
-    initialCommentCount,
-    syncStatus: false,
-  });
+  const { isAuthenticated, redirectToSignIn, getRequiredAccessToken, getOptionalAccessToken } =
+    usePromptInteractions({
+      promptId: postId,
+      initialLikeCount: 0,
+      initialSaveCount: 0,
+      initialCommentCount,
+      syncStatus: false,
+    });
 
   useEffect(() => {
     let isCancelled = false;
@@ -273,7 +267,10 @@ export function BlogCommentsSection({
       <div className="mt-5 rounded-[20px] border border-[#e6e9f2] bg-white p-5 sm:p-6">
         {isAuthenticated ? (
           <div>
-            <label htmlFor="post-comment-input" className="text-[0.9rem] font-medium text-[#0f1118]">
+            <label
+              htmlFor="post-comment-input"
+              className="text-[0.9rem] font-medium text-[#0f1118]"
+            >
               Add comment
             </label>
             <textarea
@@ -284,7 +281,9 @@ export function BlogCommentsSection({
               className="mt-2 min-h-[120px] w-full resize-y rounded-[14px] border border-[#d8dce2] bg-white px-4 py-3 text-[0.95rem] text-[#101418] outline-none transition focus:border-[#101010]"
             />
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-              <p className="text-[0.84rem] text-[#6b7280]">New comments are submitted for moderation first.</p>
+              <p className="text-[0.84rem] text-[#6b7280]">
+                New comments are submitted for moderation first.
+              </p>
               <button
                 type="button"
                 onClick={() => {
@@ -320,7 +319,10 @@ export function BlogCommentsSection({
           </div>
         ) : comments.length > 0 ? (
           comments.map((comment) => (
-            <article key={comment.id} className="rounded-[20px] border border-[#e6e9f2] bg-[#f7f8fb] p-5 sm:p-6">
+            <article
+              key={comment.id}
+              className="rounded-[20px] border border-[#e6e9f2] bg-[#f7f8fb] p-5 sm:p-6"
+            >
               <div className="flex items-center gap-3">
                 <AuthorAvatar
                   name={comment.author?.name ?? 'Anonymous'}
@@ -338,10 +340,14 @@ export function BlogCommentsSection({
                       {comment.author.name}
                     </Link>
                   ) : (
-                    <p className="text-[0.94rem] font-medium text-[#0f1118]">{comment.author?.name ?? 'Anonymous'}</p>
+                    <p className="text-[0.94rem] font-medium text-[#0f1118]">
+                      {comment.author?.name ?? 'Anonymous'}
+                    </p>
                   )}
                   <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                    <p className="text-[0.82rem] text-[#6b7280]">{formatCommentDate(comment.createdAt)}</p>
+                    <p className="text-[0.82rem] text-[#6b7280]">
+                      {formatCommentDate(comment.createdAt)}
+                    </p>
                     {comment.status === 'PENDING' ? (
                       <span className="inline-flex rounded-full bg-[#fff4d8] px-2 py-0.5 text-[0.72rem] font-medium text-[#8a6b1f]">
                         Pending review
@@ -351,7 +357,9 @@ export function BlogCommentsSection({
                 </div>
               </div>
 
-              <p className="mt-3 whitespace-pre-line text-[0.98rem] leading-[1.75] text-[#1f2937]">{comment.content}</p>
+              <p className="mt-3 whitespace-pre-line text-[0.98rem] leading-[1.75] text-[#1f2937]">
+                {comment.content}
+              </p>
 
               <div className="mt-5 flex flex-wrap items-center gap-3 text-[0.95rem]">
                 {comment.status === 'APPROVED' ? (
@@ -361,7 +369,9 @@ export function BlogCommentsSection({
                       <button
                         type="button"
                         onClick={() => {
-                          setOpenReplyFor((current) => (current === comment.id ? null : comment.id));
+                          setOpenReplyFor((current) =>
+                            current === comment.id ? null : comment.id,
+                          );
                         }}
                         className="inline-flex items-center gap-1.5 text-[#4b5563] transition-colors hover:text-[#111827]"
                       >
@@ -391,7 +401,11 @@ export function BlogCommentsSection({
                           : 'bg-[#eef1f5] text-[#6b7280] hover:text-[#111827]'
                       }`}
                     >
-                      {comment.likedByViewer ? <FaHeart className="h-4 w-4" /> : <FaRegHeart className="h-4 w-4" />}
+                      {comment.likedByViewer ? (
+                        <FaHeart className="h-4 w-4" />
+                      ) : (
+                        <FaRegHeart className="h-4 w-4" />
+                      )}
                     </button>
                     <span className="text-[1rem] text-[#111827]">{comment.likeCount}</span>
                   </>
@@ -442,7 +456,10 @@ export function BlogCommentsSection({
                 <div className="mt-5 border-l border-[#e1e6ef] pl-4 sm:pl-5">
                   <div className="space-y-3">
                     {comment.replies.map((reply) => (
-                      <article key={reply.id} className="rounded-[16px] border border-[#e6e9f2] bg-white p-4">
+                      <article
+                        key={reply.id}
+                        className="rounded-[16px] border border-[#e6e9f2] bg-white p-4"
+                      >
                         <div className="flex items-center gap-3">
                           <AuthorAvatar
                             name={reply.author?.name ?? 'Anonymous'}
@@ -460,10 +477,14 @@ export function BlogCommentsSection({
                                 {reply.author.name}
                               </Link>
                             ) : (
-                              <p className="text-[0.9rem] font-medium text-[#0f1118]">{reply.author?.name ?? 'Anonymous'}</p>
+                              <p className="text-[0.9rem] font-medium text-[#0f1118]">
+                                {reply.author?.name ?? 'Anonymous'}
+                              </p>
                             )}
                             <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                              <p className="text-[0.8rem] text-[#6b7280]">{formatCommentDate(reply.createdAt)}</p>
+                              <p className="text-[0.8rem] text-[#6b7280]">
+                                {formatCommentDate(reply.createdAt)}
+                              </p>
                               {reply.status === 'PENDING' ? (
                                 <span className="inline-flex rounded-full bg-[#fff4d8] px-2 py-0.5 text-[0.7rem] font-medium text-[#8a6b1f]">
                                   Pending review
@@ -473,7 +494,9 @@ export function BlogCommentsSection({
                           </div>
                         </div>
 
-                        <p className="mt-2 whitespace-pre-line text-[0.93rem] leading-[1.7] text-[#1f2937]">{reply.content}</p>
+                        <p className="mt-2 whitespace-pre-line text-[0.93rem] leading-[1.7] text-[#1f2937]">
+                          {reply.content}
+                        </p>
 
                         <div className="mt-3 flex items-center gap-3 text-[0.94rem]">
                           {reply.status === 'APPROVED' ? (
@@ -491,7 +514,11 @@ export function BlogCommentsSection({
                                     : 'bg-[#eef1f5] text-[#6b7280] hover:text-[#111827]'
                                 }`}
                               >
-                                {reply.likedByViewer ? <FaHeart className="h-3.5 w-3.5" /> : <FaRegHeart className="h-3.5 w-3.5" />}
+                                {reply.likedByViewer ? (
+                                  <FaHeart className="h-3.5 w-3.5" />
+                                ) : (
+                                  <FaRegHeart className="h-3.5 w-3.5" />
+                                )}
                               </button>
                               <span className="text-[#111827]">{reply.likeCount}</span>
                             </>

@@ -56,7 +56,6 @@ type MediaItem = {
 
 const PAGE_SIZE = 20;
 
-
 export default function SearchPage() {
   const { request, status } = useAdminApi();
   const router = useRouter();
@@ -163,7 +162,9 @@ export default function SearchPage() {
         <div>
           <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116]">Search</h1>
           <p className="text-[0.95rem] text-gray-500">
-            {hasSearched ? `${totalResults} result${totalResults === 1 ? '' : 's'} found` : 'Search across the dashboard.'}
+            {hasSearched
+              ? `${totalResults} result${totalResults === 1 ? '' : 's'} found`
+              : 'Search across the dashboard.'}
           </p>
         </div>
         <div className="relative">
@@ -186,7 +187,10 @@ export default function SearchPage() {
       {isLoading && (
         <div className="space-y-4">
           {Array.from({ length: 4 }).map((_, index) => (
-            <div key={`search-loading-${index}`} className="rounded-[20px] border border-[#eef2f6] bg-white p-5">
+            <div
+              key={`search-loading-${index}`}
+              className="rounded-[20px] border border-[#eef2f6] bg-white p-5"
+            >
               <div className="space-y-3">
                 <Skeleton className="h-4 w-48" />
                 <Skeleton className="h-3 w-full" />
@@ -292,13 +296,18 @@ export default function SearchPage() {
                   {results.prompts.map((item) => (
                     <tr key={item.id} className="border-t border-[#eef2f6]">
                       <td className="py-3 font-medium text-[#0f1116]">
-                        <Link href={`/dashboard/content/new?edit=${item.id}&type=prompt`} className="hover:underline">
+                        <Link
+                          href={`/dashboard/content/new?edit=${item.id}&type=prompt`}
+                          className="hover:underline"
+                        >
                           {item.title}
                         </Link>
                       </td>
                       <td className="py-3 text-gray-500">{titleCase(item.status)}</td>
                       <td className="py-3 text-gray-500">
-                        {item.primaryCategory?.name || item.categories?.[0]?.name || 'Uncategorized'}
+                        {item.primaryCategory?.name ||
+                          item.categories?.[0]?.name ||
+                          'Uncategorized'}
                       </td>
                       <td className="py-3 text-right text-gray-400">
                         {formatRelativeTimeOrDash(item.updatedAt || item.createdAt)}
@@ -331,7 +340,10 @@ export default function SearchPage() {
                   {results.posts.map((item) => (
                     <tr key={item.id} className="border-t border-[#eef2f6]">
                       <td className="py-3 font-medium text-[#0f1116]">
-                        <Link href={`/dashboard/content/new?edit=${item.id}&type=post`} className="hover:underline">
+                        <Link
+                          href={`/dashboard/content/new?edit=${item.id}&type=post`}
+                          className="hover:underline"
+                        >
                           {item.title}
                         </Link>
                       </td>
@@ -371,11 +383,17 @@ export default function SearchPage() {
                       <td className="py-3">
                         <div className="h-10 w-10 overflow-hidden rounded-lg border border-[#e5e9f2] bg-gray-50">
                           {item.url ? (
-                            <img src={item.url} alt={item.title ?? 'Media'} className="h-full w-full object-cover" />
+                            <img
+                              src={item.url}
+                              alt={item.title ?? 'Media'}
+                              className="h-full w-full object-cover"
+                            />
                           ) : null}
                         </div>
                       </td>
-                      <td className="py-3 font-medium text-[#0f1116]">{item.title ?? 'Untitled'}</td>
+                      <td className="py-3 font-medium text-[#0f1116]">
+                        {item.title ?? 'Untitled'}
+                      </td>
                       <td className="py-3 text-gray-500">{item.mime ?? '—'}</td>
                       <td className="py-3 text-gray-500">{formatBytes(item.size)}</td>
                       <td className="py-3 text-right text-gray-400">

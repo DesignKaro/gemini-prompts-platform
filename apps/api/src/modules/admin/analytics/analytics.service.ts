@@ -78,7 +78,10 @@ export class AnalyticsService {
       this.prisma.prompt.aggregate({ _sum: { viewCount: true } }),
       this.prisma.post.aggregate({ _sum: { viewCount: true } }),
       this.prisma.user.count({ where: { createdAt: { gte: from } } }),
-      this.prisma.transaction.aggregate({ _sum: { amount: true }, where: { createdAt: { gte: from } } }),
+      this.prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: { createdAt: { gte: from } },
+      }),
       this.prisma.engagementEvent.groupBy({
         by: ['eventType'],
         where: { createdAt: { gte: from } },
@@ -112,7 +115,8 @@ export class AnalyticsService {
 
     const seriesMap = new Map<string, number>();
     for (const row of viewSeriesRows) {
-      const dayKey = typeof row.day === 'string' ? row.day : new Date(row.day).toISOString().slice(0, 10);
+      const dayKey =
+        typeof row.day === 'string' ? row.day : new Date(row.day).toISOString().slice(0, 10);
       seriesMap.set(dayKey, Number(row.count));
     }
 

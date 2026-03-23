@@ -235,9 +235,7 @@ async function ensurePostColumnsAndIndexes(schema: SchemaState): Promise<void> {
     if (existingColumns.has(normalized)) {
       continue;
     }
-    await prisma.$executeRawUnsafe(
-      `ALTER TABLE \`Post\` ADD COLUMN \`${column}\` ${definition}`,
-    );
+    await prisma.$executeRawUnsafe(`ALTER TABLE \`Post\` ADD COLUMN \`${column}\` ${definition}`);
     ensureSet(schema.columns, table).add(normalized);
   }
 

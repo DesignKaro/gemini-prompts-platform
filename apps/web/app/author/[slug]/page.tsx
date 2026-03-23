@@ -33,8 +33,7 @@ export const revalidate = 120;
 export default async function AuthorDetailPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
   const resolvedSearchParams = await searchParams;
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   const promptPage = Math.max(1, Number.parseInt(resolvedSearchParams?.promptPage ?? '1', 10) || 1);
   const blogPage = Math.max(1, Number.parseInt(resolvedSearchParams?.blogPage ?? '1', 10) || 1);
   const author = await getAuthorDetail(slug, { revalidateSeconds: revalidate });
@@ -69,7 +68,12 @@ export default async function AuthorDetailPage({ params, searchParams }: PagePro
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: `${baseUrl}/` },
       { '@type': 'ListItem', position: 2, name: 'Authors', item: `${baseUrl}/author` },
-      { '@type': 'ListItem', position: 3, name: author.name, item: `${baseUrl}/author/${author.slug}` },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: author.name,
+        item: `${baseUrl}/author/${author.slug}`,
+      },
     ],
   };
 
@@ -164,9 +168,7 @@ async function PromptSection({
     <section className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-[1.4rem] text-[#0f1116] sm:text-[1.6rem]">
-            Prompt library
-          </h2>
+          <h2 className="text-[1.4rem] text-[#0f1116] sm:text-[1.6rem]">Prompt library</h2>
           <p className="mt-1 text-[0.92rem] text-[#6a7280]">
             Public prompt packs shared by this creator.
           </p>
@@ -230,9 +232,7 @@ async function BlogSection({
     <section className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-[1.4rem] text-[#0f1116] sm:text-[1.6rem]">
-            Blog posts
-          </h2>
+          <h2 className="text-[1.4rem] text-[#0f1116] sm:text-[1.6rem]">Blog posts</h2>
           <p className="mt-1 text-[0.92rem] text-[#6a7280]">
             Long-form posts and guides from this author.
           </p>

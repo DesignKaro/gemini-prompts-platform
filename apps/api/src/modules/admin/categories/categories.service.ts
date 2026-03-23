@@ -32,10 +32,7 @@ export class CategoriesService {
   }) {
     const where: Prisma.CategoryWhereInput = {};
     if (options.search) {
-      where.OR = [
-        { name: { contains: options.search } },
-        { slug: { contains: options.search } },
-      ];
+      where.OR = [{ name: { contains: options.search } }, { slug: { contains: options.search } }];
     }
     if (options.trash) {
       where.deletedAt = { not: null };
@@ -122,11 +119,12 @@ export class CategoriesService {
         imageUrl: data.imageUrl ?? undefined,
         colorConfig: data.colorConfig ?? undefined,
         sortOrder: data.sortOrder ?? undefined,
-        parent: data.parentId === undefined
-          ? undefined
-          : data.parentId
-            ? { connect: { id: data.parentId } }
-            : { disconnect: true },
+        parent:
+          data.parentId === undefined
+            ? undefined
+            : data.parentId
+              ? { connect: { id: data.parentId } }
+              : { disconnect: true },
       },
     });
 

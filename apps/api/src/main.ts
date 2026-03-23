@@ -7,6 +7,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { randomUUID } from 'crypto';
+import { PrismaUnavailableFilter } from './common/filters/prisma-unavailable.filter';
 
 async function bootstrap() {
   if (process.env.NODE_ENV !== 'production') {
@@ -54,10 +55,10 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
+  app.useGlobalFilters(new PrismaUnavailableFilter());
 
   app.use((req: Request, res: Response, next: NextFunction) => {
-    const requestId =
-      (req.headers['x-request-id'] as string) || randomUUID();
+    const requestId = (req.headers['x-request-id'] as string) || randomUUID();
     const start = Date.now();
     res.setHeader('x-request-id', requestId);
     (req as Request & { id: string }).id = requestId;

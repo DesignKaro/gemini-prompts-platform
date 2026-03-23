@@ -157,9 +157,7 @@ export default function ProfilePage() {
             return;
           }
           const payload = await response.json().catch(() => null);
-          throw new Error(
-            payload?.message || 'Unable to load profile details. Please try again.',
-          );
+          throw new Error(payload?.message || 'Unable to load profile details. Please try again.');
         }
         const payload = (await response.json()) as {
           user: {
@@ -352,9 +350,7 @@ export default function ProfilePage() {
 
     return {
       title: titleMap[activity.type],
-      detail: activity.promptTitle
-        ? `“${activity.promptTitle}”`
-        : 'Your recent prompt activity.',
+      detail: activity.promptTitle ? `“${activity.promptTitle}”` : 'Your recent prompt activity.',
       time: formatRelativeTime(activity.createdAt),
       tone: toneMap[activity.type],
     };
@@ -399,14 +395,8 @@ export default function ProfilePage() {
     return () => window.clearTimeout(timeoutId);
   }, [copied]);
   const avatarFallbackName = profile.name || session?.user?.name || 'Your profile';
-  const displayAvatarUrl =
-    avatarPreview ||
-    profile.avatarUrl ||
-    session?.user?.image ||
-    null;
-  const shareHandle = (profile.handle || session?.user?.handle || '')
-    .replace(/^@/, '')
-    .trim();
+  const displayAvatarUrl = avatarPreview || profile.avatarUrl || session?.user?.image || null;
+  const shareHandle = (profile.handle || session?.user?.handle || '').replace(/^@/, '').trim();
   const shareUrl = useMemo(() => {
     if (typeof window === 'undefined') {
       return '';
@@ -833,9 +823,7 @@ export default function ProfilePage() {
                     <p className="mt-4 text-[1rem] text-[#10141c] sm:text-[1.08rem]">
                       {item.title}
                     </p>
-                    <p className="mt-2 text-[0.9rem] leading-6 text-[#667080]">
-                      {item.detail}
-                    </p>
+                    <p className="mt-2 text-[0.9rem] leading-6 text-[#667080]">{item.detail}</p>
                   </div>
                 ))
               )}
@@ -915,8 +903,8 @@ export default function ProfilePage() {
                   Creator dashboard
                 </h2>
                 <p className="mt-3 max-w-[32rem] text-[0.92rem] leading-7 text-[#667080] sm:text-[0.98rem]">
-                  Track your audience growth, measure prompt engagement, and keep your
-                  launch momentum visible at a glance.
+                  Track your audience growth, measure prompt engagement, and keep your launch
+                  momentum visible at a glance.
                 </p>
 
                 <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -1220,9 +1208,7 @@ export default function ProfilePage() {
                   onChange={(event) => setFocusTagsInput(event.target.value)}
                   className="mt-2 w-full rounded-[14px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem] text-[#0f1116] outline-none focus:border-[#0f1116]"
                 />
-                <p className="mt-2 text-[0.78rem] text-[#9aa1ae]">
-                  Separate tags with commas.
-                </p>
+                <p className="mt-2 text-[0.78rem] text-[#9aa1ae]">Separate tags with commas.</p>
               </label>
 
               {profileSaveError ? (

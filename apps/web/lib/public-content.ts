@@ -137,10 +137,10 @@ async function fetchPublicApi<T>(
 
   const query = searchParams.toString();
   const url = `${API_BASE_URL}/api/public/${path}${query ? `?${query}` : ''}`;
-  const resolvedRevalidate =
-    options.noStore === true
-      ? null
-      : Math.max(1, Math.floor(options.revalidateSeconds ?? DEFAULT_PUBLIC_REVALIDATE_SECONDS));
+  const shouldBypassCache = options.noStore === true || process.env.NODE_ENV !== 'production';
+  const resolvedRevalidate = shouldBypassCache
+    ? null
+    : Math.max(1, Math.floor(options.revalidateSeconds ?? DEFAULT_PUBLIC_REVALIDATE_SECONDS));
 
   let response: Response;
   try {
@@ -225,15 +225,7 @@ export function estimateReadTime(value?: string | null) {
 }
 
 export async function getHomeContent() {
-  return (
-    (await fetchPublicApi<HomeResponse>('home')) ?? {
-      categories: [],
-      latestPrompts: [],
-      trendingPrompts: [],
-      latestPosts: [],
-      popularTags: [],
-    }
-  );
+  return fetchPublicApi<HomeResponse>('home');
 }
 
 export async function getPromptList(

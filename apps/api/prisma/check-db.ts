@@ -13,7 +13,15 @@ const DASHBOARD_TABLES = [
   '_PostCategories',
 ] as const;
 const DASHBOARD_COLUMNS: Record<string, string[]> = {
-  Category: ['parentId', 'description', 'imageUrl', 'colorConfig', 'sortOrder', 'updatedAt', 'deletedAt'],
+  Category: [
+    'parentId',
+    'description',
+    'imageUrl',
+    'colorConfig',
+    'sortOrder',
+    'updatedAt',
+    'deletedAt',
+  ],
   Tag: ['color', 'updatedAt', 'deletedAt'],
   Prompt: [
     'seoTitle',

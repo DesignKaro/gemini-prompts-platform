@@ -79,7 +79,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[0.9rem] text-[#6a7280]">
                         <span className="inline-flex items-center gap-2">
                           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/80">
-                            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 text-[#111111]">
+                            <svg
+                              aria-hidden="true"
+                              viewBox="0 0 24 24"
+                              className="h-4 w-4 text-[#111111]"
+                            >
                               <path
                                 d="M6 12.3l3.3 3.2L18.5 6.8"
                                 fill="none"
@@ -94,7 +98,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                         </span>
                         <span className="inline-flex items-center gap-2">
                           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/80">
-                            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 text-[#111111]">
+                            <svg
+                              aria-hidden="true"
+                              viewBox="0 0 24 24"
+                              className="h-4 w-4 text-[#111111]"
+                            >
                               <path
                                 d="M7.5 10.8V9.4a4.5 4.5 0 0 1 9 0v1.4"
                                 fill="none"
@@ -122,9 +130,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
               </section>
             }
-            footer={
-              <SiteFooter key="footer" />
-            }
+            footer={<SiteFooter key="footer" />}
           />
         </Providers>
       </body>

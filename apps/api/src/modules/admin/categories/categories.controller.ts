@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CategoriesService, CategoryCreateInput, CategoryUpdateInput } from './categories.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -46,7 +56,11 @@ export class CategoriesController {
 
   @Patch(':id')
   @Permissions('categories:manage')
-  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() body: CategoryUpdateInput) {
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() body: CategoryUpdateInput,
+  ) {
     return this.categoriesService.update(user.sub, id, body);
   }
 

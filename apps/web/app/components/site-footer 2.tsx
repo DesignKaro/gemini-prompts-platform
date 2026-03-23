@@ -13,42 +13,72 @@ type FooterSection = {
   links: FooterLink[];
 };
 
-const footerSections: FooterSection[] = [
-  {
-    title: 'Product',
-    links: [
-      { href: '/prompt', label: 'All Prompts' },
-      { href: '/membership', label: 'Membership' },
-      { href: '/exclusive', label: 'Exclusive' },
-      { href: '/newsletter', label: 'Newsletter' },
-    ],
-  },
-  {
-    title: 'Explore',
-    links: [
-      { href: '/trending', label: 'Trending' },
-      { href: '/category', label: 'Categories' },
-      { href: '/popular-tags', label: 'Popular Tags' },
-      { href: '/author', label: 'Authors' },
-    ],
-  },
-  {
-    title: 'Company',
-    links: [
-      { href: '/about', label: 'About' },
-      { href: '/blog', label: 'Blog' },
-      { href: '/contact', label: 'Contact' },
-      { href: '/help', label: 'Help Center' },
-    ],
-  },
-  {
-    title: 'Legal',
-    links: [
-      { href: '/privacy-policy', label: 'Privacy Policy' },
-      { href: '/disclaimer', label: 'Disclaimer' },
-      { href: '/code-of-conduct', label: 'Code of Conduct' },
-    ],
-  },
+const footerColumns: FooterSection[][] = [
+  [
+    {
+      title: 'Product',
+      links: [
+        { href: '/prompt', label: 'All Prompts' },
+        { href: '/membership', label: 'Membership' },
+        { href: '/exclusive', label: 'Exclusive' },
+        { href: '/newsletter', label: 'Newsletter' },
+      ],
+    },
+    {
+      title: 'Explore',
+      links: [
+        { href: '/trending', label: 'Trending' },
+        { href: '/latest', label: 'Latest' },
+        { href: '/most-popular', label: 'Most Popular' },
+        { href: '/category', label: 'Categories' },
+      ],
+    },
+  ],
+  [
+    {
+      title: 'Company',
+      links: [
+        { href: '/about', label: 'About Gemini Prompts' },
+        { href: '/contact', label: 'Contact' },
+        { href: '/help', label: 'Help Center' },
+        { href: '/search', label: 'Search' },
+      ],
+    },
+    {
+      title: 'Discover',
+      links: [
+        { href: '/blog', label: 'Blog' },
+        { href: '/author', label: 'Authors' },
+        { href: '/popular-tags', label: 'Popular Tags' },
+        { href: '/tag', label: 'Tag Directory' },
+      ],
+    },
+  ],
+  [
+    {
+      title: 'Support',
+      links: [
+        { href: '/help', label: 'Support Docs' },
+        { href: '/contact', label: 'Contact Support' },
+        { href: '/membership', label: 'Membership Help' },
+        { href: '/search', label: 'Find Anything' },
+      ],
+    },
+    {
+      title: 'Account',
+      links: [
+        { href: '/profile', label: 'My Profile' },
+        { href: '/membership', label: 'Plans & Access' },
+        { href: '/exclusive', label: 'Exclusive Library' },
+        { href: '/newsletter', label: 'Prompt Drops' },
+      ],
+    },
+  ],
+];
+
+const legalLinks: FooterLink[] = [
+  { href: '/privacy-policy', label: 'Privacy Policy' },
+  { href: '/terms', label: 'Terms' },
 ];
 
 const socialLinks: Array<
@@ -149,11 +179,11 @@ export function SiteFooter() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#0d1016] text-white">
+    <footer className="bg-black text-white">
       <div className="mx-auto w-full max-w-[1380px] px-4 py-12 sm:px-6 lg:px-8 lg:py-14">
         <div className="px-2 sm:px-0">
-          <div className="grid grid-cols-2 gap-x-8 gap-y-10 lg:grid-cols-[1.2fr_repeat(4,minmax(0,0.72fr))] lg:gap-10">
-            <div className="col-span-2 max-w-[21rem] lg:col-span-1">
+          <div className="grid gap-12 lg:grid-cols-[1.2fr_repeat(3,minmax(0,0.8fr))] lg:gap-10">
+            <div className="max-w-[21rem]">
               <Link href="/" className="inline-flex items-center">
                 <Image
                   src={brandLogo}
@@ -177,54 +207,59 @@ export function SiteFooter() {
                     target="_blank"
                     rel="noreferrer"
                     aria-label={link.label}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#d5ea52] text-[#0f1116] transition hover:bg-white hover:text-[#0f1116]"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.08] text-white/74 transition hover:bg-white/[0.14] hover:text-white"
                   >
                     {link.icon}
                   </a>
                 ))}
               </div>
+
+              <div className="mt-8 inline-flex items-center gap-3 rounded-full bg-white/[0.08] px-4 py-3 text-[0.96rem] text-white/82">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#18d57b] shadow-[0_0_0_4px_rgba(24,213,123,0.16)]" />
+                Fresh prompt drops every week
+              </div>
             </div>
 
-            {footerSections.map((section) => (
-              <div key={section.title}>
-                <h2 className="text-[1.08rem] font-medium tracking-[-0.02em] text-white">
-                  {section.title}
-                </h2>
-                <div className="mt-5 flex flex-col gap-3.5">
-                  {section.links.map((link) => (
-                    <FooterLinkItem
-                      key={`${section.title}-${link.href}-${link.label}`}
-                      href={link.href}
-                      label={link.label}
-                      external={link.external}
-                    />
-                  ))}
-                </div>
+            {footerColumns.map((column, columnIndex) => (
+              <div key={`footer-column-${columnIndex}`} className="space-y-10">
+                {column.map((section) => (
+                  <div key={section.title}>
+                    <h2 className="text-[1.08rem] font-medium tracking-[-0.02em] text-white">
+                      {section.title}
+                    </h2>
+                    <div className="mt-5 flex flex-col gap-3.5">
+                      {section.links.map((link) => (
+                        <FooterLinkItem
+                          key={`${section.title}-${link.href}-${link.label}`}
+                          href={link.href}
+                          label={link.label}
+                          external={link.external}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
-        </div>
-      </div>
 
-      <div className="bg-[#161b24]">
-        <div className="mx-auto flex w-full max-w-[1380px] flex-col gap-3 px-4 py-4 text-[0.94rem] text-white/58 sm:px-6 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-          <p>&copy; {currentYear} Copyright by Gemini Prompts</p>
-          <p className="inline-flex items-center gap-2">
-            <span className="text-[#d5ea52]" aria-hidden="true">
-              <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
-                <path d="M12 20.2 4.8 13a4.9 4.9 0 0 1 6.9-6.9L12 6.4l.3-.3a4.9 4.9 0 0 1 6.9 6.9L12 20.2Z" />
-              </svg>
-            </span>
-            <span>Made with love by </span>
-            <a
-              href="https://argro.io"
-              target="_blank"
-              rel="noreferrer"
-              className="footer-link-underline text-white/76 transition-colors hover:text-white"
-            >
-              Argro Team
-            </a>
-          </p>
+          <div className="mt-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[0.96rem] text-white/58">
+              &copy; {currentYear} Gemini Prompts. Curated prompt systems for modern teams.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+              {legalLinks.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="footer-link-underline text-[0.96rem] text-white/62 transition-colors hover:text-white"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </footer>

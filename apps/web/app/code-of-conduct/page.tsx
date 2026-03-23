@@ -3,18 +3,15 @@ import Link from 'next/link';
 const sections = [
   {
     title: 'Be respectful',
-    body:
-      'Treat other users, creators, and collaborators with respect. Harassment, abuse, hate speech, threats, and demeaning behavior are not acceptable on or around the platform.',
+    body: 'Treat other users, creators, and collaborators with respect. Harassment, abuse, hate speech, threats, and demeaning behavior are not acceptable on or around the platform.',
   },
   {
     title: 'Act in good faith',
-    body:
-      'Do not misuse community features, impersonate others, publish deceptive content, or use the platform to spread spam, scams, or harmful material.',
+    body: 'Do not misuse community features, impersonate others, publish deceptive content, or use the platform to spread spam, scams, or harmful material.',
   },
   {
     title: 'Protect the space',
-    body:
-      'If you notice behavior that undermines safety or trust, report it through support channels. We may limit access or remove accounts that violate these standards.',
+    body: 'If you notice behavior that undermines safety or trust, report it through support channels. We may limit access or remove accounts that violate these standards.',
   },
 ];
 
@@ -42,8 +39,8 @@ export default function CodeOfConductPage() {
             Code of Conduct
           </h1>
           <p className="mt-4 max-w-[44rem] text-[1.03rem] leading-[1.8] text-[#5f6773]">
-            Gemini Prompts should feel useful, safe, and constructive. These guidelines describe
-            the basic behavior expected from people using the platform and participating in its
+            Gemini Prompts should feel useful, safe, and constructive. These guidelines describe the
+            basic behavior expected from people using the platform and participating in its
             community spaces.
           </p>
 
@@ -56,9 +53,7 @@ export default function CodeOfConductPage() {
                 <h2 className="text-[1.2rem] leading-[1.2] tracking-[-0.03em] text-[#111118]">
                   {section.title}
                 </h2>
-                <p className="mt-3 text-[0.98rem] leading-[1.75] text-[#5f6773]">
-                  {section.body}
-                </p>
+                <p className="mt-3 text-[0.98rem] leading-[1.75] text-[#5f6773]">{section.body}</p>
               </article>
             ))}
           </div>

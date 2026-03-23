@@ -95,7 +95,8 @@ export class PostsService {
     const existingIds = new Set(existing.map((item) => item.id));
     return {
       categoryIds: uniqueIds.filter((id) => existingIds.has(id)),
-      primaryCategoryId: primaryCategoryId && existingIds.has(primaryCategoryId) ? primaryCategoryId : null,
+      primaryCategoryId:
+        primaryCategoryId && existingIds.has(primaryCategoryId) ? primaryCategoryId : null,
     };
   }
 
@@ -152,7 +153,8 @@ export class PostsService {
 
     let publishedAt = current.publishedAt;
     if (nextStatus === 'PUBLISHED') {
-      publishedAt = current.status === 'PUBLISHED' ? current.publishedAt ?? new Date() : new Date();
+      publishedAt =
+        current.status === 'PUBLISHED' ? (current.publishedAt ?? new Date()) : new Date();
     } else if (nextStatus === 'DRAFT' || nextStatus === 'SCHEDULED') {
       publishedAt = null;
     }

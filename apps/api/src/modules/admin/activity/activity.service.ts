@@ -38,7 +38,13 @@ export class ActivityService {
       where.targetType = options.targetType;
     }
 
-    const cacheKey = JSON.stringify({ skip, take, actorId: options.actorId, action: options.action, targetType: options.targetType });
+    const cacheKey = JSON.stringify({
+      skip,
+      take,
+      actorId: options.actorId,
+      action: options.action,
+      targetType: options.targetType,
+    });
     const cached = this.cache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       return cached.value;

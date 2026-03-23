@@ -3,18 +3,15 @@ import Link from 'next/link';
 const sections = [
   {
     title: 'Using the platform',
-    body:
-      'Gemini Prompts is designed for browsing, saving, and working with curated prompts, editorial content, and membership experiences. Please use the platform lawfully and respectfully.',
+    body: 'Gemini Prompts is designed for browsing, saving, and working with curated prompts, editorial content, and membership experiences. Please use the platform lawfully and respectfully.',
   },
   {
     title: 'Accounts and memberships',
-    body:
-      'You are responsible for activity under your account. Membership features, saved content, and exclusive access are tied to your account status and plan.',
+    body: 'You are responsible for activity under your account. Membership features, saved content, and exclusive access are tied to your account status and plan.',
   },
   {
     title: 'Content and conduct',
-    body:
-      'Do not misuse the product, attempt to interfere with service availability, or publish abusive, deceptive, or unauthorized content through the platform.',
+    body: 'Do not misuse the product, attempt to interfere with service availability, or publish abusive, deceptive, or unauthorized content through the platform.',
   },
 ];
 
@@ -42,9 +39,9 @@ export default function TermsPage() {
             Terms
           </h1>
           <p className="mt-4 max-w-[44rem] text-[1.03rem] leading-[1.8] text-[#5f6773]">
-            These terms are a concise overview of how Gemini Prompts should be used right now.
-            If the product introduces additional billing, licensing, or team features, this page
-            will be expanded here.
+            These terms are a concise overview of how Gemini Prompts should be used right now. If
+            the product introduces additional billing, licensing, or team features, this page will
+            be expanded here.
           </p>
 
           <div className="mt-10 grid gap-5">
@@ -56,9 +53,7 @@ export default function TermsPage() {
                 <h2 className="text-[1.2rem] leading-[1.2] tracking-[-0.03em] text-[#111118]">
                   {section.title}
                 </h2>
-                <p className="mt-3 text-[0.98rem] leading-[1.75] text-[#5f6773]">
-                  {section.body}
-                </p>
+                <p className="mt-3 text-[0.98rem] leading-[1.75] text-[#5f6773]">{section.body}</p>
               </article>
             ))}
           </div>

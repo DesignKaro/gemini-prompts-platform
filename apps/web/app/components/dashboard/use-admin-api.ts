@@ -57,22 +57,25 @@ export function useAdminApi() {
     }
     if (!accessToken || isAccessTokenExpired(session?.apiAccessTokenExpiresAt)) {
       if (hasOriginMismatch()) {
-        throw new Error(
-          `App URL mismatch. Open ${appOrigin} to avoid auth session fetch errors.`,
-        );
+        throw new Error(`App URL mismatch. Open ${appOrigin} to avoid auth session fetch errors.`);
       }
       if (update) {
         const refreshed = await refreshSession(update);
         accessToken = refreshed?.apiAccessToken;
         if (!accessToken) {
-          const authMessage = refreshed?.authErrorMessage || authErrorMessage || session?.authErrorMessage;
+          const authMessage =
+            refreshed?.authErrorMessage || authErrorMessage || session?.authErrorMessage;
           if (authMessage) {
             throw new Error(authMessage);
           }
           const sessionExpiry = session?.apiAccessTokenExpiresAt
             ? Date.parse(session.apiAccessTokenExpiresAt)
             : NaN;
-          if (session?.apiAccessToken && !Number.isNaN(sessionExpiry) && sessionExpiry > Date.now()) {
+          if (
+            session?.apiAccessToken &&
+            !Number.isNaN(sessionExpiry) &&
+            sessionExpiry > Date.now()
+          ) {
             return session.apiAccessToken;
           }
           throw new Error(
@@ -94,7 +97,7 @@ export function useAdminApi() {
   ]);
 
   const request = useCallback(
-    async <T,>(path: string, options: RequestOptions = {}): Promise<T> => {
+    async <T>(path: string, options: RequestOptions = {}): Promise<T> => {
       const token = await getAccessToken();
       if (!token) {
         throw new Error('Session expired. Please sign out and sign in again.');
@@ -106,8 +109,7 @@ export function useAdminApi() {
       };
 
       const hasBody = options.body !== undefined && options.body !== null;
-      const isFormData =
-        typeof FormData !== 'undefined' && options.body instanceof FormData;
+      const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
 
       if (hasBody && !isFormData && !headers['content-type']) {
         headers['content-type'] = 'application/json';

@@ -2,7 +2,15 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { MdSearch, MdMoreVert, MdEdit, MdDeleteOutline, MdAdd, MdOpenInNew, MdClose } from 'react-icons/md';
+import {
+  MdSearch,
+  MdMoreVert,
+  MdEdit,
+  MdDeleteOutline,
+  MdAdd,
+  MdOpenInNew,
+  MdClose,
+} from 'react-icons/md';
 import { useAdminApi } from '../../components/dashboard/use-admin-api';
 
 type Category = {
@@ -128,7 +136,11 @@ export default function CategoriesPage() {
   }, [authStatus, request]);
 
   const filteredCategories = useMemo(() => {
-    return categories.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.slug.toLowerCase().includes(search.toLowerCase()));
+    return categories.filter(
+      (c) =>
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        c.slug.toLowerCase().includes(search.toLowerCase()),
+    );
   }, [categories, search]);
 
   const parentOptions = useMemo(() => {
@@ -325,7 +337,7 @@ export default function CategoriesPage() {
 
   const toggleSelection = (id: string) => {
     setSelectedIds((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
     );
   };
 
@@ -342,14 +354,19 @@ export default function CategoriesPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116]">Categories</h1>
-          <p className="text-[0.95rem] text-gray-500">Manage and organize your categories effectively.</p>
+          <p className="text-[0.95rem] text-gray-500">
+            Manage and organize your categories effectively.
+          </p>
         </div>
         <div className="flex items-center gap-3">
           {isSelectMode ? (
             <>
               <button
                 type="button"
-                onClick={() => { setIsSelectMode(false); setSelectedIds([]); }}
+                onClick={() => {
+                  setIsSelectMode(false);
+                  setSelectedIds([]);
+                }}
                 className="inline-flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] shadow-sm hover:bg-gray-50 transition-colors"
               >
                 Cancel
@@ -408,7 +425,9 @@ export default function CategoriesPage() {
             <label className="flex items-center gap-2 text-[0.85rem] font-medium text-gray-600 cursor-pointer">
               <input
                 type="checkbox"
-                checked={filteredCategories.length > 0 && selectedIds.length === filteredCategories.length}
+                checked={
+                  filteredCategories.length > 0 && selectedIds.length === filteredCategories.length
+                }
                 onChange={toggleSelectAll}
                 className="h-4 w-4 rounded border-[#d7dbe5] accent-[#0f1116]"
               />
@@ -450,7 +469,9 @@ export default function CategoriesPage() {
                       <div className="flex items-center gap-2">
                         <span
                           className={`rounded-full px-2.5 py-1 text-[0.65rem] font-medium uppercase tracking-wider ${
-                            category.parentId ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-600'
+                            category.parentId
+                              ? 'bg-blue-50 text-blue-600'
+                              : 'bg-gray-100 text-gray-600'
                           }`}
                         >
                           {category.parentId ? 'Child' : 'Parent'}
@@ -460,14 +481,19 @@ export default function CategoriesPage() {
                             className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-[#0f1116] transition-colors"
                             type="button"
                             onClick={() =>
-                              setActiveMenuId((current) => (current === category.id ? null : category.id))
+                              setActiveMenuId((current) =>
+                                current === category.id ? null : category.id,
+                              )
                             }
                           >
                             <MdMoreVert size={20} />
                           </button>
                           {activeMenuId === category.id && (
                             <>
-                              <div className="fixed inset-0 z-10" onClick={() => setActiveMenuId(null)} />
+                              <div
+                                className="fixed inset-0 z-10"
+                                onClick={() => setActiveMenuId(null)}
+                              />
                               <div className="absolute right-0 top-[calc(100%+4px)] z-20 w-40 rounded-[14px] border border-[#e2e6ee] bg-white p-1.5 shadow-xl animate-in fade-in slide-in-from-top-2">
                                 <button
                                   type="button"
@@ -505,10 +531,15 @@ export default function CategoriesPage() {
                       <div className="space-y-2">
                         {category.parentName ? (
                           <span className="block text-[0.75rem] text-gray-500">
-                            Sub of <span className="font-medium text-[#0f1116]">{category.parentName}</span>
+                            Sub of{' '}
+                            <span className="font-medium text-[#0f1116]">
+                              {category.parentName}
+                            </span>
                           </span>
                         ) : (
-                          <span className="block text-[0.75rem] text-gray-400">Top-level category</span>
+                          <span className="block text-[0.75rem] text-gray-400">
+                            Top-level category
+                          </span>
                         )}
                         <a
                           href={`/category/${category.slug}`}
@@ -536,15 +567,17 @@ export default function CategoriesPage() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center gap-4 rounded-[24px] border border-dashed border-[#d8dde6] bg-[#fafbff] py-16 text-center">
-             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm text-gray-400">
-               <MdSearch size={28} />
-             </div>
-             <div>
-               <p className="text-[1.05rem] font-medium text-[#0f1116]">
-                 {isLoading ? 'Loading categories…' : 'No categories found'}
-               </p>
-               <p className="mt-1 text-[0.85rem] text-gray-500">Try adjusting your search or add a new category.</p>
-             </div>
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm text-gray-400">
+              <MdSearch size={28} />
+            </div>
+            <div>
+              <p className="text-[1.05rem] font-medium text-[#0f1116]">
+                {isLoading ? 'Loading categories…' : 'No categories found'}
+              </p>
+              <p className="mt-1 text-[0.85rem] text-gray-500">
+                Try adjusting your search or add a new category.
+              </p>
+            </div>
           </div>
         )}
       </div>
@@ -559,163 +592,168 @@ export default function CategoriesPage() {
             >
               <div className="w-full max-w-[560px] rounded-[28px] bg-white p-6 shadow-xl">
                 <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-[1.2rem] font-medium text-[#0f1116]">
-                  {editingCategoryId ? 'Edit Category' : 'Add New Category'}
-                </h2>
-                <p className="text-[0.85rem] text-gray-500">
-                  {editingCategoryId ? 'Update the details below.' : 'Fill out the details below.'}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={closeCategoryModal}
-                aria-label="Close category modal"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600 transition-colors hover:bg-gray-200"
-              >
-                <MdClose size={20} />
-              </button>
+                  <div>
+                    <h2 className="text-[1.2rem] font-medium text-[#0f1116]">
+                      {editingCategoryId ? 'Edit Category' : 'Add New Category'}
+                    </h2>
+                    <p className="text-[0.85rem] text-gray-500">
+                      {editingCategoryId
+                        ? 'Update the details below.'
+                        : 'Fill out the details below.'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeCategoryModal}
+                    aria-label="Close category modal"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600 transition-colors hover:bg-gray-200"
+                  >
+                    <MdClose size={20} />
+                  </button>
                 </div>
 
                 <form className="mt-6 space-y-4" onSubmit={handleCreateCategory}>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="space-y-2 text-[0.85rem] text-gray-600">
-                  Category Name
-                  <input
-                    type="text"
-                    value={newCategory.name}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setNewCategory((current) => ({
-                        ...current,
-                        name: value,
-                        slug: current.slug ? current.slug : updateSlugFromName(value),
-                      }));
-                    }}
-                    placeholder="e.g. Editorial"
-                    className="w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
-                  />
-                </label>
-                <label className="space-y-2 text-[0.85rem] text-gray-600">
-                  Slug
-                  <input
-                    type="text"
-                    value={newCategory.slug}
-                    onChange={(event) =>
-                      setNewCategory((current) => ({ ...current, slug: event.target.value }))
-                    }
-                    placeholder="editorial"
-                    className="w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
-                  />
-                </label>
-              </div>
-
-              <div className="space-y-2 text-[0.85rem] text-gray-600">
-                <span>Image</span>
-                <div>
-                  {newCategory.image ? (
-                    <div className="mb-[10px] flex items-center gap-3 rounded-[16px] bg-[#f1f4f8] p-3">
-                      <button
-                        type="button"
-                        onClick={() => setIsMediaPickerOpen(true)}
-                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                      >
-                        <div
-                          className="h-16 w-16 shrink-0 rounded-[12px] bg-cover bg-center"
-                          style={{ backgroundImage: `url(${newCategory.image})` }}
-                        />
-                        <div className="min-w-0">
-                          <p className="truncate text-[0.9rem] font-medium text-[#0f1116]">
-                            {newCategory.imageLabel || 'Selected image'}
-                          </p>
-                          <p className="mt-1 truncate text-[0.75rem] text-gray-500">
-                            Click to change media
-                          </p>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Clear selected image"
-                        onClick={() =>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="space-y-2 text-[0.85rem] text-gray-600">
+                      Category Name
+                      <input
+                        type="text"
+                        value={newCategory.name}
+                        onChange={(event) => {
+                          const value = event.target.value;
                           setNewCategory((current) => ({
                             ...current,
-                            image: '',
-                            imageLabel: '',
-                          }))
+                            name: value,
+                            slug: current.slug ? current.slug : updateSlugFromName(value),
+                          }));
+                        }}
+                        placeholder="e.g. Editorial"
+                        className="w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
+                      />
+                    </label>
+                    <label className="space-y-2 text-[0.85rem] text-gray-600">
+                      Slug
+                      <input
+                        type="text"
+                        value={newCategory.slug}
+                        onChange={(event) =>
+                          setNewCategory((current) => ({ ...current, slug: event.target.value }))
                         }
-                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#b94a4a] shadow-sm transition-colors hover:bg-[#fff4f4]"
-                      >
-                        <MdClose size={18} />
-                      </button>
+                        placeholder="editorial"
+                        className="w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="space-y-2 text-[0.85rem] text-gray-600">
+                    <span>Image</span>
+                    <div>
+                      {newCategory.image ? (
+                        <div className="mb-[10px] flex items-center gap-3 rounded-[16px] bg-[#f1f4f8] p-3">
+                          <button
+                            type="button"
+                            onClick={() => setIsMediaPickerOpen(true)}
+                            className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                          >
+                            <div
+                              className="h-16 w-16 shrink-0 rounded-[12px] bg-cover bg-center"
+                              style={{ backgroundImage: `url(${newCategory.image})` }}
+                            />
+                            <div className="min-w-0">
+                              <p className="truncate text-[0.9rem] font-medium text-[#0f1116]">
+                                {newCategory.imageLabel || 'Selected image'}
+                              </p>
+                              <p className="mt-1 truncate text-[0.75rem] text-gray-500">
+                                Click to change media
+                              </p>
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="Clear selected image"
+                            onClick={() =>
+                              setNewCategory((current) => ({
+                                ...current,
+                                image: '',
+                                imageLabel: '',
+                              }))
+                            }
+                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#b94a4a] shadow-sm transition-colors hover:bg-[#fff4f4]"
+                          >
+                            <MdClose size={18} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setIsMediaPickerOpen(true)}
+                          className="mb-[10px] flex w-full items-center gap-3 rounded-[16px] bg-[#f1f4f8] p-4 text-left transition-colors hover:bg-[#edf2f7]"
+                        >
+                          <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#0f1116] shadow-sm">
+                            <MdAdd size={20} />
+                          </span>
+                          <span className="text-[0.95rem] font-[400] text-[#0f1116]">
+                            Click to upload media
+                          </span>
+                        </button>
+                      )}
                     </div>
-                  ) : (
+                  </div>
+
+                  <label className="space-y-2 text-[0.85rem] text-gray-600">
+                    Description
+                    <textarea
+                      rows={6}
+                      value={newCategory.description}
+                      onChange={(event) =>
+                        setNewCategory((current) => ({
+                          ...current,
+                          description: event.target.value,
+                        }))
+                      }
+                      placeholder="Short description for this category."
+                      className="min-h-[180px] w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
+                    />
+                  </label>
+
+                  <label className="space-y-2 text-[0.85rem] text-gray-600">
+                    Parent or Child
+                    <select
+                      value={newCategory.parent}
+                      onChange={(event) =>
+                        setNewCategory((current) => ({ ...current, parent: event.target.value }))
+                      }
+                      className="w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
+                    >
+                      <option value="">Parent (no parent category)</option>
+                      {parentOptions.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          Child of {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
                     <button
                       type="button"
-                      onClick={() => setIsMediaPickerOpen(true)}
-                      className="mb-[10px] flex w-full items-center gap-3 rounded-[16px] bg-[#f1f4f8] p-4 text-left transition-colors hover:bg-[#edf2f7]"
+                      onClick={closeCategoryModal}
+                      className="rounded-xl border border-[#e1e5ee] px-4 py-2 text-[0.85rem] text-gray-600 hover:bg-gray-50"
                     >
-                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#0f1116] shadow-sm">
-                        <MdAdd size={20} />
-                      </span>
-                      <span className="text-[0.95rem] font-[400] text-[#0f1116]">
-                        Click to upload media
-                      </span>
+                      Cancel
                     </button>
-                  )}
-                </div>
-              </div>
-
-              <label className="space-y-2 text-[0.85rem] text-gray-600">
-                Description
-                <textarea
-                  rows={6}
-                  value={newCategory.description}
-                  onChange={(event) =>
-                    setNewCategory((current) => ({ ...current, description: event.target.value }))
-                  }
-                  placeholder="Short description for this category."
-                  className="min-h-[180px] w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
-                />
-              </label>
-
-              <label className="space-y-2 text-[0.85rem] text-gray-600">
-                Parent or Child
-                <select
-                  value={newCategory.parent}
-                  onChange={(event) =>
-                    setNewCategory((current) => ({ ...current, parent: event.target.value }))
-                  }
-                  className="w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
-                >
-                  <option value="">Parent (no parent category)</option>
-                  {parentOptions.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      Child of {category.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={closeCategoryModal}
-                  className="rounded-xl border border-[#e1e5ee] px-4 py-2 text-[0.85rem] text-gray-600 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="rounded-xl bg-[#0f1116] px-4 py-2 text-[0.85rem] font-medium text-white hover:opacity-90 disabled:opacity-60"
-                >
-                  {isSaving ? 'Saving…' : editingCategoryId ? 'Save Changes' : 'Save Category'}
-                </button>
-                </div>
+                    <button
+                      type="submit"
+                      disabled={isSaving}
+                      className="rounded-xl bg-[#0f1116] px-4 py-2 text-[0.85rem] font-medium text-white hover:opacity-90 disabled:opacity-60"
+                    >
+                      {isSaving ? 'Saving…' : editingCategoryId ? 'Save Changes' : 'Save Category'}
+                    </button>
+                  </div>
                 </form>
               </div>
             </div>,
-            document.body
+            document.body,
           )
         : null}
 
@@ -828,7 +866,7 @@ export default function CategoriesPage() {
                 </div>
               </div>
             </div>,
-            document.body
+            document.body,
           )
         : null}
     </div>

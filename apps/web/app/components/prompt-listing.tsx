@@ -175,9 +175,7 @@ export function PromptCardUI({ prompt, showReadTime = true }: PromptCardProps) {
                 aria-label={savedByUser ? 'Unsave prompt' : 'Save prompt'}
                 aria-pressed={savedByUser}
                 className={`flex h-10 w-10 items-center justify-center rounded-full text-[#4b5563] transition-colors ${
-                  savedByUser
-                    ? 'bg-[#111111] text-white'
-                    : 'bg-[#f3f4f6] hover:bg-[#e5e7eb]'
+                  savedByUser ? 'bg-[#111111] text-white' : 'bg-[#f3f4f6] hover:bg-[#e5e7eb]'
                 } disabled:cursor-not-allowed disabled:opacity-80`}
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]">
@@ -216,7 +214,14 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'most-commented', label: 'Most commented' },
 ];
 
-export function FilterBar({ categories, activeCategory, sort, total, onCategory, onSort }: FilterBarProps) {
+export function FilterBar({
+  categories,
+  activeCategory,
+  sort,
+  total,
+  onCategory,
+  onSort,
+}: FilterBarProps) {
   const visibleCategories = categories.slice(0, 6);
   const hasMoreCategories = categories.length > visibleCategories.length;
 
@@ -235,7 +240,7 @@ export function FilterBar({ categories, activeCategory, sort, total, onCategory,
         >
           All
         </button>
-        {visibleCategories.map(cat => (
+        {visibleCategories.map((cat) => (
           <button
             key={cat}
             type="button"
@@ -265,11 +270,13 @@ export function FilterBar({ categories, activeCategory, sort, total, onCategory,
         <span className="text-[0.88rem] text-[#9ca3af]">{total} prompts</span>
         <select
           value={sort}
-          onChange={e => onSort(e.target.value as SortKey)}
+          onChange={(e) => onSort(e.target.value as SortKey)}
           className="rounded-full border border-[#e1e5ee] bg-white px-4 py-2 text-[0.88rem] font-[500] text-[#0f1118] outline-none hover:border-[#c0c6d1]"
         >
-          {SORT_OPTIONS.map(o => (
-            <option key={o.value} value={o.value}>{o.label}</option>
+          {SORT_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
           ))}
         </select>
       </div>
@@ -292,7 +299,7 @@ export function Pagination({ page, total, onPage }: PaginationProps) {
       >
         Previous
       </button>
-      {pages.map(p => (
+      {pages.map((p) => (
         <button
           key={p}
           onClick={() => onPage(p)}
@@ -347,50 +354,47 @@ export function PromptPageShell({
   const [activeCategory, setActiveCategory] = useState('all');
   const [sort, setSort] = useState<SortKey>(defaultSort);
   const [page, setPage] = useState(1);
-  const categories = useMemo(
-    () => {
-      const categoryStats = new Map<
-        string,
-        { count: number; engagement: number; latestTimestamp: number }
-      >();
+  const categories = useMemo(() => {
+    const categoryStats = new Map<
+      string,
+      { count: number; engagement: number; latestTimestamp: number }
+    >();
 
-      for (const prompt of prompts) {
-        const category = getPromptCategoryName(prompt);
-        const current = categoryStats.get(category) ?? {
-          count: 0,
-          engagement: 0,
-          latestTimestamp: 0,
-        };
-        const promptDate = prompt.publishedAt || prompt.updatedAt;
-        const promptTimestamp = promptDate ? new Date(promptDate).getTime() : 0;
-        const safeTimestamp = Number.isNaN(promptTimestamp) ? 0 : promptTimestamp;
+    for (const prompt of prompts) {
+      const category = getPromptCategoryName(prompt);
+      const current = categoryStats.get(category) ?? {
+        count: 0,
+        engagement: 0,
+        latestTimestamp: 0,
+      };
+      const promptDate = prompt.publishedAt || prompt.updatedAt;
+      const promptTimestamp = promptDate ? new Date(promptDate).getTime() : 0;
+      const safeTimestamp = Number.isNaN(promptTimestamp) ? 0 : promptTimestamp;
 
-        categoryStats.set(category, {
-          count: current.count + 1,
-          engagement:
-            current.engagement +
-            prompt.likeCount +
-            prompt.commentCount +
-            Math.round(prompt.viewCount / 10),
-          latestTimestamp: Math.max(current.latestTimestamp, safeTimestamp),
-        });
-      }
+      categoryStats.set(category, {
+        count: current.count + 1,
+        engagement:
+          current.engagement +
+          prompt.likeCount +
+          prompt.commentCount +
+          Math.round(prompt.viewCount / 10),
+        latestTimestamp: Math.max(current.latestTimestamp, safeTimestamp),
+      });
+    }
 
-      return Array.from(categoryStats.entries())
-        .sort((a, b) => {
-          const [, left] = a;
-          const [, right] = b;
-          if (right.count !== left.count) return right.count - left.count;
-          if (right.engagement !== left.engagement) return right.engagement - left.engagement;
-          if (right.latestTimestamp !== left.latestTimestamp) {
-            return right.latestTimestamp - left.latestTimestamp;
-          }
-          return a[0].localeCompare(b[0]);
-        })
-        .map(([name]) => name);
-    },
-    [prompts],
-  );
+    return Array.from(categoryStats.entries())
+      .sort((a, b) => {
+        const [, left] = a;
+        const [, right] = b;
+        if (right.count !== left.count) return right.count - left.count;
+        if (right.engagement !== left.engagement) return right.engagement - left.engagement;
+        if (right.latestTimestamp !== left.latestTimestamp) {
+          return right.latestTimestamp - left.latestTimestamp;
+        }
+        return a[0].localeCompare(b[0]);
+      })
+      .map(([name]) => name);
+  }, [prompts]);
 
   const filtered = useMemo(() => {
     const base =
@@ -420,8 +424,14 @@ export function PromptPageShell({
   const safePage = Math.min(page, totalPages);
   const visible = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  const handleCategory = (c: string) => { setActiveCategory(c); setPage(1); };
-  const handleSort = (s: SortKey) => { setSort(s); setPage(1); };
+  const handleCategory = (c: string) => {
+    setActiveCategory(c);
+    setPage(1);
+  };
+  const handleSort = (s: SortKey) => {
+    setSort(s);
+    setPage(1);
+  };
 
   return (
     <main className="page-shell bg-white">
@@ -429,9 +439,17 @@ export function PromptPageShell({
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="text-[0.9rem] text-[#8b8f99]">
           <ol className="flex flex-wrap items-center gap-2">
-            <li><Link href="/" className="transition-colors hover:text-[#101010]">Home</Link></li>
+            <li>
+              <Link href="/" className="transition-colors hover:text-[#101010]">
+                Home
+              </Link>
+            </li>
             <li className="text-[#c0c6d1]">/</li>
-            <li><Link href={breadcrumbHref} className="transition-colors hover:text-[#101010]">{breadcrumb}</Link></li>
+            <li>
+              <Link href={breadcrumbHref} className="transition-colors hover:text-[#101010]">
+                {breadcrumb}
+              </Link>
+            </li>
           </ol>
         </nav>
 
@@ -474,13 +492,20 @@ export function PromptPageShell({
 
         {/* Grid */}
         <div className="site-section-sub grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {visible.map(prompt => (
+          {visible.map((prompt) => (
             <PromptCardUI key={prompt.id} prompt={prompt} />
           ))}
         </div>
 
         {/* Pagination */}
-        <Pagination page={safePage} total={totalPages} onPage={p => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
+        <Pagination
+          page={safePage}
+          total={totalPages}
+          onPage={(p) => {
+            setPage(p);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
       </div>
     </main>
   );

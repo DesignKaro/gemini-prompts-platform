@@ -104,10 +104,7 @@ export class SearchService {
           .findMany({
             where: {
               deletedAt: null,
-              OR: [
-                { name: { contains: term } },
-                { slug: { contains: term } },
-              ],
+              OR: [{ name: { contains: term } }, { slug: { contains: term } }],
             },
             orderBy: { updatedAt: 'desc' },
             take: limit,
@@ -129,10 +126,7 @@ export class SearchService {
           .findMany({
             where: {
               deletedAt: null,
-              OR: [
-                { name: { contains: term } },
-                { slug: { contains: term } },
-              ],
+              OR: [{ name: { contains: term } }, { slug: { contains: term } }],
             },
             orderBy: { updatedAt: 'desc' },
             take: limit,
@@ -154,10 +148,7 @@ export class SearchService {
           .findMany({
             where: {
               deletedAt: null,
-              OR: [
-                { title: { contains: term } },
-                { description: { contains: term } },
-              ],
+              OR: [{ title: { contains: term } }, { description: { contains: term } }],
             },
             orderBy: { updatedAt: 'desc' },
             take: limit,
@@ -179,10 +170,7 @@ export class SearchService {
           .findMany({
             where: {
               deletedAt: null,
-              OR: [
-                { title: { contains: term } },
-                { excerpt: { contains: term } },
-              ],
+              OR: [{ title: { contains: term } }, { excerpt: { contains: term } }],
             },
             orderBy: { updatedAt: 'desc' },
             take: limit,
@@ -206,10 +194,7 @@ export class SearchService {
             where: {
               deletedAt: null,
               status: MediaStatus.ACTIVE,
-              OR: [
-                { title: { contains: term } },
-                { url: { contains: term } },
-              ],
+              OR: [{ title: { contains: term } }, { url: { contains: term } }],
             },
             orderBy: { updatedAt: 'desc' },
             take: limit,
@@ -267,10 +252,7 @@ export class SearchService {
           .findMany({
             where: {
               deletedAt: null,
-              OR: [
-                { name: { contains: term } },
-                { slug: { contains: term } },
-              ],
+              OR: [{ name: { contains: term } }, { slug: { contains: term } }],
             },
             orderBy: { updatedAt: 'desc' },
             take: limit,
@@ -295,10 +277,7 @@ export class SearchService {
           .findMany({
             where: {
               deletedAt: null,
-              OR: [
-                { name: { contains: term } },
-                { slug: { contains: term } },
-              ],
+              OR: [{ name: { contains: term } }, { slug: { contains: term } }],
             },
             orderBy: { updatedAt: 'desc' },
             take: limit,
@@ -323,10 +302,7 @@ export class SearchService {
           .findMany({
             where: {
               deletedAt: null,
-              OR: [
-                { title: { contains: term } },
-                { description: { contains: term } },
-              ],
+              OR: [{ title: { contains: term } }, { description: { contains: term } }],
             },
             orderBy: { updatedAt: 'desc' },
             take: limit,
@@ -360,10 +336,7 @@ export class SearchService {
           .findMany({
             where: {
               deletedAt: null,
-              OR: [
-                { title: { contains: term } },
-                { excerpt: { contains: term } },
-              ],
+              OR: [{ title: { contains: term } }, { excerpt: { contains: term } }],
             },
             orderBy: { updatedAt: 'desc' },
             take: limit,
@@ -396,10 +369,7 @@ export class SearchService {
             where: {
               deletedAt: null,
               status: MediaStatus.ACTIVE,
-              OR: [
-                { title: { contains: term } },
-                { url: { contains: term } },
-              ],
+              OR: [{ title: { contains: term } }, { url: { contains: term } }],
             },
             orderBy: { createdAt: 'desc' },
             take: limit,

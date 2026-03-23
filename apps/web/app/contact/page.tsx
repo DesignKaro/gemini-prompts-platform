@@ -1,8 +1,7 @@
 import Link from 'next/link';
 
 export default function ContactPage() {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
 
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
@@ -68,7 +67,16 @@ export default function ContactPage() {
       cta: 'View newsletter',
       icon: (
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
-          <rect x="4" y="6.8" width="16" height="10.4" rx="2.2" fill="none" stroke="currentColor" strokeWidth="1.7" />
+          <rect
+            x="4"
+            y="6.8"
+            width="16"
+            height="10.4"
+            rx="2.2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+          />
           <path
             d="M6.6 9.1 12 12.5l5.4-3.4"
             fill="none"
@@ -87,7 +95,16 @@ export default function ContactPage() {
       cta: 'Instagram',
       icon: (
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
-          <rect x="4" y="4" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" strokeWidth="1.7" />
+          <rect
+            x="4"
+            y="4"
+            width="16"
+            height="16"
+            rx="3.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+          />
           <circle cx="12" cy="12" r="3.6" fill="none" stroke="currentColor" strokeWidth="1.7" />
           <circle cx="17.2" cy="6.8" r="1" fill="currentColor" />
         </svg>
@@ -122,8 +139,8 @@ export default function ContactPage() {
               Contact
             </h1>
             <p className="mt-4 max-w-[44rem] text-[1.05rem] leading-[1.75] text-[#5f6773]">
-              Have a question, idea, or partnership request? Send us a note and we’ll get back
-              to you as soon as possible.
+              Have a question, idea, or partnership request? Send us a note and we’ll get back to
+              you as soon as possible.
             </p>
 
             <div className="mt-6 flex flex-wrap items-center gap-3 text-[0.95rem] text-[#6a7280]">
@@ -222,7 +239,10 @@ export default function ContactPage() {
 
               <p className="text-[0.9rem] leading-[1.6] text-[#6a7280]">
                 Prefer email? Reach us at{' '}
-                <a className="text-[#111118] underline underline-offset-4" href="mailto:hello@immihub.com">
+                <a
+                  className="text-[#111118] underline underline-offset-4"
+                  href="mailto:hello@immihub.com"
+                >
                   hello@immihub.com
                 </a>
                 .

@@ -40,7 +40,9 @@ function useDisplayName() {
         setNameFromApi(payload.user.name ?? null);
       })
       .catch(() => {});
-    return () => { isActive = false; };
+    return () => {
+      isActive = false;
+    };
   }, [apiBaseUrl, session?.apiAccessToken]);
 
   return (
@@ -282,7 +284,9 @@ export default function DashboardPage() {
           <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116] sm:text-[2.2rem]">
             Welcome Back, {displayName}!
           </h1>
-          <p className="text-[0.95rem] text-gray-500">Here's what's happening with your prompts today.</p>
+          <p className="text-[0.95rem] text-gray-500">
+            Here's what's happening with your prompts today.
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -347,7 +351,10 @@ export default function DashboardPage() {
               <StatCard
                 title="Prompts"
                 value={formatValue(totals?.prompts)}
-                trend={{ value: totals ? `${formatValue(totals.promptViews)} views` : '—', isUp: true }}
+                trend={{
+                  value: totals ? `${formatValue(totals.promptViews)} views` : '—',
+                  isUp: true,
+                }}
                 icon={<MdAutoAwesome size={20} />}
                 color="lime"
               />
@@ -356,7 +363,10 @@ export default function DashboardPage() {
               <StatCard
                 title="Blogs"
                 value={formatValue(totals?.posts)}
-                trend={{ value: totals ? `${formatValue(totals.postViews)} views` : '—', isUp: true }}
+                trend={{
+                  value: totals ? `${formatValue(totals.postViews)} views` : '—',
+                  isUp: true,
+                }}
                 icon={<MdArticle size={20} />}
                 color="purple"
               />
@@ -368,7 +378,10 @@ export default function DashboardPage() {
               <StatCard
                 title="Comments"
                 value={formatValue(totals?.comments)}
-                trend={{ value: totals ? `${formatValue(totals.comments)} total` : '—', isUp: true }}
+                trend={{
+                  value: totals ? `${formatValue(totals.comments)} total` : '—',
+                  isUp: true,
+                }}
                 icon={<MdChatBubbleOutline size={20} />}
                 color="orange"
               />
@@ -377,7 +390,10 @@ export default function DashboardPage() {
               <StatCard
                 title="Views on Prompts"
                 value={formatValue(totals?.promptViews)}
-                trend={{ value: totals ? `${formatValue(totals.promptViews)} total` : '—', isUp: true }}
+                trend={{
+                  value: totals ? `${formatValue(totals.promptViews)} total` : '—',
+                  isUp: true,
+                }}
                 icon={<MdVisibility size={20} />}
                 color="teal"
               />
@@ -386,7 +402,10 @@ export default function DashboardPage() {
               <StatCard
                 title="Views on Blogs"
                 value={formatValue(totals?.postViews)}
-                trend={{ value: totals ? `${formatValue(totals.postViews)} total` : '—', isUp: true }}
+                trend={{
+                  value: totals ? `${formatValue(totals.postViews)} total` : '—',
+                  isUp: true,
+                }}
                 icon={<MdMenuBook size={20} />}
                 color="amber"
               />
@@ -400,7 +419,9 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-[1.05rem] font-medium text-[#0f1116]">Recent Activity</h2>
-              <p className="text-[0.82rem] text-gray-400 mt-0.5">Latest events across your content</p>
+              <p className="text-[0.82rem] text-gray-400 mt-0.5">
+                Latest events across your content
+              </p>
             </div>
             <Link
               href="/dashboard/activity"
@@ -415,14 +436,21 @@ export default function DashboardPage() {
               <p className="text-[0.85rem] text-gray-400">Loading recent activity…</p>
             ) : recentActivity.length > 0 ? (
               recentActivity.map((item) => (
-                <div key={item.id} className="group flex items-start gap-3 rounded-xl p-2.5 transition-colors hover:bg-gray-50 -mx-2.5">
-                  <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${item.color}`}>
+                <div
+                  key={item.id}
+                  className="group flex items-start gap-3 rounded-xl p-2.5 transition-colors hover:bg-gray-50 -mx-2.5"
+                >
+                  <span
+                    className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${item.color}`}
+                  >
                     {item.icon}
                   </span>
                   <div className="flex flex-1 items-center justify-between gap-4 mt-1">
                     <p className="text-[0.85rem] text-[#0f1116]">{item.message}</p>
                     <div className="flex items-center gap-3">
-                      <span className="shrink-0 text-[0.78rem] text-gray-400 lg:w-[70px] text-right">{item.time}</span>
+                      <span className="shrink-0 text-[0.78rem] text-gray-400 lg:w-[70px] text-right">
+                        {item.time}
+                      </span>
                     </div>
                   </div>
                 </div>

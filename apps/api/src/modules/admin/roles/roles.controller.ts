@@ -28,7 +28,11 @@ export class RolesController {
   @Permissions('roles:manage')
   createRole(
     @Body()
-    body: { name: string; description?: string | null; permissionCodes?: string[] },
+    body: {
+      name: string;
+      description?: string | null;
+      permissionCodes?: string[];
+    },
   ) {
     return this.rolesService.createRole(body);
   }

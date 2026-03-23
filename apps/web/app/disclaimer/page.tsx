@@ -3,18 +3,15 @@ import Link from 'next/link';
 const sections = [
   {
     title: 'General information',
-    body:
-      'Gemini Prompts provides prompts, editorial content, and product information for general educational and creative use. It should not be treated as legal, financial, medical, or other regulated professional advice.',
+    body: 'Gemini Prompts provides prompts, editorial content, and product information for general educational and creative use. It should not be treated as legal, financial, medical, or other regulated professional advice.',
   },
   {
     title: 'AI output responsibility',
-    body:
-      'Outputs generated from prompts can vary by model, context, and user input. You are responsible for reviewing, validating, and adapting AI-generated content before using it in public, commercial, or client-facing work.',
+    body: 'Outputs generated from prompts can vary by model, context, and user input. You are responsible for reviewing, validating, and adapting AI-generated content before using it in public, commercial, or client-facing work.',
   },
   {
     title: 'Third-party links and tools',
-    body:
-      'Some pages may reference external platforms, tools, or examples. We are not responsible for the availability, accuracy, or policies of those third-party services.',
+    body: 'Some pages may reference external platforms, tools, or examples. We are not responsible for the availability, accuracy, or policies of those third-party services.',
   },
 ];
 
@@ -49,16 +46,11 @@ export default function DisclaimerPage() {
 
           <div className="mt-10 grid gap-5">
             {sections.map((section) => (
-              <article
-                key={section.title}
-                className="rounded-[22px] bg-[#fbfcfe] p-6"
-              >
+              <article key={section.title} className="rounded-[22px] bg-[#fbfcfe] p-6">
                 <h2 className="text-[1.2rem] leading-[1.2] tracking-[-0.03em] text-[#111118]">
                   {section.title}
                 </h2>
-                <p className="mt-3 text-[0.98rem] leading-[1.75] text-[#5f6773]">
-                  {section.body}
-                </p>
+                <p className="mt-3 text-[0.98rem] leading-[1.75] text-[#5f6773]">{section.body}</p>
               </article>
             ))}
           </div>

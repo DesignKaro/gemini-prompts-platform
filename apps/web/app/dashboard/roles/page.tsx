@@ -301,7 +301,10 @@ export default function RolesPage() {
                   <Skeleton className="h-3 w-24" />
                   <div className="flex flex-wrap gap-2">
                     {Array.from({ length: 6 }).map((__, idx) => (
-                      <Skeleton key={`perm-skeleton-${index}-${idx}`} className="h-6 w-20 rounded-full" />
+                      <Skeleton
+                        key={`perm-skeleton-${index}-${idx}`}
+                        className="h-6 w-20 rounded-full"
+                      />
                     ))}
                   </div>
                 </div>
@@ -424,7 +427,9 @@ export default function RolesPage() {
                       <span className="text-[0.8rem] font-medium text-[#0f1116]">Role name</span>
                       <input
                         value={formState.name}
-                        onChange={(e) => setFormState((prev) => ({ ...prev, name: e.target.value }))}
+                        onChange={(e) =>
+                          setFormState((prev) => ({ ...prev, name: e.target.value }))
+                        }
                         disabled={editingRole?.isSystem}
                         className="mt-2 w-full rounded-xl border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116] disabled:bg-gray-100"
                         placeholder="e.g. Support Lead"

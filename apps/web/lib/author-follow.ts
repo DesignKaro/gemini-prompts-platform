@@ -36,10 +36,7 @@ type RequestOptions = {
   accessToken: string;
 };
 
-async function requestAuthorApi<T>(
-  path: string,
-  options: RequestOptions,
-): Promise<T> {
+async function requestAuthorApi<T>(path: string, options: RequestOptions): Promise<T> {
   const response = await fetch(`${API_BASE_URL}/api/public${path}`, {
     method: options.method ?? 'GET',
     headers: {

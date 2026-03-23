@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { PromptsService, PromptCreateInput, PromptUpdateInput } from './prompts.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -61,7 +71,11 @@ export class PromptsController {
 
   @Patch(':id/status')
   @Permissions('prompts:manage')
-  updateStatus(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body('status') status: PromptStatus) {
+  updateStatus(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body('status') status: PromptStatus,
+  ) {
     return this.promptsService.updateStatus(user.sub, id, status);
   }
 
