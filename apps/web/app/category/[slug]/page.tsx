@@ -12,6 +12,7 @@ import {
   getPostList,
   getPromptList,
 } from '../../../lib/public-content';
+import { resolveCategoryImage } from '../../../lib/content-image-fallbacks';
 import { buildMetadata, getNormalizedBaseUrl, getSeoSettings } from '../../../lib/seo';
 import {
   buildBreadcrumbSchema,
@@ -160,9 +161,7 @@ async function CategoryDetailPageContent({ params }: PageProps) {
   ]);
   const pageUrl = `${baseUrl}/category/${category.slug}`;
   const shouldNoIndex = seoSettings.noindexCategoryPages;
-  const categoryImageUrl =
-    category.imageUrl ||
-    'https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1400';
+  const categoryImageUrl = resolveCategoryImage(category.imageUrl, category.slug || category.id);
 
   const schemaItems = [
     {

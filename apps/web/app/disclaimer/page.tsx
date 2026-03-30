@@ -190,7 +190,7 @@ export default async function DisclaimerPage() {
             <p>
               <strong>GeminiPrompts.io</strong>
               <br />
-              Email: <a href="mailto:info@geminiprompts.io">info@geminiprompts.io</a>
+              Email: <a href="mailto:help@geminiprompts.io">help@geminiprompts.io</a>
               <br />
               Website: <a href="https://geminiprompts.io">geminiprompts.io</a>
             </p>

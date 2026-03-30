@@ -275,11 +275,7 @@ export default function MembershipPricing() {
       return;
     }
 
-    const publicKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.trim();
-    if (!publicKey) {
-      setCheckoutError('Payment setup is incomplete. Please contact support.');
-      return;
-    }
+    const configuredPublicKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.trim() || null;
 
     setCheckoutPending(true);
     setCheckoutError(null);
@@ -292,6 +288,11 @@ export default function MembershipPricing() {
       }
 
       const order = await createMembershipCheckoutOrder(cycle, accessToken);
+      const checkoutKey = order.keyId?.trim() || configuredPublicKey;
+      if (!checkoutKey) {
+        setCheckoutError('Payment setup is incomplete. Please contact support.');
+        return;
+      }
       await ensureRazorpayScript();
 
       if (!window.Razorpay) {
@@ -301,7 +302,7 @@ export default function MembershipPricing() {
 
       const checkoutResult = await new Promise<RazorpayHandlerResponse>((resolve, reject) => {
         const checkout = new RazorpayCheckout({
-          key: order.keyId || publicKey,
+          key: checkoutKey,
           amount: order.amount,
           currency: order.currency,
           name: 'Gemini Prompts',

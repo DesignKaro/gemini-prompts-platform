@@ -167,7 +167,7 @@ export default async function CodeOfConductPage() {
               </li>
               <li>
                 Report any accidental exposure of private data to us immediately at{' '}
-                <a href="mailto:info@geminiprompts.io">info@geminiprompts.io</a>.
+                <a href="mailto:help@geminiprompts.io">help@geminiprompts.io</a>.
               </li>
             </ul>
             <h3>4.5 Engage Constructively</h3>
@@ -324,7 +324,7 @@ export default async function CodeOfConductPage() {
             <p>
               <strong>To report a violation:</strong>
               <br />
-              Email us at <a href="mailto:info@geminiprompts.io">info@geminiprompts.io</a>
+              Email us at <a href="mailto:help@geminiprompts.io">help@geminiprompts.io</a>
               <br />
               Subject line: <code>Code of Conduct Report</code>
             </p>
@@ -389,7 +389,7 @@ export default async function CodeOfConductPage() {
             <h2>10. Appeals</h2>
             <p>
               If you believe a moderation action taken against your account was made in error, you
-              may appeal by contacting us at <a href="mailto:info@geminiprompts.io">info@geminiprompts.io</a>{' '}
+              may appeal by contacting us at <a href="mailto:help@geminiprompts.io">help@geminiprompts.io</a>{' '}
               with the subject line <code>Moderation Appeal</code>. Please provide your account
               details and a clear explanation of why you believe the decision should be reconsidered.
             </p>
@@ -411,7 +411,7 @@ export default async function CodeOfConductPage() {
             <p>
               <strong>GeminiPrompts.io</strong>
               <br />
-              Email: <a href="mailto:info@geminiprompts.io">info@geminiprompts.io</a>
+              Email: <a href="mailto:help@geminiprompts.io">help@geminiprompts.io</a>
               <br />
               Website: <a href="https://geminiprompts.io">geminiprompts.io</a>
             </p>

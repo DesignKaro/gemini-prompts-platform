@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { SeoSchemaScripts } from '../components/seo-schema-script';
 import { Skeleton } from '../components/ui/skeleton';
 import { getCategoryList } from '../../lib/public-content';
+import { resolveCategoryImage } from '../../lib/content-image-fallbacks';
 import { buildPaginatedMetadata, getNormalizedBaseUrl, getSeoSettings } from '../../lib/seo';
 import {
   buildBreadcrumbSchema,
@@ -19,9 +20,6 @@ type PageProps = {
     page?: string;
   }>;
 };
-
-const CATEGORY_IMAGE_FALLBACK =
-  'https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=900';
 
 export async function generateMetadata({ searchParams }: PageProps) {
   const resolvedSearchParams = await searchParams;
@@ -173,7 +171,7 @@ async function CategoriesArchiveSection({
                 <div
                   className="h-11 w-11 shrink-0 rounded-full border border-[#e3e6ee] bg-cover bg-center"
                   style={{
-                    backgroundImage: `url(${category.imageUrl || CATEGORY_IMAGE_FALLBACK})`,
+                    backgroundImage: `url(${resolveCategoryImage(category.imageUrl, category.slug || category.id)})`,
                   }}
                 />
                 <div className="min-w-0">
@@ -204,7 +202,7 @@ async function CategoriesArchiveSection({
                 <div
                   className="h-[72px] w-[138px] shrink-0 rounded-[14px] border border-[#e3e6ee] bg-cover bg-center"
                   style={{
-                    backgroundImage: `url(${category.imageUrl || CATEGORY_IMAGE_FALLBACK})`,
+                    backgroundImage: `url(${resolveCategoryImage(category.imageUrl, category.slug || category.id)})`,
                   }}
                 />
                 <div className="min-w-0">

@@ -299,7 +299,7 @@ export default async function PrivacyPolicyPage() {
             </ul>
             <p>
               To exercise any of these rights, please contact us at{' '}
-              <a href="mailto:info@geminiprompts.io">info@geminiprompts.io</a>. We will respond
+              <a href="mailto:help@geminiprompts.io">help@geminiprompts.io</a>. We will respond
               within <strong>30 days</strong>.
             </p>
 
@@ -326,7 +326,7 @@ export default async function PrivacyPolicyPage() {
               (or <strong>16</strong> in the European Economic Area). We do not knowingly collect
               personal information from children. If you believe a child has provided us with
               personal data, please contact us immediately at{' '}
-              <a href="mailto:info@geminiprompts.io">info@geminiprompts.io</a> and we will take
+              <a href="mailto:help@geminiprompts.io">help@geminiprompts.io</a> and we will take
               steps to delete such information.
             </p>
 
@@ -363,7 +363,7 @@ export default async function PrivacyPolicyPage() {
             <p>
               <strong>GeminiPrompts.io</strong>
               <br />
-              Email: <a href="mailto:info@geminiprompts.io">info@geminiprompts.io</a>
+              Email: <a href="mailto:help@geminiprompts.io">help@geminiprompts.io</a>
               <br />
               Website: <a href="https://geminiprompts.io">geminiprompts.io</a>
             </p>

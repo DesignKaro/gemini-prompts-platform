@@ -229,7 +229,7 @@ export default async function RefundAndReturnPolicyPage() {
             <p>
               <strong>Step 1 — Contact Us</strong>
               <br />
-              Send an email to <a href="mailto:info@geminiprompts.io">info@geminiprompts.io</a>{' '}
+              Send an email to <a href="mailto:help@geminiprompts.io">help@geminiprompts.io</a>{' '}
               with the subject line:
               <br />
               <code>Refund Request – [Your Order ID]</code>
@@ -311,7 +311,7 @@ export default async function RefundAndReturnPolicyPage() {
             <p>
               You may cancel your subscription at any time from your account dashboard under{' '}
               <strong>Settings → Billing → Cancel Subscription</strong>, or by emailing us at{' '}
-              <a href="mailto:info@geminiprompts.io">info@geminiprompts.io</a>.
+              <a href="mailto:help@geminiprompts.io">help@geminiprompts.io</a>.
             </p>
             <h3>7.2 What Happens After Cancellation</h3>
             <ul>
@@ -347,7 +347,7 @@ export default async function RefundAndReturnPolicyPage() {
             <h2>9. Chargebacks and Disputes</h2>
             <p>
               We encourage you to contact us at{' '}
-              <a href="mailto:info@geminiprompts.io">info@geminiprompts.io</a> before initiating a
+              <a href="mailto:help@geminiprompts.io">help@geminiprompts.io</a> before initiating a
               chargeback with your bank or payment provider. Most issues can be resolved quickly and
               directly.
             </p>
@@ -395,7 +395,7 @@ export default async function RefundAndReturnPolicyPage() {
             <p>
               <strong>GeminiPrompts.io</strong>
               <br />
-              Email: <a href="mailto:info@geminiprompts.io">info@geminiprompts.io</a>
+              Email: <a href="mailto:help@geminiprompts.io">help@geminiprompts.io</a>
               <br />
               Website: <a href="https://geminiprompts.io">geminiprompts.io</a>
             </p>

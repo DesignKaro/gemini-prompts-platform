@@ -8,12 +8,43 @@ import {
   ProfileListsError,
   type ProfileActivityItem,
 } from '../../../lib/profile-lists';
+import { resolvePromptImage } from '../../../lib/content-image-fallbacks';
 import { redirectToSignInModal } from '../../../lib/utils/auth-redirect';
 import { refreshSession } from '../../../lib/utils/session';
 
 const PAGE_SIZE = 20;
-const PROMPT_IMAGE_FALLBACK =
-  'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1200';
+
+type PromptThumbProps = {
+  image: string | null;
+  title: string;
+  fallbackKey: string;
+  className: string;
+};
+
+function PromptThumb({ image, title, fallbackKey, className }: PromptThumbProps) {
+  const fallbackSrc = resolvePromptImage(null, fallbackKey);
+  const [src, setSrc] = useState(() => resolvePromptImage(image, fallbackKey));
+
+  useEffect(() => {
+    setSrc(resolvePromptImage(image, fallbackKey));
+  }, [image, fallbackKey]);
+
+  return (
+    <img
+      src={src}
+      alt={title}
+      className={`${className} object-cover`}
+      loading="lazy"
+      decoding="async"
+      referrerPolicy="no-referrer"
+      onError={() => {
+        if (src !== fallbackSrc) {
+          setSrc(fallbackSrc);
+        }
+      }}
+    />
+  );
+}
 
 function isAccessTokenExpired(expiresAt?: string | null) {
   if (!expiresAt) return false;
@@ -292,13 +323,11 @@ export function ProfileActivityClient() {
                             {toActivityLabel(item.type)}
                           </td>
                           <td className="px-4 py-3">
-                            <div
-                              className="h-11 w-20 rounded-[10px] border border-[#e3e7ef] bg-cover bg-center"
-                              style={{
-                                backgroundImage: `url(${item.promptImage ?? PROMPT_IMAGE_FALLBACK})`,
-                              }}
-                              role="img"
-                              aria-label={item.promptTitle ?? 'Prompt image'}
+                            <PromptThumb
+                              image={item.promptImage}
+                              title={item.promptTitle ?? 'Prompt image'}
+                              fallbackKey={item.promptSlug ?? item.id}
+                              className="h-11 w-20 rounded-[10px] border border-[#e3e7ef]"
                             />
                           </td>
                           <td className="px-4 py-3 text-[0.86rem] text-[#667080]">

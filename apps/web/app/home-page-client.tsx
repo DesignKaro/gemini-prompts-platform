@@ -1046,9 +1046,9 @@ export default function HomePageClient({
       { slug: string; title: string; articles: number; image: string }
     >();
 
-    const addCategory = (slug?: string | null, name?: string | null, image?: string | null) => {
+    const addCategory = (slug?: string | null, name?: string | null) => {
       if (!slug || !name) return;
-      const resolvedImage = resolveCategoryImage(image, slug);
+      const resolvedImage = resolveCategoryImage(null, slug);
 
       const existing = bySlug.get(slug);
       if (existing) {
@@ -1070,17 +1070,17 @@ export default function HomePageClient({
 
     for (const prompt of watchReadListenPrompts) {
       const category = prompt.primaryCategory ?? prompt.categories?.[0] ?? null;
-      addCategory(category?.slug, category?.name, prompt.image);
+      addCategory(category?.slug, category?.name);
     }
 
     for (const prompt of displayTrendingPrompts) {
       const category = prompt.primaryCategory ?? prompt.categories?.[0] ?? null;
-      addCategory(category?.slug, category?.name, prompt.image);
+      addCategory(category?.slug, category?.name);
     }
 
     for (const post of homeContent?.latestPosts ?? []) {
       const category = post.primaryCategory ?? post.categories?.[0] ?? null;
-      addCategory(category?.slug, category?.name, post.image);
+      addCategory(category?.slug, category?.name);
     }
 
     return Array.from(bySlug.values())

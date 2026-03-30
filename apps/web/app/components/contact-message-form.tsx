@@ -19,7 +19,45 @@ type ContactFormState = {
 
 function defaultApiBaseUrl() {
   const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
-  return raw ? raw.replace(/\/$/, '') : 'http://localhost:4000';
+  if (raw) {
+    return raw.replace(/\/$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin.replace(/\/$/, '');
+  }
+  return '';
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function readApiMessage(payload: unknown) {
+  if (typeof payload === 'string') {
+    const trimmed = payload.trim();
+    return trimmed || null;
+  }
+
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  const message = (payload as { message?: unknown }).message;
+  if (typeof message === 'string') {
+    const trimmed = message.trim();
+    return trimmed || null;
+  }
+
+  if (Array.isArray(message)) {
+    const combined = message
+      .filter((item): item is string => typeof item === 'string')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .join(' ');
+    return combined || null;
+  }
+
+  return null;
 }
 
 const INITIAL_FORM_STATE: ContactFormState = {
@@ -64,6 +102,16 @@ export function ContactMessageForm({ source = 'contact_page', pagePath }: Contac
       setErrorMessage('All fields are required.');
       return;
     }
+    if (!isValidEmail(email)) {
+      setSubmitState('error');
+      setErrorMessage('Enter a valid email address.');
+      return;
+    }
+    if (message.length < 5) {
+      setSubmitState('error');
+      setErrorMessage('Message must be at least 5 characters.');
+      return;
+    }
 
     setSubmitState('submitting');
     setErrorMessage('');
@@ -95,20 +143,13 @@ export function ContactMessageForm({ source = 'contact_page', pagePath }: Contac
         : await response.text().catch(() => null);
 
       if (!response.ok) {
-        const apiMessage =
-          body && typeof body === 'object' && 'message' in body && typeof body.message === 'string'
-            ? body.message
-            : typeof body === 'string' && body.trim()
-              ? body.trim()
-              : 'Unable to submit your message right now.';
+        const apiMessage = readApiMessage(body) || 'Unable to submit your message right now.';
 
         throw new Error(apiMessage);
       }
 
       const apiSuccessMessage =
-        body && typeof body === 'object' && 'message' in body && typeof body.message === 'string'
-          ? body.message
-          : 'Message submitted successfully. We will get back to you soon.';
+        readApiMessage(body) || 'Message submitted successfully. We will get back to you soon.';
 
       setFormState(INITIAL_FORM_STATE);
       setSuccessMessage(apiSuccessMessage);
@@ -207,8 +248,11 @@ export function ContactMessageForm({ source = 'contact_page', pagePath }: Contac
 
       <p className="text-[0.9rem] leading-[1.6] text-[#6a7280]">
         Prefer email? Reach us at{' '}
-        <a className="text-[#111118] underline underline-offset-4" href="mailto:hello@immihub.com">
-          hello@immihub.com
+        <a
+          className="text-[#111118] underline underline-offset-4"
+          href="mailto:help@geminiprompts.io"
+        >
+          help@geminiprompts.io
         </a>
         .
       </p>

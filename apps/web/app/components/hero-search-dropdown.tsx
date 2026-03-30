@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SearchResponse } from '../../lib/public-content';
+import { CATEGORY_IMAGE_FALLBACK } from '../../lib/content-image-fallbacks';
 import { buildAvatarSrc, normalizeAvatarUrl } from '../../lib/utils/avatar';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:4000';
@@ -74,9 +75,6 @@ const FALLBACK_LABEL_BY_TYPE: Record<ResultType, string> = {
   tag: '#',
   author: 'U',
 };
-const CATEGORY_IMAGE_FALLBACK =
-  'https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=900';
-
 function formatCount(value: number) {
   return value.toLocaleString('en-US');
 }
@@ -213,9 +211,7 @@ function buildResultsByTab(payload: SearchResponse): SearchResultsByTab {
       subtitle: `${formatCount(category.totalCount)} items`,
       href: `/${category.slug}`,
       thumbnail:
-        normalizeAvatarUrl(category.imageUrl) ||
-        resolveCategoryImage(category.id, category.slug) ||
-        CATEGORY_IMAGE_FALLBACK,
+        normalizeAvatarUrl(category.imageUrl) || CATEGORY_IMAGE_FALLBACK,
       thumbnailFallback: CATEGORY_IMAGE_FALLBACK,
     })),
     tags: payload.tags.map((tag) => ({

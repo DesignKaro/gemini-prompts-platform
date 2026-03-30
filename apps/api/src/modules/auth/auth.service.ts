@@ -682,6 +682,12 @@ export class AuthService {
       throw new UnauthorizedException('User not found.');
     }
 
+    const imageAssetMap = await this.buildMediaAssetUrlMap([
+      ...savedPromptRecords.map((record) => record.prompt.featuredImageUrl),
+      ...likeRecords.map((record) => record.prompt.featuredImageUrl),
+      ...createdPromptRecords.map((record) => record.featuredImageUrl),
+    ]);
+
     const publicUser = await this.ensureProtectedSuperadminRole(this.toPublicUser(user));
     const resolvedUser = publicUser.handle
       ? publicUser
@@ -695,7 +701,7 @@ export class AuthService {
         type: 'SAVE' as const,
         promptTitle: record.prompt.title,
         promptSlug: record.prompt.slug,
-        promptImage: record.prompt.featuredImageUrl ?? null,
+        promptImage: this.resolveMediaAssetUrl(record.prompt.featuredImageUrl, imageAssetMap),
         createdAt: record.createdAt.toISOString(),
       })),
       ...likeRecords.map((record) => ({
@@ -703,7 +709,7 @@ export class AuthService {
         type: 'LIKE' as const,
         promptTitle: record.prompt.title,
         promptSlug: record.prompt.slug,
-        promptImage: record.prompt.featuredImageUrl ?? null,
+        promptImage: this.resolveMediaAssetUrl(record.prompt.featuredImageUrl, imageAssetMap),
         createdAt: record.createdAt.toISOString(),
       })),
       ...createdPromptRecords.map((record) => ({
@@ -711,7 +717,7 @@ export class AuthService {
         type: 'CREATE' as const,
         promptTitle: record.title,
         promptSlug: record.slug,
-        promptImage: record.featuredImageUrl ?? null,
+        promptImage: this.resolveMediaAssetUrl(record.featuredImageUrl, imageAssetMap),
         createdAt: record.createdAt.toISOString(),
       })),
     ]
@@ -723,7 +729,7 @@ export class AuthService {
       title: record.prompt.title,
       slug: record.prompt.slug,
       promptType: record.prompt.promptType,
-      image: record.prompt.featuredImageUrl ?? null,
+      image: this.resolveMediaAssetUrl(record.prompt.featuredImageUrl, imageAssetMap),
       savedAt: record.createdAt.toISOString(),
     }));
 
@@ -810,6 +816,12 @@ export class AuthService {
       throw new UnauthorizedException('User not found.');
     }
 
+    const imageAssetMap = await this.buildMediaAssetUrlMap([
+      ...savedRecords.map((record) => record.prompt.featuredImageUrl),
+      ...likeRecords.map((record) => record.prompt.featuredImageUrl),
+      ...createdRecords.map((record) => record.featuredImageUrl),
+    ]);
+
     const items = [
       ...savedRecords.map(
         (record): ProfileActivityItem => ({
@@ -817,7 +829,7 @@ export class AuthService {
           type: 'SAVE',
           promptTitle: record.prompt.title,
           promptSlug: record.prompt.slug,
-          promptImage: record.prompt.featuredImageUrl ?? null,
+          promptImage: this.resolveMediaAssetUrl(record.prompt.featuredImageUrl, imageAssetMap),
           createdAt: record.createdAt.toISOString(),
         }),
       ),
@@ -827,7 +839,7 @@ export class AuthService {
           type: 'LIKE',
           promptTitle: record.prompt.title,
           promptSlug: record.prompt.slug,
-          promptImage: record.prompt.featuredImageUrl ?? null,
+          promptImage: this.resolveMediaAssetUrl(record.prompt.featuredImageUrl, imageAssetMap),
           createdAt: record.createdAt.toISOString(),
         }),
       ),
@@ -837,7 +849,7 @@ export class AuthService {
           type: 'CREATE',
           promptTitle: record.title,
           promptSlug: record.slug,
-          promptImage: record.featuredImageUrl ?? null,
+          promptImage: this.resolveMediaAssetUrl(record.featuredImageUrl, imageAssetMap),
           createdAt: record.createdAt.toISOString(),
         }),
       ),
@@ -890,13 +902,17 @@ export class AuthService {
       throw new UnauthorizedException('User not found.');
     }
 
+    const imageAssetMap = await this.buildMediaAssetUrlMap(
+      records.map((record) => record.prompt.featuredImageUrl),
+    );
+
     return {
       items: records.map((record) => ({
         id: record.prompt.id,
         title: record.prompt.title,
         slug: record.prompt.slug,
         promptType: record.prompt.promptType,
-        image: record.prompt.featuredImageUrl ?? null,
+        image: this.resolveMediaAssetUrl(record.prompt.featuredImageUrl, imageAssetMap),
         savedAt: record.createdAt.toISOString(),
       })),
       total,
@@ -1059,6 +1075,10 @@ export class AuthService {
       }),
     ]);
 
+    const imageAssetMap = await this.buildMediaAssetUrlMap(
+      prompts.map((prompt) => prompt.featuredImageUrl),
+    );
+
     return {
       user: {
         handle: user.handle,
@@ -1077,7 +1097,7 @@ export class AuthService {
         slug: prompt.slug,
         title: prompt.title,
         promptType: prompt.promptType,
-        image: prompt.featuredImageUrl ?? null,
+        image: this.resolveMediaAssetUrl(prompt.featuredImageUrl, imageAssetMap),
         publishedAt: prompt.publishedAt ? prompt.publishedAt.toISOString() : null,
       })),
     };
@@ -1259,6 +1279,49 @@ export class AuthService {
     if (!value.startsWith(this.mediaRefPrefix)) return null;
     const id = value.slice(this.mediaRefPrefix.length).trim();
     return id || null;
+  }
+
+  private async buildMediaAssetUrlMap(values: Array<string | null | undefined>) {
+    const refIds = Array.from(
+      new Set(
+        values
+          .map((value) => (typeof value === 'string' ? this.extractMediaRef(value.trim()) : null))
+          .filter((value): value is string => Boolean(value)),
+      ),
+    );
+
+    if (refIds.length === 0) {
+      return new Map<string, string>();
+    }
+
+    const assets = await this.prisma.mediaAsset.findMany({
+      where: { id: { in: refIds } },
+      select: { id: true, url: true },
+    });
+
+    return new Map(assets.map((asset) => [asset.id, asset.url]));
+  }
+
+  private resolveMediaAssetUrl(
+    value: string | null | undefined,
+    assetMap: Map<string, string>,
+  ): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const normalized = value.trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const refId = this.extractMediaRef(normalized);
+    if (!refId) {
+      return normalized;
+    }
+
+    const resolved = assetMap.get(refId)?.trim();
+    return resolved || null;
   }
 
   private async syncUserAvatarMediaUsage(

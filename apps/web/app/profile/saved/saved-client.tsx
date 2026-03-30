@@ -8,12 +8,11 @@ import {
   ProfileListsError,
   type ProfileSavedPromptItem,
 } from '../../../lib/profile-lists';
+import { resolvePromptImage } from '../../../lib/content-image-fallbacks';
 import { redirectToSignInModal } from '../../../lib/utils/auth-redirect';
 import { refreshSession } from '../../../lib/utils/session';
 
 const PAGE_SIZE = 20;
-const PROMPT_IMAGE_FALLBACK =
-  'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1200';
 
 function isAccessTokenExpired(expiresAt?: string | null) {
   if (!expiresAt) return false;
@@ -43,6 +42,38 @@ function formatPromptType(value: string) {
     .replace(/_/g, ' ')
     .toLowerCase()
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+type PromptThumbProps = {
+  image: string | null;
+  title: string;
+  fallbackKey: string;
+  className: string;
+};
+
+function PromptThumb({ image, title, fallbackKey, className }: PromptThumbProps) {
+  const fallbackSrc = resolvePromptImage(null, fallbackKey);
+  const [src, setSrc] = useState(() => resolvePromptImage(image, fallbackKey));
+
+  useEffect(() => {
+    setSrc(resolvePromptImage(image, fallbackKey));
+  }, [image, fallbackKey]);
+
+  return (
+    <img
+      src={src}
+      alt={title}
+      className={`${className} object-cover`}
+      loading="lazy"
+      decoding="async"
+      referrerPolicy="no-referrer"
+      onError={() => {
+        if (src !== fallbackSrc) {
+          setSrc(fallbackSrc);
+        }
+      }}
+    />
+  );
 }
 
 export function ProfileSavedClient() {
@@ -291,13 +322,15 @@ export function ProfileSavedClient() {
                           </td>
                           <td className="px-4 py-3">
                             <div
-                              className="h-11 w-20 rounded-[10px] border border-[#e3e7ef] bg-cover bg-center"
-                              style={{
-                                backgroundImage: `url(${prompt.image ?? PROMPT_IMAGE_FALLBACK})`,
-                              }}
-                              role="img"
-                              aria-label={prompt.title}
-                            />
+                              className="h-11 w-20 overflow-hidden rounded-[10px] border border-[#e3e7ef] bg-[#eef1f5]"
+                            >
+                              <PromptThumb
+                                image={prompt.image}
+                                title={prompt.title}
+                                fallbackKey={prompt.slug || prompt.id}
+                                className="h-full w-full"
+                              />
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-[0.86rem] text-[#667080]">
                             “{prompt.title}”

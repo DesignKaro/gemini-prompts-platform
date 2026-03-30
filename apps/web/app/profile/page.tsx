@@ -7,6 +7,7 @@ import { refreshSession as refreshSessionOnce } from '../../lib/utils/session';
 import { useSearchParams } from 'next/navigation';
 import { AuthorAvatar } from '../components/author-avatar';
 import { LoadingButton } from '../components/ui/loading-button';
+import { resolvePromptImage } from '../../lib/content-image-fallbacks';
 import {
   FaFacebookF,
   FaHeart,
@@ -17,6 +18,38 @@ import {
   FaThreads,
   FaXTwitter,
 } from 'react-icons/fa6';
+
+type PromptThumbProps = {
+  image: string | null;
+  title: string;
+  fallbackKey: string;
+  className: string;
+};
+
+function PromptThumb({ image, title, fallbackKey, className }: PromptThumbProps) {
+  const fallbackSrc = resolvePromptImage(null, fallbackKey);
+  const [src, setSrc] = useState(() => resolvePromptImage(image, fallbackKey));
+
+  useEffect(() => {
+    setSrc(resolvePromptImage(image, fallbackKey));
+  }, [image, fallbackKey]);
+
+  return (
+    <img
+      src={src}
+      alt={title}
+      className={`${className} object-cover`}
+      loading="lazy"
+      decoding="async"
+      referrerPolicy="no-referrer"
+      onError={() => {
+        if (src !== fallbackSrc) {
+          setSrc(fallbackSrc);
+        }
+      }}
+    />
+  );
+}
 
 function ProfilePageContent() {
   const SAVED_PROMPTS_PREVIEW_LIMIT = 3;
@@ -930,14 +963,15 @@ function ProfilePageContent() {
                     className="flex flex-col gap-2.5 rounded-[16px] border border-[#dde3eb] bg-white p-2.5 sm:flex-row sm:items-center sm:p-3"
                   >
                     <div
-                      className="h-[90px] w-full rounded-[12px] bg-cover bg-center sm:h-[74px] sm:w-[122px]"
-                      style={{
-                        backgroundImage: `url(${
-                          prompt.image ??
-                          'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1200'
-                        })`,
-                      }}
-                    />
+                      className="h-[90px] w-full overflow-hidden rounded-[12px] bg-[#eef1f5] sm:h-[74px] sm:w-[122px]"
+                    >
+                      <PromptThumb
+                        image={prompt.image}
+                        title={prompt.title}
+                        fallbackKey={prompt.slug || prompt.id}
+                        className="h-full w-full"
+                      />
+                    </div>
                     <div className="flex-1">
                       <span className="rounded-full bg-[#f0f2f6] px-2 py-0.5 text-[0.7rem] text-[#4a5261]">
                         {formatPromptType(prompt.promptType)}

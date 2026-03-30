@@ -46,8 +46,8 @@ export default async function ContactPage() {
     {
       title: 'Email us',
       description: 'Support, partnerships, and feedback.',
-      href: 'mailto:hello@immihub.com',
-      cta: 'hello@immihub.com',
+      href: 'mailto:help@geminiprompts.io',
+      cta: 'help@geminiprompts.io',
       icon: (
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
           <path
@@ -111,7 +111,7 @@ export default async function ContactPage() {
     {
       title: 'Follow us',
       description: 'Updates and new collections.',
-      href: 'https://instagram.com',
+      href: 'https://www.instagram.com/geminiprompts.io?igsh=MW5qOTZwdHJlMHhvYQ==',
       cta: 'Instagram',
       icon: (
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
@@ -131,6 +131,47 @@ export default async function ContactPage() {
       ),
     },
   ];
+
+  const renderContactCard = (card: (typeof contactCards)[number]) => {
+    const isExternal = /^https?:\/\//i.test(card.href);
+    const isMailto = card.href.startsWith('mailto:');
+    const className =
+      'group flex h-full flex-col rounded-[24px] border border-[#e6e9f2] bg-white p-6 transition hover:border-[#d8dce2] hover:bg-[#fbfcfe]';
+    const content = (
+      <>
+        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f2f4f7] text-[#111118]">
+          {card.icon}
+        </span>
+        <h2 className="mt-4 text-[1.2rem] leading-[1.2] tracking-[-0.02em] text-[#111118]">
+          {card.title}
+        </h2>
+        <p className="mt-2 text-[0.98rem] leading-[1.65] text-[#5f6773]">{card.description}</p>
+        <span className="mt-auto pt-6 text-[0.95rem] text-[#101010] underline decoration-[#d8dce2] underline-offset-[6px] transition group-hover:decoration-[#101010]">
+          {card.cta}
+        </span>
+      </>
+    );
+
+    if (isExternal || isMailto) {
+      return (
+        <a
+          key={card.title}
+          href={card.href}
+          className={className}
+          target={isExternal ? '_blank' : undefined}
+          rel={isExternal ? 'noreferrer' : undefined}
+        >
+          {content}
+        </a>
+      );
+    }
+
+    return (
+      <Link key={card.title} href={card.href} className={className}>
+        {content}
+      </Link>
+    );
+  };
 
   return (
     <main className="page-shell-tight bg-white">
@@ -164,31 +205,12 @@ export default async function ContactPage() {
                 Typical reply: 1–2 business days
               </span>
               <span className="rounded-full border border-[#e1e5ee] px-4 py-2">
-                Email: hello@immihub.com
+                Email: help@geminiprompts.io
               </span>
             </div>
 
             <div className="mt-10 grid gap-6 sm:grid-cols-2">
-              {contactCards.map((card) => (
-                <a
-                  key={card.title}
-                  href={card.href}
-                  className="group flex h-full flex-col rounded-[24px] border border-[#e6e9f2] bg-white p-6 transition hover:border-[#d8dce2] hover:bg-[#fbfcfe]"
-                >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f2f4f7] text-[#111118]">
-                    {card.icon}
-                  </span>
-                  <h2 className="mt-4 text-[1.2rem] leading-[1.2] tracking-[-0.02em] text-[#111118]">
-                    {card.title}
-                  </h2>
-                  <p className="mt-2 text-[0.98rem] leading-[1.65] text-[#5f6773]">
-                    {card.description}
-                  </p>
-                  <span className="mt-auto pt-6 text-[0.95rem] text-[#101010] underline decoration-[#d8dce2] underline-offset-[6px] transition group-hover:decoration-[#101010]">
-                    {card.cta}
-                  </span>
-                </a>
-              ))}
+              {contactCards.map(renderContactCard)}
             </div>
           </div>
 

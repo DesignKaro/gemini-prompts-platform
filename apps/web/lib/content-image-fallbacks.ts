@@ -14,13 +14,8 @@ const POST_IMAGE_FALLBACKS = [
   'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1400',
 ];
 
-const CATEGORY_IMAGE_FALLBACKS = [
-  'https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=900',
-  'https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=900',
-  'https://images.unsplash.com/photo-1517466787929-bc90951d0974?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=900',
-  'https://images.unsplash.com/photo-1517292987719-0369a794ec0f?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=900',
-  'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=900',
-];
+export const CATEGORY_IMAGE_FALLBACK =
+  'https://media.geminiprompts.io/gemini_prompts/media/2026/03/a3835e04888835117f5a4b41fbca7ee2.avif';
 
 function normalizeImage(value?: string | null) {
   if (typeof value !== 'string') {
@@ -62,6 +57,6 @@ export function resolvePostImage(image?: string | null, key?: string | null) {
   return normalizeImage(image) ?? pickDeterministicFallback(key?.trim() || '', POST_IMAGE_FALLBACKS);
 }
 
-export function resolveCategoryImage(image?: string | null, key?: string | null) {
-  return normalizeImage(image) ?? pickDeterministicFallback(key?.trim() || '', CATEGORY_IMAGE_FALLBACKS);
+export function resolveCategoryImage(image?: string | null, _key?: string | null) {
+  return normalizeImage(image) ?? CATEGORY_IMAGE_FALLBACK;
 }
