@@ -106,7 +106,7 @@ const heroCards = [
     rotate: 0,
   },
   {
-    src: 'https://media.geminiprompts.io/gemini_prompts/media/2026/03/d5c02129175eddda92eff79b9036632d.webp',
+    src: 'https://media.geminiprompts.io/gemini_prompts/media/2026/03/30ad9993c8f9fbc779fb09a8d89db02a.webp',
     alt: 'Gemini Prompts hero slider image 5',
     height: 286,
     stackRotate: 2,
@@ -2452,7 +2452,7 @@ export default function HomePageClient({
               className="min-h-[280px] overflow-hidden rounded-[28px] bg-cover bg-center sm:min-h-[420px] sm:rounded-[32px] lg:min-h-[560px] lg:rounded-[34px]"
               style={{
                 backgroundImage:
-                  'url(https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1400)',
+                  'url(https://media.geminiprompts.io/gemini_prompts/media/2026/03/0174a6eeeef99c013ff586162a9fff7c.webp)',
               }}
             />
 
@@ -2540,7 +2540,7 @@ export default function HomePageClient({
               className="relative min-h-[220px] overflow-hidden rounded-[24px] bg-cover bg-center p-5 sm:min-h-[248px] sm:rounded-[30px] sm:p-7"
               style={{
                 backgroundImage:
-                  'url(https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1200)',
+                  'url(https://media.geminiprompts.io/gemini_prompts/media/2026/03/612bbc3b63c12674cfc84d784cf94e9f.webp)',
               }}
             >
               <div className="absolute inset-0 bg-gradient-to-t from-[#0f172acc] via-[#0f172a26] to-transparent" />
