@@ -4,8 +4,16 @@ import { auth } from '@/auth';
 import { hasAnyPermission, isSuperadminSession } from '@/lib/utils/permissions';
 import { bumpPublicCacheVersion } from '@/lib/public-cache-version';
 import { PUBLIC_CONTENT_CACHE_TAG } from '@/lib/public-content';
+import type { Session } from 'next-auth';
 
-function canClearPublicCache(session: Awaited<ReturnType<typeof auth>>) {
+function toSession(value: unknown): Session | null {
+  if (!value || typeof value !== 'object' || !('user' in value)) {
+    return null;
+  }
+  return value as Session;
+}
+
+function canClearPublicCache(session: Session | null) {
   if (!session) {
     return false;
   }
@@ -22,7 +30,7 @@ function canClearPublicCache(session: Awaited<ReturnType<typeof auth>>) {
 }
 
 export async function POST() {
-  const session = await auth();
+  const session = toSession(await auth());
   if (!canClearPublicCache(session)) {
     return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
   }
