@@ -57,6 +57,8 @@ export function resolvePostImage(image?: string | null, key?: string | null) {
   return normalizeImage(image) ?? pickDeterministicFallback(key?.trim() || '', POST_IMAGE_FALLBACKS);
 }
 
-export function resolveCategoryImage(image?: string | null, _key?: string | null) {
+export function resolveCategoryImage(image?: string | null, key?: string | null) {
+  // Keep `key` in the API for call-site compatibility, even with a single shared fallback.
+  void key;
   return normalizeImage(image) ?? CATEGORY_IMAGE_FALLBACK;
 }
