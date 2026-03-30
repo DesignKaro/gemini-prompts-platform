@@ -69,8 +69,8 @@ function useSafeSession() {
 
 const heroCards = [
   {
-    src: 'https://images.unsplash.com/photo-1547750588-51ce0c34f651?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1200',
-    alt: 'Colorful poster collage by Jon Tyson on Unsplash',
+    src: 'https://media.geminiprompts.io/gemini_prompts/media/2026/03/642a12b6bee2014946b05c6f05d3c9e6.avif',
+    alt: 'Gemini Prompts hero slider image 1',
     height: 286,
     stackRotate: -6,
     stackX: -18,
@@ -82,8 +82,8 @@ const heroCards = [
     rotate: -13,
   },
   {
-    src: 'https://images.unsplash.com/photo-1769421573800-5748940c2cb2?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1200',
-    alt: 'Colorful collage with pencils by Elena Mozhvilo on Unsplash',
+    src: 'https://media.geminiprompts.io/gemini_prompts/media/2026/03/defe2d7e19db3aea6c6c5ad368c91376.webp',
+    alt: 'Gemini Prompts hero slider image 2',
     height: 300,
     stackRotate: -4,
     stackX: -10,
@@ -95,8 +95,8 @@ const heroCards = [
     rotate: -8,
   },
   {
-    src: 'https://images.unsplash.com/photo-1754934302867-2e096e80fc68?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1200',
-    alt: 'Abstract colorful shapes by Fons Heijnsbroek on Unsplash',
+    src: 'https://media.geminiprompts.io/gemini_prompts/media/2026/03/d31a683406c15454afd78f1e2fb4decc.webp',
+    alt: 'Gemini Prompts hero slider image 3',
     height: 282,
     stackRotate: -2,
     stackX: -4,
@@ -108,8 +108,8 @@ const heroCards = [
     rotate: -2,
   },
   {
-    src: 'https://images.unsplash.com/photo-1747948908400-fac8c50b2ac0?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1200',
-    alt: 'Swirling colorful abstract art by Logan Voss on Unsplash',
+    src: 'https://media.geminiprompts.io/gemini_prompts/media/2026/03/8e3a7a03f5a3d4f21c8e88f2c81ac254.webp',
+    alt: 'Gemini Prompts hero slider image 4',
     height: 276,
     stackRotate: 0,
     stackX: 0,
@@ -121,8 +121,8 @@ const heroCards = [
     rotate: 0,
   },
   {
-    src: 'https://images.unsplash.com/photo-1767036840849-4e8f68fa58ad?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1200',
-    alt: 'Woman in red hat portrait by sammy swae on Unsplash',
+    src: 'https://media.geminiprompts.io/gemini_prompts/media/2026/03/d5c02129175eddda92eff79b9036632d.webp',
+    alt: 'Gemini Prompts hero slider image 5',
     height: 286,
     stackRotate: 2,
     stackX: 6,
@@ -134,8 +134,8 @@ const heroCards = [
     rotate: 4,
   },
   {
-    src: 'https://images.unsplash.com/photo-1770198809758-f29e74422507?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1200',
-    alt: 'Collage with colorful shapes by Marija Zaric on Unsplash',
+    src: 'https://media.geminiprompts.io/gemini_prompts/media/2026/03/25378b7205f765b8bb69b5107f096246.webp',
+    alt: 'Gemini Prompts hero slider image 6',
     height: 294,
     stackRotate: 4,
     stackX: 14,
@@ -145,19 +145,6 @@ const heroCards = [
     y: -24,
     zIndex: 4,
     rotate: 7,
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1515405295579-ba7b45403062?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1200',
-    alt: 'Graphic green poster art by Mikhail Nilov on Unsplash',
-    height: 288,
-    stackRotate: 6,
-    stackX: 20,
-    stackY: 28,
-    width: 250,
-    x: 484,
-    y: -8,
-    zIndex: 1,
-    rotate: 12,
   },
 ];
 
