@@ -38,10 +38,6 @@ export class PermissionsGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (!requiredPermissions?.length) {
-      return true;
-    }
-
     const request = context.switchToHttp().getRequest<{
       user?: AuthUser;
       originalUrl?: string;
@@ -86,6 +82,10 @@ export class PermissionsGuard implements CanActivate {
     const effectiveUser = request.user ?? user;
     if (requestUrl.includes('/admin/') && !this.hasDashboardAccess(effectiveUser)) {
       return false;
+    }
+
+    if (!requiredPermissions?.length) {
+      return true;
     }
 
     return requiredPermissions.every((permission) => permissions?.includes(permission));

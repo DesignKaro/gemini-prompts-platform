@@ -1,12 +1,21 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { SeoSchemaScripts } from '../components/seo-schema-script';
 import MembershipPricing from './pricing-client';
+import { buildMetadata, getNormalizedBaseUrl, getSeoSettings } from '../../lib/seo';
+import { buildBreadcrumbSchema, buildWebPageSchema } from '../../lib/structured-data';
 
-export const metadata: Metadata = {
-  title: 'Membership — Gemini Prompts',
-  description:
-    'Unlock members-only prompts, premium packs, and weekly drops. Simple pricing with cancel-anytime flexibility.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSeoSettings();
+
+  return buildMetadata({
+    title: 'Membership',
+    description:
+      'Unlock members-only prompts, premium packs, and weekly drops. Simple pricing with cancel-anytime flexibility.',
+    path: '/membership',
+    noIndex: settings.noindexStaticPages,
+  });
+}
 
 const CHECK = (
   <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
@@ -21,29 +30,34 @@ const CHECK = (
   </svg>
 );
 
-export default function MembershipPage() {
+export default async function MembershipPage() {
   const sectionSpacing = 'mt-12 sm:mt-14 lg:mt-16';
   const sectionSubSpacing = 'mt-8 sm:mt-10';
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
-
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'Home',
-        item: `${baseUrl}/`,
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
+  const seoSettings = await getSeoSettings();
+  const baseUrl = getNormalizedBaseUrl(seoSettings);
+  const pageUrl = `${baseUrl}/membership`;
+  const shouldNoIndex = seoSettings.noindexStaticPages;
+  const schemaItems = [
+    {
+      family: 'webpage' as const,
+      schema: buildWebPageSchema({
+        url: pageUrl,
         name: 'Membership',
-        item: `${baseUrl}/membership`,
-      },
-    ],
-  };
+        description:
+          'Unlock members-only prompts, premium packs, and weekly drops. Simple pricing with cancel-anytime flexibility.',
+      }),
+    },
+    {
+      family: 'breadcrumb' as const,
+      schema: buildBreadcrumbSchema(
+        [
+          { name: 'Home', item: `${baseUrl}/` },
+          { name: 'Membership', item: pageUrl },
+        ],
+        pageUrl,
+      ),
+    },
+  ].filter((entry) => Boolean(entry.schema));
 
   const featureCards = [
     {
@@ -374,11 +388,7 @@ export default function MembershipPage() {
 
   return (
     <main className="page-shell bg-white">
-      <script
-        type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
+      <SeoSchemaScripts items={schemaItems} noIndex={shouldNoIndex} />
 
       <div className="page-container">
         <nav aria-label="Breadcrumb" className="text-[0.9rem] text-[#8b8f99]">
@@ -613,12 +623,6 @@ export default function MembershipPage() {
                     className="inline-flex h-11 w-full items-center justify-center rounded-full bg-[#d5ea52] px-6 text-[0.95rem] font-medium text-[#101418] transition-colors hover:bg-[#cbe246]"
                   >
                     Join Premium
-                  </Link>
-                  <Link
-                    href="/latest"
-                    className="inline-flex h-11 w-full items-center justify-center rounded-full border border-white/25 bg-white/10 px-6 text-[0.95rem] text-white transition-colors hover:bg-white/15"
-                  >
-                    Stay free
                   </Link>
                 </div>
 

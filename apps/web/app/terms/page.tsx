@@ -1,4 +1,18 @@
 import Link from 'next/link';
+import { SeoSchemaScripts } from '../components/seo-schema-script';
+import { buildMetadata, getNormalizedBaseUrl, getSeoSettings } from '../../lib/seo';
+import { buildBreadcrumbSchema, buildWebPageSchema } from '../../lib/structured-data';
+
+export async function generateMetadata() {
+  const settings = await getSeoSettings();
+
+  return buildMetadata({
+    title: 'Terms',
+    description: 'Review the terms for using Gemini Prompts, memberships, and community features.',
+    path: '/terms',
+    noIndex: settings.noindexStaticPages,
+  });
+}
 
 const sections = [
   {
@@ -15,9 +29,34 @@ const sections = [
   },
 ];
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const settings = await getSeoSettings();
+  const baseUrl = getNormalizedBaseUrl(settings);
+  const pageUrl = `${baseUrl}/terms`;
+  const schemaItems = [
+    {
+      family: 'webpage' as const,
+      schema: buildWebPageSchema({
+        url: pageUrl,
+        name: 'Terms',
+        description: 'Review the terms for using Gemini Prompts, memberships, and community features.',
+      }),
+    },
+    {
+      family: 'breadcrumb' as const,
+      schema: buildBreadcrumbSchema(
+        [
+          { name: 'Home', item: `${baseUrl}/` },
+          { name: 'Terms', item: pageUrl },
+        ],
+        pageUrl,
+      ),
+    },
+  ].filter((entry) => Boolean(entry.schema));
+
   return (
     <main className="page-shell-tight bg-white">
+      <SeoSchemaScripts items={schemaItems} noIndex={settings.noindexStaticPages} />
       <div className="mx-auto w-full max-w-[1080px]">
         <nav aria-label="Breadcrumb" className="text-[0.9rem] text-[#8b8f99]">
           <ol className="flex flex-wrap items-center gap-2">

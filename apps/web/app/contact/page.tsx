@@ -1,26 +1,46 @@
 import Link from 'next/link';
+import { ContactMessageForm } from '../components/contact-message-form';
+import { SeoSchemaScripts } from '../components/seo-schema-script';
+import { buildMetadata, getNormalizedBaseUrl, getSeoSettings } from '../../lib/seo';
+import { buildBreadcrumbSchema, buildWebPageSchema } from '../../lib/structured-data';
 
-export default function ContactPage() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
+export async function generateMetadata() {
+  const settings = await getSeoSettings();
 
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'Home',
-        item: `${baseUrl}/`,
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
+  return buildMetadata({
+    title: 'Contact',
+    description: 'Get in touch with the Gemini Prompts team for support, feedback, and partnerships.',
+    path: '/contact',
+    noIndex: settings.noindexStaticPages,
+  });
+}
+
+export default async function ContactPage() {
+  const seoSettings = await getSeoSettings();
+  const baseUrl = getNormalizedBaseUrl(seoSettings);
+  const pageUrl = `${baseUrl}/contact`;
+  const shouldNoIndex = seoSettings.noindexStaticPages;
+  const schemaItems = [
+    {
+      family: 'webpage' as const,
+      schema: buildWebPageSchema({
+        url: pageUrl,
         name: 'Contact',
-        item: `${baseUrl}/contact`,
-      },
-    ],
-  };
+        description:
+          'Get in touch with the Gemini Prompts team for support, feedback, and partnerships.',
+      }),
+    },
+    {
+      family: 'breadcrumb' as const,
+      schema: buildBreadcrumbSchema(
+        [
+          { name: 'Home', item: `${baseUrl}/` },
+          { name: 'Contact', item: pageUrl },
+        ],
+        pageUrl,
+      ),
+    },
+  ].filter((entry) => Boolean(entry.schema));
 
   const contactCards = [
     {
@@ -114,11 +134,7 @@ export default function ContactPage() {
 
   return (
     <main className="page-shell-tight bg-white">
-      <script
-        type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
+      <SeoSchemaScripts items={schemaItems} noIndex={shouldNoIndex} />
 
       <div className="mx-auto w-full max-w-[1300px]">
         <nav aria-label="Breadcrumb" className="text-[0.9rem] text-[#8b8f99]">
@@ -181,73 +197,9 @@ export default function ContactPage() {
               Send a message
             </h2>
             <p className="mt-3 text-[1rem] leading-[1.7] text-[#5f6773]">
-              This form is UI-only for now — we’ll wire it to the backend next.
+              Share your question and we’ll route it to the right team member.
             </p>
-
-            <form className="mt-7 space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block">
-                  <span className="text-[0.92rem] text-[#4b525e]">Name</span>
-                  <input
-                    type="text"
-                    name="name"
-                    placeholder="Your name"
-                    className="mt-2 h-[48px] w-full rounded-[14px] border border-[#d8dce2] bg-white px-4 text-[1rem] text-[#101418] outline-none transition focus:border-[#101010]"
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-[0.92rem] text-[#4b525e]">Email</span>
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="you@company.com"
-                    className="mt-2 h-[48px] w-full rounded-[14px] border border-[#d8dce2] bg-white px-4 text-[1rem] text-[#101418] outline-none transition focus:border-[#101010]"
-                  />
-                </label>
-              </div>
-
-              <label className="block">
-                <span className="text-[0.92rem] text-[#4b525e]">Subject</span>
-                <select
-                  name="subject"
-                  className="mt-2 h-[48px] w-full rounded-[14px] border border-[#d8dce2] bg-white px-4 text-[1rem] text-[#101418] outline-none transition focus:border-[#101010]"
-                  defaultValue="support"
-                >
-                  <option value="support">Support</option>
-                  <option value="feedback">Feedback</option>
-                  <option value="partnership">Partnership</option>
-                  <option value="billing">Billing</option>
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="text-[0.92rem] text-[#4b525e]">Message</span>
-                <textarea
-                  name="message"
-                  rows={6}
-                  placeholder="Tell us what you need…"
-                  className="mt-2 w-full rounded-[14px] border border-[#d8dce2] bg-white px-4 py-3 text-[1rem] text-[#101418] outline-none transition focus:border-[#101010]"
-                />
-              </label>
-
-              <button
-                type="button"
-                className="h-[50px] w-full rounded-full bg-[#111111] px-6 text-[1rem] text-white transition-colors hover:bg-black"
-              >
-                Send message
-              </button>
-
-              <p className="text-[0.9rem] leading-[1.6] text-[#6a7280]">
-                Prefer email? Reach us at{' '}
-                <a
-                  className="text-[#111118] underline underline-offset-4"
-                  href="mailto:hello@immihub.com"
-                >
-                  hello@immihub.com
-                </a>
-                .
-              </p>
-            </form>
+            <ContactMessageForm source="contact_page" pagePath="/contact" />
           </div>
         </div>
 
@@ -268,7 +220,7 @@ export default function ContactPage() {
               { href: '/help', label: 'Help center' },
               { href: '/membership', label: 'Membership' },
               { href: '/dashboard/saved-prompts', label: 'Saved prompts' },
-              { href: '/prompt', label: 'Trending prompts' },
+              { href: '/prompts', label: 'Trending prompts' },
             ].map((item) => (
               <Link
                 key={item.href}

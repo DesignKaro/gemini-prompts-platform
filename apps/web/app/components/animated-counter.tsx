@@ -3,13 +3,15 @@
 import { useEffect, useRef, useState } from 'react';
 
 type AnimatedCounterProps = {
-  value: string; // e.g. "1.2K+" or "240+"
+  value: string | number; // e.g. "1.2K+" or 240
+  suffix?: string;
   className?: string;
 };
 
-function parseValue(raw: string): { num: number; suffix: string; isFloat: boolean } {
-  const match = raw.match(/^([\d.]+)([KkMm]?\+?)(.*)$/);
-  if (!match) return { num: 0, suffix: raw, isFloat: false };
+function parseValue(raw: string | number): { num: number; suffix: string; isFloat: boolean } {
+  const normalized = typeof raw === 'number' ? String(raw) : raw;
+  const match = normalized.match(/^([\d.]+)([KkMm]?\+?)(.*)$/);
+  if (!match) return { num: 0, suffix: normalized, isFloat: false };
   const numStr = match[1] ?? '';
   const unit = match[2] ?? '';
   const extra = match[3] ?? '';
@@ -18,7 +20,7 @@ function parseValue(raw: string): { num: number; suffix: string; isFloat: boolea
   return { num, suffix: unit + extra, isFloat };
 }
 
-export function AnimatedCounter({ value, className }: AnimatedCounterProps) {
+export function AnimatedCounter({ value, suffix: suffixProp, className }: AnimatedCounterProps) {
   const { num: target, suffix, isFloat } = parseValue(value);
   const [current, setCurrent] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
@@ -50,11 +52,19 @@ export function AnimatedCounter({ value, className }: AnimatedCounterProps) {
   }, [target]);
 
   const display = isFloat ? current.toFixed(1) : Math.floor(current).toLocaleString();
+  const resolvedSuffix = suffixProp ?? suffix;
+  const plusCount = (resolvedSuffix.match(/\+/g) ?? []).length;
+  const suffixWithoutPlus = resolvedSuffix.replace(/\+/g, '');
 
   return (
     <span ref={ref} className={className}>
       {display}
-      {suffix}
+      {suffixWithoutPlus}
+      {Array.from({ length: plusCount }).map((_, index) => (
+        <span key={`counter-plus-${index}`} className="text-[#cde25a]">
+          +
+        </span>
+      ))}
     </span>
   );
 }

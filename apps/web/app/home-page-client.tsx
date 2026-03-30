@@ -1,14 +1,38 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { motion } from 'framer-motion';
 import ctaRobo from '../Assets/Page/cta-robo.png';
+import communityImage1 from '../Assets/Community/1.webp';
+import communityImage2 from '../Assets/Community/2.webp';
+import communityImage3 from '../Assets/Community/3.webp';
+import communityImage4 from '../Assets/Community/4.webp';
+import communityImage5 from '../Assets/Community/5.webp';
+import communityImage6 from '../Assets/Community/6.webp';
+import communityImage7 from '../Assets/Community/7.webp';
+import communityImage8 from '../Assets/Community/8.webp';
+import communityImage9 from '../Assets/Community/9.webp';
+import communityImage10 from '../Assets/Community/10.webp';
+import communityImage11 from '../Assets/Community/11.webp';
+import communityImage12 from '../Assets/Community/12.webp';
+import communityImage13 from '../Assets/Community/13.webp';
+import communityImage14 from '../Assets/Community/14.webp';
+import communityImage15 from '../Assets/Community/15.webp';
+import communityImage16 from '../Assets/Community/16.webp';
+import communityImage17 from '../Assets/Community/17.webp';
+import communityImage18 from '../Assets/Community/18.webp';
+import communityImage19 from '../Assets/Community/19.webp';
+import communityImage20 from '../Assets/Community/20.webp';
 import { AuthorAvatar } from './components/author-avatar';
+import { HeroSearchDropdown } from './components/hero-search-dropdown';
 import { PostCardUI } from './components/post-card';
 import { PromptCardUI } from './components/prompt-listing';
 import { usePromptInteractions } from './components/prompt-interactions/use-prompt-interactions';
 import { Skeleton } from './components/ui/skeleton';
+import { AnimatedCounter } from './components/animated-counter';
 import { useDragSlider } from '../hooks/useDragSlider';
 import {
   AuthorApiError,
@@ -28,6 +52,20 @@ import {
   type PublicPrompt,
 } from '../lib/public-content';
 import { refreshSession } from '../lib/utils/session';
+
+const SESSION_FALLBACK = {
+  data: null,
+  status: 'unauthenticated' as const,
+  update: (async () => null) as ReturnType<typeof useSession>['update'],
+};
+
+function useSafeSession() {
+  try {
+    return useSession();
+  } catch {
+    return SESSION_FALLBACK;
+  }
+}
 
 const heroCards = [
   {
@@ -123,24 +161,6 @@ const heroCards = [
   },
 ];
 
-const floatingBadges = [
-  {
-    label: '@promptlab',
-    className: 'left-[14%] top-[36px] bg-[#3866f3] text-white',
-    delay: '520ms',
-  },
-  {
-    label: '@curated',
-    className: 'left-1/2 top-[18px] -translate-x-1/2 bg-[#f2a8c8] text-white',
-    delay: '570ms',
-  },
-  {
-    label: '@andrea',
-    className: 'right-[11%] top-[64px] bg-[#86cfb1] text-white',
-    delay: '620ms',
-  },
-];
-
 const categorySkeletonCount = 8;
 const authorSkeletonCount = 8;
 const trendingPromptSkeletonCount = 4;
@@ -169,46 +189,53 @@ function isAccessTokenExpired(expiresAt?: string | null) {
   return expiresAtMs <= Date.now() + 60_000;
 }
 
+function formatCompactCount(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
 const whyChooseItems = [
   {
-    title: 'Unrivaled Quality',
+    title: 'Gemini Prompt Clarity',
     description:
-      'Every featured prompt is reviewed for usefulness, originality, and real-world creator value. You get a cleaner library filled with ideas that are ready to use.',
+      'Every featured gemini prompt is reviewed for usefulness, originality, and creator-ready output structure so you get practical results faster.',
   },
   {
-    title: 'Fast creator workflow',
+    title: 'Fast Creator Workflow',
     description:
-      'Discover prompt packs, save references, and move from inspiration to launch without losing momentum. Everything is organized to help you find strong ideas in less time.',
+      'Discover prompt packs, save references, and move from idea to publish without losing momentum using prompt-for-gemini templates.',
   },
   {
-    title: 'Unrivaled Variety',
+    title: 'High-Intent Prompt Variety',
     description:
-      'We offer strong value across image, code, and content prompts for every type of builder. That means one library can support your visuals, product work, and storytelling.',
+      'From gemini ai photo prompt formats to niche creative sets like rare animals, one library supports multiple creator use cases.',
   },
   {
-    title: 'Legacy of Excellence',
+    title: 'Trend + Timeless Balance',
     description:
-      'The collection is curated to feel timeless, useful, and consistently high-signal instead of trend-chasing. You can keep returning to proven prompts that still hold up over time.',
+      'We blend trending prompt seen formats with evergreen templates so your output stays fresh without losing quality fundamentals.',
   },
 ];
 
 const benefitCards = [
   {
-    title: '100% Authentic Product',
+    title: 'High-Signal Gemini Prompt Quality',
     description:
-      'Prominently display a clear "100% authentic guarantee" so every buyer feels immediate trust.',
+      'Every prompt is reviewed for clarity, structure, and output consistency so you can generate stronger results with less trial and error.',
     tone: 'bg-[#fff0e6]',
   },
   {
-    title: 'Free & Easy Return',
+    title: 'Weekly Trending Prompt Drops',
     description:
-      'Provide customers with prepaid return labels to make the process hassle-free and friendly.',
+      'Stay current with fresh prompt seen styles, festival themes, and viral content formats published every week.',
     tone: 'bg-[#f3f3f1]',
   },
   {
-    title: 'Safe Payments',
+    title: 'Creator-Ready Prompt Formats',
     description:
-      'Use fraud detection tools to identify suspicious activity and protect every order with confidence.',
+      'Use copy-paste prompt formats for Gemini AI, ChatGPT, and visual workflows without rewriting from scratch.',
     tone: 'bg-[#f3f3f1]',
   },
 ];
@@ -216,51 +243,45 @@ const benefitCards = [
 const testimonials = [
   {
     quote:
-      'Gemini Prompts helped me ship campaign drafts in hours instead of days. The prompt quality is consistent and genuinely useful.',
+      'I used to test 20+ prompts to get one usable image. Now I get strong portrait options in a few tries, especially for lighting and mood.',
     name: 'Kyle Weznick',
-    role: 'Media Director, Turn Around Music Group',
-    avatar:
-      'url(https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=300)',
+    role: 'Wedding Photographer, Austin',
+    avatar: `url(${communityImage3.src})`,
   },
   {
     quote:
-      'I use it every morning to unblock writing tasks. The structure of each prompt gives me a reliable starting point every time.',
+      'The prompts are easy to copy and tweak. I get better skin tones, cleaner outfits, and backgrounds that actually match my concept.',
     name: 'Nina Alvarez',
-    role: 'Content Lead, Studio North',
-    avatar:
-      'url(https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=300)',
+    role: 'Reels Creator, Mumbai',
+    avatar: `url(${communityImage6.src})`,
   },
   {
     quote:
-      'Our design team now explores twice as many directions before review. It feels like having a creative strategist built into our workflow.',
+      'We use these prompts for product mockups and social posts. The image quality stays consistent, so our review cycle is much faster.',
     name: 'Rohan Mehta',
     role: 'Product Designer, Pixel Forge',
-    avatar:
-      'url(https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=300)',
+    avatar: `url(${communityImage9.src})`,
   },
   {
     quote:
-      'The code prompt packs are practical, not fluff. They helped our team tighten specs, debug faster, and improve handoffs.',
+      'I am not a technical person, but this made AI image creation simple. I can turn rough ideas into polished visuals in minutes.',
     name: 'Elena Brooks',
-    role: 'Engineering Manager, Buildlane',
-    avatar:
-      'url(https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=300)',
+    role: 'Content Manager, Buildlane',
+    avatar: `url(${communityImage12.src})`,
   },
   {
     quote:
-      'I joined for content ideas and stayed for the curation quality. Everything feels polished, relevant, and ready to adapt.',
+      'For ads and thumbnails, these prompt packs save a lot of time. We test more visual angles without rewriting everything from scratch.',
     name: 'Marcus Lee',
     role: 'Growth Marketer, Brightbit',
-    avatar:
-      'url(https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=300)',
+    avatar: `url(${communityImage15.src})`,
   },
   {
     quote:
-      'This library gave our small team enterprise-level creative momentum. We launch faster now without sacrificing quality.',
+      'What I like most is the friendly style. The prompts feel practical, and my feed now looks more cohesive across different themes.',
     name: 'Priya Nair',
-    role: 'Founder, Orbit Atelier',
-    avatar:
-      'url(https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=300)',
+    role: 'Lifestyle Creator, Orbit Atelier',
+    avatar: `url(${communityImage18.src})`,
   },
 ];
 
@@ -268,273 +289,507 @@ const communityCardSize = 'h-[80px] w-[80px] sm:h-[96px] sm:w-[96px]';
 
 const communityTopCards = [
   {
-    src: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Portrait with warm lighting',
+    src: communityImage1.src,
+    alt: 'Community member portrait 1',
   },
   {
-    src: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Creative portrait with neutral tone',
+    src: communityImage2.src,
+    alt: 'Community member portrait 2',
   },
   {
-    src: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Model in streetwear look',
+    src: communityImage3.src,
+    alt: 'Community member portrait 3',
   },
   {
-    src: 'https://images.unsplash.com/photo-1545167622-3a6ac756afa4?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Vibrant close-up portrait',
+    src: communityImage4.src,
+    alt: 'Community member portrait 4',
   },
   {
-    src: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Creative profile shot',
+    src: communityImage5.src,
+    alt: 'Community member portrait 5',
   },
   {
-    src: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Bold fashion portrait',
+    src: communityImage6.src,
+    alt: 'Community member portrait 6',
   },
   {
-    src: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Stylish studio portrait',
+    src: communityImage7.src,
+    alt: 'Community member portrait 7',
   },
   {
-    src: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Smiling portrait with soft tones',
+    src: communityImage8.src,
+    alt: 'Community member portrait 8',
   },
   {
-    src: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Portrait in editorial style',
+    src: communityImage9.src,
+    alt: 'Community member portrait 9',
   },
   {
-    src: 'https://images.unsplash.com/photo-1545996124-0501ebae84d0?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Street portrait with bright colors',
+    src: communityImage10.src,
+    alt: 'Community member portrait 10',
   },
 ];
 
 const communityBottomCards = [
   {
-    src: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Portrait with cinematic lighting',
+    src: communityImage11.src,
+    alt: 'Community member portrait 11',
   },
   {
-    src: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Portrait with bright expression',
+    src: communityImage12.src,
+    alt: 'Community member portrait 12',
   },
   {
-    src: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Casual portrait closeup',
+    src: communityImage13.src,
+    alt: 'Community member portrait 13',
   },
   {
-    src: 'https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Urban portrait look',
+    src: communityImage14.src,
+    alt: 'Community member portrait 14',
   },
   {
-    src: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Creative portrait with gradient tones',
+    src: communityImage15.src,
+    alt: 'Community member portrait 15',
   },
   {
-    src: 'https://images.unsplash.com/photo-1541532713592-79a0317b6b77?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Fashion portrait with deep colors',
+    src: communityImage16.src,
+    alt: 'Community member portrait 16',
   },
   {
-    src: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Portrait with warm highlights',
+    src: communityImage17.src,
+    alt: 'Community member portrait 17',
   },
   {
-    src: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Profile portrait in dark tones',
+    src: communityImage18.src,
+    alt: 'Community member portrait 18',
   },
   {
-    src: 'https://images.unsplash.com/photo-1499996860823-5214fcc65f8f?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Portrait with artistic mood',
+    src: communityImage19.src,
+    alt: 'Community member portrait 19',
   },
   {
-    src: 'https://images.unsplash.com/photo-1528892952291-009c663ce843?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=280',
-    alt: 'Portrait with expressive styling',
+    src: communityImage20.src,
+    alt: 'Community member portrait 20',
   },
 ];
 
-const homeFaqCategories = ['General', 'Trust & Safety', 'Services', 'Billing', 'Office Cleaning'];
+const useCaseCards = [
+  {
+    description:
+      'Pick image prompts by mood, style, and goal so you spend less time testing and more time creating.',
+    icon: 'spark',
+    title: 'Find The Right Prompt Fast',
+  },
+  {
+    description:
+      'Start in Gemini for visuals, then use ChatGPT for captions and post copy from the same idea.',
+    icon: 'stack',
+    title: 'Use Across Gemini & ChatGPT',
+  },
+  {
+    description:
+      'Prepare prompt sets for upcoming posts, festive edits, and client work in one simple workflow.',
+    icon: 'bars',
+    title: 'Weekly Content Planning',
+  },
+  {
+    description:
+      'Get sharper portrait details, better lighting, and more consistent backgrounds with structured templates.',
+    icon: 'shield',
+    title: 'Cleaner Image Results',
+  },
+  {
+    description:
+      'Use pre-built packs for reels, thumbnails, and campaign visuals when you need a fast turnaround.',
+    icon: 'bolt',
+    title: 'Ready-Made Prompt Packs',
+  },
+  {
+    description:
+      'Save top-performing prompts, tweak them, and build your own image style library over time.',
+    icon: 'refresh',
+    title: 'Improve With Every Post',
+  },
+];
+
+function renderUseCaseIcon(icon: string) {
+  if (icon === 'spark') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6">
+        <path
+          d="M5.5 12.5c3.2 0 5.8-2.6 5.8-5.8 0 3.2 2.6 5.8 5.8 5.8-3.2 0-5.8 2.6-5.8 5.8 0-3.2-2.6-5.8-5.8-5.8Zm10.8-7.8v2m1-1h-2M5.8 18.4v1.7m.8-.8H5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+  if (icon === 'stack') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6">
+        <path
+          d="m12 5 7 3.8-7 3.8-7-3.8L12 5Zm7 7.2-7 3.8-7-3.8M19 16l-7 3.8L5 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+  if (icon === 'bars') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6">
+        <path
+          d="M6 18V8m6 10V5m6 13v-8"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+        />
+      </svg>
+    );
+  }
+  if (icon === 'shield') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6">
+        <path
+          d="m12 4 7 2.7v5.2c0 4.2-2.7 7.9-7 9.8-4.3-1.9-7-5.6-7-9.8V6.7L12 4Zm-3.1 8.2 2.3 2.2 4-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+  if (icon === 'bolt') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6">
+        <path
+          d="M13.2 3 5.4 13.1h5.5L9.8 21l8.8-10.9h-5.5L13.2 3Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6">
+      <path
+        d="M20 11.6A8 8 0 1 1 17.7 6m2.3-.3v5h-5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+const homeFaqCategories = [
+  'Gemini Prompt Basics',
+  'Photo & Visual',
+  'Boys & Girls Prompts',
+  'Usage & Access',
+];
 
 const faqItems = [
   {
+    category: 'Gemini Prompt Basics',
+    id: 'what-is-gemini-prompt',
+    question: 'What is a gemini prompt and how do I use it?',
     answer:
-      'After renovation, we recommend a deep clean booking so dust and debris are removed from vents, surfaces, and corners before your regular cleaning cycle starts.',
-    category: 'General',
-    id: 'renovation-work',
-    question: 'What if I just had renovation work done?',
+      'A gemini prompt is a ready instruction you paste into Gemini AI to get the output style you want. Pick a prompt, customize details like mood or scene, then run it in Gemini.',
   },
   {
+    category: 'Gemini Prompt Basics',
+    id: 'gemini-ai-prompt-vs-normal',
+    question: 'Is a gemini ai prompt different from a normal prompt?',
     answer:
-      'You can book in just a few minutes from the website. Pick your service, choose a time slot, add any notes, and confirm your details before checkout.',
-    category: 'General',
-    id: 'book-appointment',
-    question: 'How do I book an appointment online?',
+      'Yes. A strong gemini ai prompt is structured with intent, style, context, and constraints, so Gemini can generate cleaner and more consistent results.',
   },
   {
+    category: 'Gemini Prompt Basics',
+    id: 'google-gemini-prompt-compatibility',
+    question: 'Can I use the same google gemini prompt in ChatGPT or Midjourney?',
     answer:
-      'Yes. You can reschedule or cancel from your account dashboard as long as you do so before the cutoff window shown in your booking confirmation.',
-    category: 'General',
-    id: 'reschedule-cancel',
-    question: 'Can I reschedule or cancel my booking?',
+      'You can reuse the base idea, but each model responds best to slight format changes. Start with a google gemini prompt, then adjust wording for ChatGPT text tasks or Midjourney visual styles.',
   },
   {
+    category: 'Gemini Prompt Basics',
+    id: 'prompt-seen-meaning',
+    question: 'What does prompt seen mean in trending reels and edits?',
     answer:
-      'We serve most neighborhoods in our listed service areas. Enter your address at checkout and we will instantly confirm whether service is available.',
-    category: 'General',
-    id: 'service-area',
-    question: 'How do I know if you service my area?',
+      'Prompt seen usually means the creator used a public prompt format already trending online. You can recreate the look by using a similar structure and replacing the subject details.',
   },
   {
+    category: 'Gemini Prompt Basics',
+    id: 'prompt-for-gemini-structure',
+    question: 'How should I structure a prompt for gemini for better output?',
     answer:
-      'Most standard appointments run between 2 and 4 hours depending on your space size, selected service type, and any extras you include.',
-    category: 'General',
-    id: 'appointment-length',
-    question: 'How long does a typical appointment take?',
+      'Use a simple order: subject, context, style, camera or tone details, and output goal. Structured prompts reduce random outputs and improve quality.',
   },
   {
+    category: 'Gemini Prompt Basics',
+    id: 'gemini-prompt-length',
+    question: 'Should a gemini prompt be short or detailed?',
     answer:
-      'Yes. Frequent customers receive loyalty pricing and occasional bundle discounts, which you can view during checkout before confirming your appointment.',
-    category: 'Billing',
-    id: 'frequent-customer-discount',
-    question: "Do I get a discount if I'm a frequent customer?",
+      'For creative visuals, detailed prompts usually perform better. Keep it clear and specific instead of adding unrelated words.',
   },
   {
+    category: 'Gemini Prompt Basics',
+    id: 'gemini-prompt-with-examples',
+    question: 'Can I include examples inside a gemini ai prompt?',
     answer:
-      'We accept all major credit and debit cards, and in some areas we also support Apple Pay and Google Pay for faster checkout.',
-    category: 'Billing',
-    id: 'payment-methods',
-    question: 'What payment methods do you accept?',
+      'Yes. Adding one compact example can help Gemini understand your expected style, tone, and output format more accurately.',
   },
   {
+    category: 'Gemini Prompt Basics',
+    id: 'gemini-prompt-for-beginners',
+    question: 'What is the easiest gemini prompt format for beginners?',
     answer:
-      'You are charged only after your booking is confirmed. Recurring plans are billed according to the schedule you choose during signup.',
-    category: 'Billing',
-    id: 'when-charged',
-    question: 'When will I be charged for my booking?',
+      'Start with: "Create [subject] in [style] with [lighting/background], high detail, realistic quality." Then tweak one element at a time.',
   },
   {
+    category: 'Gemini Prompt Basics',
+    id: 'avoid-gemini-prompt-mistakes',
+    question: 'What common mistakes should I avoid in a gemini prompt?',
     answer:
-      'Yes. Invoices and payment receipts are available from your account dashboard, and we also email a copy after every completed service.',
-    category: 'Billing',
-    id: 'invoice-receipt',
-    question: 'Can I get an invoice or receipt after service?',
+      'Avoid vague terms, conflicting styles, and missing context. Clear direction and consistent style cues produce much stronger results.',
   },
   {
+    category: 'Gemini Prompt Basics',
+    id: 'gemini-prompt-output-consistency',
+    question: 'How can I make gemini prompt output more consistent?',
     answer:
-      'If something does not look right, contact support and we will review the charge, explain the line items, and correct any verified billing issue.',
-    category: 'Billing',
-    id: 'billing-issue',
-    question: 'What should I do if I notice a billing issue?',
+      'Reuse a stable prompt template, keep style language consistent, and only change one variable per generation cycle.',
   },
   {
+    category: 'Photo & Visual',
+    id: 'best-gemini-ai-photo-prompt',
+    question: 'Which gemini ai photo prompt works best for realistic edits?',
     answer:
-      'Absolutely. You can leave detailed notes while booking, and you can also update special requests from your dashboard before your cleaner arrives.',
-    category: 'Services',
-    id: 'special-instructions',
-    question: 'Can I give specific instructions to the cleaners and ask for special requests?',
+      'Use prompts that include lighting, lens style, texture detail, and background mood. This improves skin detail, depth, and realism for portrait and cinematic image results.',
   },
   {
+    category: 'Photo & Visual',
+    id: 'prompt-for-gemini-cinematic',
+    question: 'How do I write a prompt for gemini for cinematic photos?',
     answer:
-      'No worries. Cleaners can bring standard supplies when requested. If you want eco-friendly products, select that preference during booking.',
-    category: 'Services',
-    id: 'supplies-needed',
-    question: "What if I don't have a mop, bucket, or vacuum?",
+      'Start with subject, add camera angle and lighting, then define color mood and environment. A good prompt for gemini uses clear visual direction instead of broad one-line instructions.',
   },
   {
+    category: 'Photo & Visual',
+    id: 'rare-animals-prompts',
+    question: 'Do you have rare animals prompt ideas?',
     answer:
-      'Yes. Deep cleaning, move-in and move-out cleaning, and add-on services can be selected during checkout so your appointment fits your exact needs.',
-    category: 'Services',
-    id: 'deep-cleaning-options',
-    question: 'Do you offer deep cleaning or specialty cleaning services?',
+      'Yes. We publish rare animals prompt concepts for cinematic wildlife posters, fantasy edits, and realistic nature-style visuals with rich environmental detail.',
   },
   {
+    category: 'Photo & Visual',
+    id: 'lighting-camera-details',
+    question: 'Do lighting and camera details matter in a gemini ai photo prompt?',
     answer:
-      'If you have a strong preference, we do our best to match you with the same cleaner for recurring bookings depending on availability.',
-    category: 'Services',
-    id: 'same-cleaner',
-    question: 'Can I request the same cleaner for recurring visits?',
+      'Yes, they matter a lot. Keywords like soft light, golden hour, 85mm lens, and shallow depth create more realistic and controllable visuals.',
   },
   {
+    category: 'Photo & Visual',
+    id: 'upscaling-photo-quality',
+    question: 'How do I get higher-quality images from photo prompts?',
     answer:
-      'Yes. Add-on tasks like inside-fridge cleaning, inside-oven cleaning, or laundry folding can be selected before you confirm your appointment.',
-    category: 'Services',
-    id: 'add-on-tasks',
-    question: 'Can I add extra tasks to my service?',
+      'Use clear composition details, realistic texture cues, and explicit quality instructions like high detail and natural skin texture.',
   },
   {
+    category: 'Photo & Visual',
+    id: 'background-replacement',
+    question: 'Can I use prompts for clean background replacement?',
     answer:
-      'Yes, we provide office and commercial cleaning with flexible schedules, including after-hours service to avoid disrupting your operations.',
-    category: 'Office Cleaning',
-    id: 'office-cleaning',
-    question: 'Do you clean offices and other commercial spaces?',
+      'Yes. Describe foreground subject, new environment, depth, and lighting continuity so the replacement looks natural.',
   },
   {
+    category: 'Photo & Visual',
+    id: 'festival-photo-prompts',
+    question: 'Are there festival-ready gemini ai photo prompt templates?',
     answer:
-      'Yes. We can arrange evening, early morning, or weekend service windows so your team can work without interruptions.',
-    category: 'Office Cleaning',
-    id: 'after-hours-office',
-    question: 'Can office cleanings be scheduled outside business hours?',
+      'Yes. We provide seasonal templates for Diwali, Holi, Navratri, Christmas, and more with matching color palettes and mood cues.',
   },
   {
+    category: 'Photo & Visual',
+    id: 'realistic-portrait-details',
+    question: 'How do I make portraits look realistic instead of over-processed?',
     answer:
-      'We clean workstations, meeting rooms, kitchens, restrooms, lobbies, and other shared areas, with custom checklists available for each site.',
-    category: 'Office Cleaning',
-    id: 'office-areas-covered',
-    question: 'What areas are included in office cleaning?',
+      'Use natural skin detail, balanced contrast, realistic facial proportions, and soft post-processing language in your prompt.',
   },
   {
+    category: 'Photo & Visual',
+    id: 'social-media-ratio',
+    question: 'Can I mention social media framing like reel or post ratio?',
     answer:
-      'Absolutely. We support weekly, biweekly, and custom recurring schedules for office clients, including multi-location coordination.',
-    category: 'Office Cleaning',
-    id: 'recurring-office',
-    question: 'Do you offer recurring office cleaning plans?',
+      'Yes. Mention framing goals like vertical reel style, centered subject, and feed-ready composition to get platform-friendly outputs.',
   },
   {
+    category: 'Photo & Visual',
+    id: 'photo-style-transfer',
+    question: 'Can I request style transfer in a gemini ai prompt?',
     answer:
-      'Yes. We can work around access rules, badge entry, security desks, and site-specific instructions to keep everything seamless for your team.',
-    category: 'Office Cleaning',
-    id: 'building-access',
-    question: 'Can you handle office building access and security requirements?',
+      'Yes. You can specify vintage, cinematic, editorial, retro, or documentary styles while still keeping the subject and mood controlled.',
   },
   {
+    category: 'Boys & Girls Prompts',
+    id: 'prompt-for-gemini-ai-girl',
+    question: 'Where can I find a prompt for gemini ai girl?',
     answer:
-      'Every cleaner is background-checked and identity-verified. We also monitor reviews and maintain strict quality standards for ongoing bookings.',
-    category: 'Trust & Safety',
-    id: 'trust-safety',
-    question: 'How do you ensure cleaners are trustworthy and professional?',
+      'You can browse our girl-focused prompt sets for festive, aesthetic, editorial, and portrait styles. Each prompt for gemini ai girl is designed to be ready-to-paste.',
   },
   {
+    category: 'Boys & Girls Prompts',
+    id: 'prompt-for-gemini-ai-boy',
+    question: 'Where can I find a prompt for gemini ai boy?',
     answer:
-      'Yes. Our teams are insured, and we have clear incident reporting processes in place to protect both customers and professionals.',
-    category: 'Trust & Safety',
-    id: 'insured-teams',
-    question: 'Are your cleaners insured and covered while on the job?',
+      'Check our boys prompt collections for gym, attitude, retro, and cinematic looks. Every prompt for gemini ai boy can be customized by outfit, location, and mood.',
   },
   {
+    category: 'Boys & Girls Prompts',
+    id: 'gemini-prompts-for-boys',
+    question: 'Do you provide gemini prompts for boys in trend-focused styles?',
     answer:
-      'We review every issue seriously. If something is damaged or missed, contact support promptly and we will guide you through the resolution process.',
-    category: 'Trust & Safety',
-    id: 'damage-resolution',
-    question: 'What happens if something is damaged during service?',
+      'Yes. Our gemini prompts for boys cover street portraits, fitness aesthetics, bike edits, and social-media-ready visual themes.',
   },
   {
+    category: 'Boys & Girls Prompts',
+    id: 'girls-aesthetic-prompts',
+    question: 'Do you also have aesthetic girls prompt themes?',
     answer:
-      'We use secure payment processing and protect your account details with industry-standard safeguards. Sensitive payment data is never exposed to cleaners.',
-    category: 'Trust & Safety',
-    id: 'payment-security',
-    question: 'How do you keep my payment and account information secure?',
+      'Yes. You can find soft aesthetic, festive, editorial, glam, and lifestyle style prompts designed for high-visual social content.',
   },
   {
+    category: 'Boys & Girls Prompts',
+    id: 'outfit-pose-control',
+    question: 'Can I control outfit, pose, and expression in boys and girls prompts?',
     answer:
-      'Yes. You can review cleaner ratings, completed jobs, and service history from your account to feel confident before ongoing bookings.',
-    category: 'Trust & Safety',
-    id: 'review-cleaner-history',
-    question: 'Can I see ratings or service history for cleaners?',
+      'Yes. Add explicit outfit details, body pose direction, expression, and camera framing to control the final look.',
+  },
+  {
+    category: 'Boys & Girls Prompts',
+    id: 'gym-attitude-boy-prompts',
+    question: 'Do you have gym and attitude prompt for gemini ai boy styles?',
+    answer:
+      'Yes. We provide gym, street, retro, and attitude templates tuned for prompt for gemini ai boy creator needs.',
+  },
+  {
+    category: 'Boys & Girls Prompts',
+    id: 'saree-girl-prompts',
+    question: 'Can I get traditional prompt for gemini ai girl edits like saree looks?',
+    answer:
+      'Yes. Our traditional sets include saree, festive, temple, and royal portrait themes with culturally relevant styling cues.',
+  },
+  {
+    category: 'Boys & Girls Prompts',
+    id: 'couple-prompt-styles',
+    question: 'Are couple prompts available for romantic and cinematic edits?',
+    answer:
+      'Yes. Couple prompt sets include romantic portraits, candid moods, travel scenes, and cinematic storytelling styles.',
+  },
+  {
+    category: 'Boys & Girls Prompts',
+    id: 'avoid-over-edited-face',
+    question: 'How do I avoid over-edited faces in boys and girls prompts?',
+    answer:
+      'Use natural skin texture, realistic proportions, subtle makeup terms, and balanced contrast instructions in your prompt.',
+  },
+  {
+    category: 'Boys & Girls Prompts',
+    id: 'youth-trend-styles',
+    question: 'Do you update youth trend styles for boys and girls regularly?',
+    answer:
+      'Yes. We update modern looks based on trending creator formats so your visual style stays current across platforms.',
+  },
+  {
+    category: 'Usage & Access',
+    id: 'is-gemini-prompts-free',
+    question: 'Are prompts on GeminiPrompts.io free to use?',
+    answer:
+      'Yes, many prompts are free, and we also offer premium prompt packs for deeper workflows and exclusive creator-ready prompt libraries.',
+  },
+  {
+    category: 'Usage & Access',
+    id: 'update-frequency',
+    question: 'How often do you add new gemini prompt collections?',
+    answer:
+      'New prompts and categories are added every week so you can keep up with fresh trends, festival themes, and evolving creator styles.',
+  },
+  {
+    category: 'Usage & Access',
+    id: 'save-and-revisit-prompts',
+    question: 'Can I save prompts and revisit them later?',
+    answer:
+      'Yes. Sign in to save prompts to your profile and quickly reopen them anytime from your saved prompts list.',
+  },
+  {
+    category: 'Usage & Access',
+    id: 'copy-paste-directly',
+    question: 'Can I directly copy and paste prompts into Gemini AI?',
+    answer:
+      'Yes. All prompts are formatted for quick copy-paste use, and you can customize key details before running them.',
+  },
+  {
+    category: 'Usage & Access',
+    id: 'membership-vs-free',
+    question: 'What is the difference between free and member-only prompts?',
+    answer:
+      'Free prompts cover broad creative needs, while membership unlocks exclusive prompt packs, advanced templates, and premium updates.',
+  },
+  {
+    category: 'Usage & Access',
+    id: 'client-work-usage',
+    question: 'Can I use these prompts for client projects and brand content?',
+    answer:
+      'Yes. Many creators use our prompts for commercial-style drafts, campaign mockups, and client-facing visual ideation.',
+  },
+  {
+    category: 'Usage & Access',
+    id: 'language-support',
+    question: 'Do prompts work only in English or in other languages too?',
+    answer:
+      'English gives the most stable output, but you can localize prompts and still get strong results by keeping structure clear.',
+  },
+  {
+    category: 'Usage & Access',
+    id: 'request-new-prompts',
+    question: 'Can I request new prompt categories or styles?',
+    answer:
+      'Yes. You can share request ideas, and we prioritize categories based on demand, trend relevance, and creator workflows.',
+  },
+  {
+    category: 'Usage & Access',
+    id: 'mobile-usage',
+    question: 'Can I use GeminiPrompts.io on mobile devices smoothly?',
+    answer:
+      'Yes. You can browse, copy, save, and open prompts on mobile and desktop with the same account workflow.',
+  },
+  {
+    category: 'Usage & Access',
+    id: 'low-quality-output-fix',
+    question: 'What should I do if prompt output quality is low?',
+    answer:
+      'Refine the prompt with clearer subject details, style cues, and lighting context. Small targeted edits usually improve output fast.',
   },
 ];
 
 type WatchReadListenCardViewModel = {
   id: string;
   slug: string;
+  categorySlug: string | null;
   title: string;
   author: string;
   date: string;
@@ -553,6 +808,7 @@ function toWatchReadListenCard(prompt: PublicPrompt): WatchReadListenCardViewMod
   return {
     id: prompt.id,
     slug: prompt.slug,
+    categorySlug: prompt.primaryCategory?.slug || prompt.categories[0]?.slug || null,
     title: prompt.title,
     author: prompt.author.name,
     date: formatDisplayDate(prompt.publishedAt || prompt.updatedAt),
@@ -584,15 +840,20 @@ function WatchReadListenPromptCard({ prompt }: { prompt: PublicPrompt }) {
   });
 
   return (
-    <article className="group relative rounded-[20px] border border-[#dfe2e8] bg-white p-4 sm:p-5 lg:p-6">
+    <article className="group relative rounded-[24px] border border-[#dfe2e8] bg-white p-[10px]">
       <Link
-        href={`/prompt/${card.slug}`}
+        href={card.categorySlug ? `/${card.categorySlug}/${card.slug}` : `/prompt/${card.slug}`}
         aria-label={`Open prompt: ${card.title}`}
-        className="absolute inset-0 z-10 rounded-[20px]"
+        className="absolute inset-0 z-10 rounded-[24px]"
       />
 
-      <div className="pointer-events-none relative z-20 grid gap-4 sm:grid-cols-[1fr_220px] sm:items-stretch">
-        <div className="flex flex-col">
+      <div className="pointer-events-none relative z-20 grid gap-4 sm:grid-cols-[220px_1fr] sm:items-stretch">
+        <div
+          className="order-1 relative h-[190px] overflow-hidden rounded-[24px] bg-cover bg-center"
+          style={{ backgroundImage: `url(${card.image})` }}
+        />
+
+        <div className="order-2 flex flex-col">
           <div className="flex flex-wrap items-center gap-2">
             {card.tags.map((tag) => (
               <span
@@ -646,7 +907,11 @@ function WatchReadListenPromptCard({ prompt }: { prompt: PublicPrompt }) {
 
               <div className="flex items-center gap-2 text-[#131823]">
                 <Link
-                  href={`/prompt/${card.slug}#comments`}
+                  href={
+                    card.categorySlug
+                      ? `/${card.categorySlug}/${card.slug}#comments`
+                      : `/prompt/${card.slug}#comments`
+                  }
                   aria-label={`Open comments for ${card.title}`}
                   className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#f1f3f6] text-[#4b5568] transition-colors hover:bg-[#e8ecf2]"
                 >
@@ -700,11 +965,6 @@ function WatchReadListenPromptCard({ prompt }: { prompt: PublicPrompt }) {
             </div>
           </div>
         </div>
-
-        <div
-          className="relative min-h-[170px] overflow-hidden rounded-[20px] bg-cover bg-center"
-          style={{ backgroundImage: `url(${card.image})` }}
-        />
       </div>
     </article>
   );
@@ -722,30 +982,33 @@ export default function HomePageClient({
   initialTrendingAuthors,
 }: HomePageClientProps) {
   const heroRef = useRef<HTMLElement | null>(null);
-  const { sliderRef: categorySliderRef, dragHandlers: categoryDragHandlers } = useDragSlider();
+  const { sliderRef: categorySliderRef } = useDragSlider();
   const { sliderRef: trendingAuthorsSliderRef, dragHandlers: trendingAuthorsDragHandlers } =
     useDragSlider();
   const { sliderRef: recentlyUploadedSliderRef, dragHandlers: recentlyUploadedDragHandlers } =
     useDragSlider();
-  const { data: session, status: sessionStatus, update } = useSession();
+  const trendingPromptsSliderRef = useRef<HTMLDivElement | null>(null);
+  const { data: session, status: sessionStatus, update } = useSafeSession();
+  const updateSessionRef = useRef(update);
+  const lastSessionRefreshAttemptRef = useRef(0);
   const followedAuthorsRequestRef = useRef(0);
   const followedPromptsRequestRef = useRef(0);
   const watchReadListenRequestRef = useRef(0);
+  const watchReadListenSentinelRef = useRef<HTMLDivElement | null>(null);
   const carouselCards = [...heroCards, ...heroCards];
   const desktopCardHeight = 340;
-  const mobileCardHeight = 190;
-  const [openWhyChoose, setOpenWhyChoose] = useState(whyChooseItems[0]?.title ?? '');
+  const mobileCardHeight = 160;
+  const [openWhyChoose, setOpenWhyChoose] = useState('');
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [activeFaqCategory, setActiveFaqCategory] = useState(homeFaqCategories[0] ?? 'General');
-  const [openFaqId, setOpenFaqId] = useState(
-    faqItems.find((item) => item.category === (homeFaqCategories[0] ?? 'General'))?.id ?? '',
-  );
+  const [openFaqId, setOpenFaqId] = useState('');
   const [homeContent, setHomeContent] = useState<HomeResponse | null>(initialHomeContent);
   const [isHomeContentLoading, setIsHomeContentLoading] = useState(!initialHomeContent);
   const [homeContentLoadError, setHomeContentLoadError] = useState<string | null>(null);
   const [watchReadListenPrompts, setWatchReadListenPrompts] = useState<PublicPrompt[]>(
     initialLatestPrompts?.items ?? [],
   );
+  const [activeWatchReadListenCategory, setActiveWatchReadListenCategory] = useState<string>('all');
   const [isWatchReadListenLoadingInitial, setIsWatchReadListenLoadingInitial] =
     useState(!initialLatestPrompts);
   const [isWatchReadListenLoadingMore, setIsWatchReadListenLoadingMore] = useState(false);
@@ -778,8 +1041,12 @@ export default function HomePageClient({
   );
   const totalTestimonials = testimonials.length;
   const currentTestimonial = testimonials[activeTestimonial] ?? testimonials[0]!;
+
+  useEffect(() => {
+    updateSessionRef.current = update;
+  }, [update]);
   const visibleFaqItems = faqItems.filter((item) => item.category === activeFaqCategory);
-  const displayTrendingCategories =
+  const displayTrendingCategoriesFromHome =
     homeContent?.categories?.map((category) => ({
       slug: category.slug,
       title: category.name,
@@ -807,6 +1074,87 @@ export default function HomePageClient({
       slug: post.slug,
     })) ?? [];
   const displayPopularTags = homeContent?.popularTags ?? [];
+  const derivedTrendingCategories = useMemo(() => {
+    const bySlug = new Map<
+      string,
+      { slug: string; title: string; articles: number; image: string }
+    >();
+
+    const fallbackCategoryImage =
+      'https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=900';
+
+    const addCategory = (slug?: string | null, name?: string | null, image?: string | null) => {
+      if (!slug || !name) return;
+
+      const existing = bySlug.get(slug);
+      if (existing) {
+        bySlug.set(slug, {
+          ...existing,
+          articles: existing.articles + 1,
+          image: existing.image || image || fallbackCategoryImage,
+        });
+        return;
+      }
+
+      bySlug.set(slug, {
+        slug,
+        title: name,
+        articles: 1,
+        image: image || fallbackCategoryImage,
+      });
+    };
+
+    for (const prompt of watchReadListenPrompts) {
+      const category = prompt.primaryCategory ?? prompt.categories?.[0] ?? null;
+      addCategory(category?.slug, category?.name, prompt.image);
+    }
+
+    for (const prompt of displayTrendingPrompts) {
+      const category = prompt.primaryCategory ?? prompt.categories?.[0] ?? null;
+      addCategory(category?.slug, category?.name, prompt.image);
+    }
+
+    for (const post of homeContent?.latestPosts ?? []) {
+      const category = post.primaryCategory ?? post.categories?.[0] ?? null;
+      addCategory(category?.slug, category?.name, post.image);
+    }
+
+    return Array.from(bySlug.values())
+      .sort((a, b) => b.articles - a.articles || a.title.localeCompare(b.title))
+      .slice(0, 12);
+  }, [displayTrendingPrompts, homeContent?.latestPosts, watchReadListenPrompts]);
+  const displayTrendingCategories =
+    displayTrendingCategoriesFromHome.length > 0
+      ? displayTrendingCategoriesFromHome
+      : derivedTrendingCategories;
+  const topWatchReadListenCategories = useMemo(
+    () =>
+      [...displayTrendingCategories]
+        .sort((a, b) => b.articles - a.articles)
+        .slice(0, 5)
+        .map((category) => ({
+          slug: category.slug,
+          title: category.title,
+          totalCount: category.articles,
+        })),
+    [displayTrendingCategories],
+  );
+  const filteredWatchReadListenPrompts = useMemo(() => {
+    if (activeWatchReadListenCategory === 'all') {
+      return watchReadListenPrompts;
+    }
+    if (!activeWatchReadListenCategory) {
+      return watchReadListenPrompts;
+    }
+
+    return watchReadListenPrompts.filter((prompt) => {
+      const primarySlug = prompt.primaryCategory?.slug;
+      if (primarySlug === activeWatchReadListenCategory) {
+        return true;
+      }
+      return prompt.categories.some((category) => category.slug === activeWatchReadListenCategory);
+    });
+  }, [activeWatchReadListenCategory, watchReadListenPrompts]);
   const selectedFollowedAuthorIdSet = useMemo(
     () => new Set(selectedFollowedAuthorIds),
     [selectedFollowedAuthorIds],
@@ -867,6 +1215,8 @@ export default function HomePageClient({
 
   useEffect(() => {
     if (initialHomeContent) {
+      setHomeContent(initialHomeContent);
+      setIsHomeContentLoading(false);
       setHomeContentLoadError(null);
       return;
     }
@@ -891,6 +1241,8 @@ export default function HomePageClient({
 
   useEffect(() => {
     if (initialTrendingAuthors) {
+      setTrendingAuthors(initialTrendingAuthors.items);
+      setIsTrendingAuthorsLoading(false);
       setTrendingAuthorsLoadError(null);
       return;
     }
@@ -956,28 +1308,111 @@ export default function HomePageClient({
 
   useEffect(() => {
     if (initialLatestPrompts) {
+      setWatchReadListenPrompts(initialLatestPrompts.items);
+      setWatchReadListenHasMore(initialLatestPrompts.items.length < initialLatestPrompts.total);
+      setIsWatchReadListenLoadingInitial(false);
+      setWatchReadListenLoadError(null);
+      setWatchReadListenLoadMoreError(null);
       return;
     }
 
     void loadWatchReadListenPrompts({ append: false, skip: 0 });
   }, [initialLatestPrompts, loadWatchReadListenPrompts]);
 
+  useEffect(() => {
+    if (topWatchReadListenCategories.length === 0) {
+      if (activeWatchReadListenCategory !== 'all') {
+        setActiveWatchReadListenCategory('all');
+      }
+      return;
+    }
+
+    if (activeWatchReadListenCategory === 'all') {
+      return;
+    }
+
+    const exists = topWatchReadListenCategories.some(
+      (category) => category.slug === activeWatchReadListenCategory,
+    );
+    if (!exists) {
+      setActiveWatchReadListenCategory(topWatchReadListenCategories[0]?.slug ?? 'all');
+    }
+  }, [activeWatchReadListenCategory, topWatchReadListenCategories]);
+
+  useEffect(() => {
+    const sentinel = watchReadListenSentinelRef.current;
+    if (!sentinel) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) {
+          return;
+        }
+
+        if (
+          isWatchReadListenLoadingInitial ||
+          isWatchReadListenLoadingMore ||
+          !watchReadListenHasMore ||
+          Boolean(watchReadListenLoadError) ||
+          Boolean(watchReadListenLoadMoreError)
+        ) {
+          return;
+        }
+
+        void loadWatchReadListenPrompts({
+          append: true,
+          skip: watchReadListenPrompts.length,
+        });
+      },
+      {
+        root: null,
+        rootMargin: '220px 0px',
+        threshold: 0.01,
+      },
+    );
+
+    observer.observe(sentinel);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [
+    isWatchReadListenLoadingInitial,
+    isWatchReadListenLoadingMore,
+    watchReadListenHasMore,
+    watchReadListenLoadError,
+    watchReadListenLoadMoreError,
+    watchReadListenPrompts.length,
+    loadWatchReadListenPrompts,
+  ]);
+
   const getSessionAccessToken = useCallback(async () => {
+    if (sessionStatus !== 'authenticated') {
+      return null;
+    }
+
     let accessToken = session?.apiAccessToken ?? null;
     if (accessToken && !isAccessTokenExpired(session?.apiAccessTokenExpiresAt)) {
       return accessToken;
     }
 
-    if (update) {
-      const refreshed = await refreshSession(update).catch(() => null);
-      accessToken = refreshed?.apiAccessToken ?? null;
-      if (accessToken) {
-        return accessToken;
-      }
+    // Homepage followed-authors panel should not trigger session refresh loops.
+    // If token is expired, fail quietly and let user re-auth through normal UX.
+    if (Date.now() - lastSessionRefreshAttemptRef.current < 60_000) return null;
+    const updater = updateSessionRef.current;
+    if (!updater) return null;
+    lastSessionRefreshAttemptRef.current = Date.now();
+    const refreshed = await refreshSession(updater);
+    accessToken = refreshed?.apiAccessToken ?? null;
+    if (accessToken && !isAccessTokenExpired(refreshed?.apiAccessTokenExpiresAt ?? null)) {
+      return accessToken;
     }
 
     return null;
-  }, [session?.apiAccessToken, session?.apiAccessTokenExpiresAt, update]);
+  }, [session?.apiAccessToken, session?.apiAccessTokenExpiresAt, sessionStatus]);
 
   const loadFollowedAuthors = useCallback(async () => {
     if (sessionStatus !== 'authenticated') {
@@ -1107,8 +1542,12 @@ export default function HomePageClient({
   );
 
   useEffect(() => {
+    if (sessionStatus !== 'authenticated') {
+      void loadFollowedAuthors();
+      return;
+    }
     void loadFollowedAuthors();
-  }, [loadFollowedAuthors]);
+  }, [sessionStatus, session?.user?.id, loadFollowedAuthors]);
 
   useEffect(() => {
     if (sessionStatus !== 'authenticated') {
@@ -1238,12 +1677,27 @@ export default function HomePageClient({
       return;
     }
 
-    const firstCard = slider.querySelector<HTMLElement>('[data-category-card]');
+    const firstCard = slider.querySelector<HTMLElement>('[data-category-pill]');
     const sliderStyles = window.getComputedStyle(slider);
     const gap = Number.parseFloat(sliderStyles.columnGap || sliderStyles.gap || '0');
-    const scrollAmount = firstCard
-      ? firstCard.offsetWidth + gap
-      : Math.round(slider.clientWidth * 0.8);
+    const scrollAmount = firstCard ? firstCard.offsetWidth + gap : Math.round(slider.clientWidth * 0.72);
+
+    slider.scrollBy({
+      left: direction === 'next' ? scrollAmount : -scrollAmount,
+      behavior: 'smooth',
+    });
+  };
+
+  const scrollTrendingPrompts = (direction: 'prev' | 'next') => {
+    const slider = trendingPromptsSliderRef.current;
+    if (!slider) {
+      return;
+    }
+
+    const firstCard = slider.querySelector<HTMLElement>('[data-trending-prompt-card]');
+    const sliderStyles = window.getComputedStyle(slider);
+    const gap = Number.parseFloat(sliderStyles.columnGap || sliderStyles.gap || '0');
+    const scrollAmount = firstCard ? firstCard.offsetWidth + gap : Math.round(slider.clientWidth * 0.86);
 
     slider.scrollBy({
       left: direction === 'next' ? scrollAmount : -scrollAmount,
@@ -1291,21 +1745,6 @@ export default function HomePageClient({
 
   const retryLoadWatchReadListenInitial = () => {
     void loadWatchReadListenPrompts({ append: false, skip: 0 });
-  };
-
-  const loadMoreWatchReadListen = () => {
-    if (
-      isWatchReadListenLoadingInitial ||
-      isWatchReadListenLoadingMore ||
-      !watchReadListenHasMore
-    ) {
-      return;
-    }
-
-    void loadWatchReadListenPrompts({
-      append: true,
-      skip: watchReadListenPrompts.length,
-    });
   };
 
   const retryLoadWatchReadListenMore = () => {
@@ -1380,30 +1819,30 @@ export default function HomePageClient({
   };
 
   return (
-    <main className="homepage-headings w-full pb-20 pt-4">
+    <main className="homepage-headings w-full pb-8 pt-3 sm:pt-4">
       <section
         ref={heroRef}
-        className="reveal-section relative overflow-hidden py-10 text-center sm:py-12 lg:py-16"
+        className="reveal-section relative overflow-visible py-6 text-center sm:overflow-hidden sm:py-12 lg:py-16"
       >
         <div className="page-container-wide px-4 sm:px-6 lg:px-8">
-          <h1 className="hero-copy mx-auto mt-2 max-w-[72rem] text-[3rem] leading-[1.1] tracking-[-0.07em] text-[#111111] sm:text-[4.2rem] lg:text-[5.7rem]">
-            <span className="block">A place for prompt</span>
-            <span className="block">masterpieces.</span>
+          <h1 className="hero-copy mx-auto mt-2 max-w-[22rem] px-1 text-[1.62rem] leading-[1.16] tracking-[-0.018em] text-[#111111] sm:max-w-[72rem] sm:text-[3rem] sm:tracking-[-0.04em] lg:text-[4.4rem]">
+            <span className="block whitespace-nowrap">Gemini Prompt Library</span>
+            <span className="block">Trending Gemini AI Prompt Ideas</span>
           </h1>
+          <p className="mx-auto mt-3 max-w-[48rem] text-[0.92rem] leading-6 text-[#5d6778] sm:mt-4 sm:text-[1rem] sm:leading-7">
+            Explore a ready-to-use gemini prompt collection for photos, reels, boys, girls, and
+            niche concepts like rare animals. Copy, paste, and create instantly.
+          </p>
+          <HeroSearchDropdown
+            categories={homeContent?.categories ?? []}
+            tags={homeContent?.popularTags ?? []}
+            latestPrompts={homeContent?.latestPrompts ?? []}
+            latestPosts={homeContent?.latestPosts ?? []}
+            latestAuthors={trendingAuthors}
+          />
 
-          <div className="relative mt-6 h-[220px] w-full sm:h-[430px] lg:mt-8 lg:h-[470px]">
-            {floatingBadges.map((badge) => (
-              <div
-                key={badge.label}
-                className={`hero-badge relative hidden rounded-full px-5 py-2 text-[1.02rem] leading-none shadow-[0_16px_34px_rgba(17,17,17,0.08)] md:block ${badge.className}`}
-                style={{ animationDelay: badge.delay }}
-              >
-                {badge.label}
-                <span className="absolute -bottom-1.5 left-6 h-3 w-3 rotate-45 rounded-[2px] bg-inherit" />
-              </div>
-            ))}
-
-            <div className="absolute inset-x-0 bottom-0 h-[220px] overflow-hidden sm:h-[352px] lg:h-[384px]">
+          <div className="relative mt-4 h-[180px] w-full sm:mb-[-100px] sm:mt-6 sm:h-[430px] sm:-translate-y-[100px] lg:mt-8 lg:h-[470px]">
+            <div className="absolute inset-x-0 bottom-0 h-[180px] overflow-hidden sm:h-[352px] lg:h-[384px]">
               <div className="hero-carousel hero-carousel-mask absolute inset-x-0 bottom-0 hidden overflow-hidden sm:block">
                 <div className="hero-carousel-track flex w-max items-end gap-5 pb-5 pt-5">
                   {carouselCards.map((card, index) => (
@@ -1415,12 +1854,17 @@ export default function HomePageClient({
                         width: `${card.width}px`,
                       }}
                     >
-                      <div
-                        className="hero-stack-card h-full w-full rounded-[30px] bg-cover bg-center"
-                        style={{
-                          backgroundImage: `url(${card.src})`,
-                        }}
-                      />
+                      <div className="hero-stack-card relative h-full w-full overflow-hidden rounded-[30px]">
+                        <Image
+                          src={card.src}
+                          alt={card.alt}
+                          fill
+                          sizes="(max-width: 1024px) 0px, 250px"
+                          priority={index === 3}
+                          loading={index === 3 ? 'eager' : 'lazy'}
+                          className="object-cover"
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1429,19 +1873,24 @@ export default function HomePageClient({
               <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-12 bg-gradient-to-l from-white via-white/45 to-transparent sm:block lg:w-20" />
 
               <div className="hero-carousel hero-carousel-mask absolute inset-x-0 bottom-0 overflow-hidden sm:hidden">
-                <div className="hero-carousel-track flex w-max items-end gap-3 pb-3 pt-4">
+                <div className="hero-carousel-track flex w-max items-end gap-2.5 pb-2 pt-3">
                   {carouselCards.map((card, index) => (
                     <div
                       key={`${card.src}-mobile-${index}`}
-                      className="hero-carousel-item relative w-[168px] shrink-0 cursor-pointer"
+                      className="hero-carousel-item relative w-[146px] shrink-0 cursor-pointer"
                       style={{ height: `${mobileCardHeight}px` }}
                     >
-                      <div
-                        className="hero-stack-card h-full w-full rounded-[22px] bg-cover bg-center"
-                        style={{
-                          backgroundImage: `url(${card.src})`,
-                        }}
-                      />
+                      <div className="hero-stack-card relative h-full w-full overflow-hidden rounded-[22px]">
+                        <Image
+                          src={card.src}
+                          alt={card.alt}
+                          fill
+                          sizes="168px"
+                          priority={index === 3}
+                          loading={index === 3 ? 'eager' : 'lazy'}
+                          className="object-cover"
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1451,62 +1900,116 @@ export default function HomePageClient({
             </div>
           </div>
 
-          <p className="hero-copy mx-auto mt-5 max-w-[44rem] text-[1.03rem] leading-8 text-[#5f6773] sm:mt-7 sm:text-[1.1rem]">
-            Creators can showcase prompt masterpieces, and builders can discover image, code, and
-            content ideas ready for their next launch.
-          </p>
+        </div>
+      </section>
 
-          <div className="hero-copy mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link
-              href="/membership"
-              className="rounded-full bg-[#111111] px-7 py-3 text-[1rem] text-white transition-transform duration-300 ease-out hover:-translate-y-0.5"
+      {/* Start counter section */}
+      <section className="bg-[#f8f8f8] px-4 py-10 sm:px-6 sm:py-10 lg:px-8 lg:py-10">
+        <div className="page-container-wide grid gap-8 lg:grid-cols-[0.4fr_0.6fr] lg:items-center lg:gap-10">
+          
+          {/* Left: Heading and description */}
+          <div className="flex w-full flex-col gap-5">
+            <h2 className="font-poppins text-[2rem] font-medium tracking-[-0.04em] text-[#101010] sm:text-[2.5rem] lg:text-[3rem] lg:leading-[1.2]">
+              Find the Right Gemini Prompt in Seconds
+            </h2>
+            <p className="w-full text-[0.95rem] leading-[1.55] text-[#5f6773] sm:text-[1rem]">
+              Discover gemini ai prompt ideas for photo edits, captions, reels, and creator content.
+              Search by style and instantly start with ready-to-use prompt formats.
+            </p>
+          </div>
+
+          {/* Right: Counters */}
+          <div className="flex w-full items-center pt-3 sm:pt-4 lg:justify-self-start lg:pt-0">
+            <div className="grid w-full grid-cols-2 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-4 lg:gap-6">
+            <motion.div
+              whileInView={{ y: [30, 0], opacity: [0, 1] }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              viewport={{ once: true, amount: 0.4 }}
+              className="flex flex-col items-center text-center"
             >
-              Join for $9.99/m
-            </Link>
-            <Link
-              href="/latest"
-              className="px-4 py-3 text-[1rem] text-[#1b1b1b] transition-colors duration-300 ease-out hover:text-[#5f6773]"
+              <AnimatedCounter
+                value="5k+"
+                className="font-poppins text-[3rem] font-light leading-[0.92] tracking-[-0.06em] text-[#101010] sm:text-[5rem]"
+              />
+              <span className="mt-6 text-[1rem] font-normal leading-[1.2] tracking-[-0.03em] text-[#101010] sm:text-[1.05rem]">
+                Prompts
+              </span>
+            </motion.div>
+            <motion.div
+              whileInView={{ y: [30, 0], opacity: [0, 1] }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+              viewport={{ once: true, amount: 0.4 }}
+              className="flex flex-col items-center text-center"
             >
-              Read more
-            </Link>
+              <AnimatedCounter
+                value="100k+"
+                className="font-poppins text-[3rem] font-light leading-[0.92] tracking-[-0.06em] text-[#101010] sm:text-[5rem]"
+              />
+              <span className="mt-6 text-[1rem] font-normal leading-[1.2] tracking-[-0.03em] text-[#101010] sm:text-[1.05rem]">
+                All Users
+              </span>
+            </motion.div>
+            <motion.div
+              whileInView={{ y: [30, 0], opacity: [0, 1] }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+              viewport={{ once: true, amount: 0.4 }}
+              className="flex flex-col items-center text-center"
+            >
+              <AnimatedCounter
+                value="49k+"
+                className="font-poppins text-[3rem] font-light leading-[0.92] tracking-[-0.06em] text-[#101010] sm:text-[5rem]"
+              />
+              <span className="mt-6 text-[1rem] font-normal leading-[1.2] tracking-[-0.03em] text-[#101010] sm:text-[1.05rem]">
+                Subscribers
+              </span>
+            </motion.div>
+            <motion.div
+              whileInView={{ y: [30, 0], opacity: [0, 1] }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
+              viewport={{ once: true, amount: 0.4 }}
+              className="flex flex-col items-center text-center"
+            >
+              <AnimatedCounter
+                value="100+"
+                className="font-poppins text-[3rem] font-light leading-[0.92] tracking-[-0.06em] text-[#101010] sm:text-[5rem]"
+              />
+              <span className="mt-6 text-[1rem] font-normal leading-[1.2] tracking-[-0.03em] text-[#101010] sm:text-[1.05rem]">
+                Posts
+              </span>
+            </motion.div>
+            </div>
           </div>
         </div>
       </section>
+      {/* End counter section */}
 
       <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <div className="page-container-wide">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="section-heading-medium text-[1.65rem] leading-[1.06] tracking-[-0.05em] text-[#101010] sm:text-[2.25rem] lg:text-[2.5rem]">
-              Top trending topics
+            <h2 className="text-[1.85rem] font-medium leading-[1.06] tracking-[-0.05em] text-[#101010] sm:text-[2.4rem]">
+              Trending Gemini Prompt Categories
             </h2>
-            <div className="hidden items-center gap-3 sm:flex">
+            <div className="hidden items-center gap-2 sm:flex">
               <Link
                 href="/category"
-                className="rounded-full border border-[#d8dce2] bg-white px-5 py-2.5 text-[0.96rem] text-[#101010] transition-colors duration-300 hover:border-[#101010] hover:bg-[#101010] hover:text-white"
+                className="inline-flex h-[48px] items-center justify-center rounded-full border border-[#e5e8ef] bg-white px-5 text-[0.95rem] font-medium text-[#111111] transition-colors hover:border-[#cfd5df] hover:bg-[#f7f9fc]"
               >
-                Explore all categories
+                Explore all Categories
               </Link>
               <button
                 type="button"
                 aria-label="Scroll categories left"
                 onClick={() => scrollCategories('prev')}
-                className="flex h-[54px] w-[54px] items-center justify-center rounded-full border border-[#d9d9d4] text-[#1b1b1b] transition-colors duration-300 hover:border-[#1b1b1b]"
+                className="flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#e5e8ef] bg-white text-[#161a22] transition-colors hover:border-[#cfd5df] hover:bg-[#f7f9fc]"
               >
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6">
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
                   <path
-                    d="M15 5.5 8.5 12 15 18.5"
+                    d="M14.5 5.5 8 12l6.5 6.5"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="1.9"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                  />
-                  <path
-                    d="M9.5 12h9"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.9"
-                    strokeLinecap="round"
                   />
                 </svg>
               </button>
@@ -1514,23 +2017,16 @@ export default function HomePageClient({
                 type="button"
                 aria-label="Scroll categories right"
                 onClick={() => scrollCategories('next')}
-                className="flex h-[54px] w-[54px] items-center justify-center rounded-full border border-[#d9d9d4] text-[#1b1b1b] transition-colors duration-300 hover:border-[#1b1b1b]"
+                className="flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#e5e8ef] bg-white text-[#161a22] transition-colors hover:border-[#cfd5df] hover:bg-[#f7f9fc]"
               >
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6">
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
                   <path
-                    d="M9 5.5 15.5 12 9 18.5"
+                    d="M9.5 5.5 16 12l-6.5 6.5"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="1.9"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                  />
-                  <path
-                    d="M14.5 12h-9"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.9"
-                    strokeLinecap="round"
                   />
                 </svg>
               </button>
@@ -1539,20 +2035,49 @@ export default function HomePageClient({
 
           <div
             ref={categorySliderRef}
-            className="no-scrollbar category-slider mt-5 flex items-start overflow-x-auto pb-2 snap-x snap-mandatory drag-slider sm:mt-7"
-            {...categoryDragHandlers}
+            className="no-scrollbar mt-6 flex snap-x snap-mandatory items-center gap-3 overflow-x-auto pb-2 sm:mt-8 sm:gap-3"
           >
             {isHomeContentLoading ? (
               Array.from({ length: categorySkeletonCount }).map((_, index) => (
                 <div
                   key={`category-skeleton-${index}`}
-                  data-category-card
-                  className="category-card flex shrink-0 snap-start flex-col items-center text-center"
+                  className="flex w-[68vw] min-w-[14rem] max-w-[18rem] shrink-0 snap-start items-center gap-3 rounded-full border border-[#ebedf2] bg-white px-3 py-2.5 sm:w-auto sm:min-w-0 sm:max-w-none"
                 >
-                  <Skeleton className="h-[84px] w-[84px] !rounded-full sm:h-[112px] sm:w-[112px] lg:h-[96px] lg:w-[96px]" />
-                  <Skeleton className="mt-3 h-4 w-24 rounded-full sm:mt-4" />
-                  <Skeleton className="mt-2 h-3.5 w-16 rounded-full" />
+                  <Skeleton className="h-[46px] w-[46px] !rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4.5 w-24 rounded-full" />
+                    <Skeleton className="h-3.5 w-14 rounded-full" />
+                  </div>
                 </div>
+              ))
+            ) : displayTrendingCategories.length > 0 ? (
+              displayTrendingCategories.map((category) => (
+                <Link
+                  key={category.slug}
+                  href={`/category/${category.slug}`}
+                  data-category-pill
+                  className="flex w-[68vw] min-w-[14rem] max-w-[18rem] shrink-0 snap-start items-center justify-between gap-3 rounded-full border border-[#e9ebf1] bg-white px-[8px] py-[8px] transition-colors hover:border-[#cfd5df] hover:bg-[#fafbfe] sm:w-auto sm:min-w-0 sm:max-w-none sm:justify-start"
+                  aria-label={`Open ${category.title} category`}
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="relative h-[46px] w-[46px] overflow-hidden rounded-full border border-[#eceff5]">
+                      <Image
+                        src={category.image}
+                        alt={`${category.title} icon`}
+                        fill
+                        sizes="46px"
+                        loading="lazy"
+                        className="object-cover"
+                      />
+                    </div>
+                    <span className="truncate whitespace-nowrap text-[0.98rem] font-medium text-[#191c22]">
+                      {category.title}
+                    </span>
+                  </div>
+                  <span className="flex h-8 min-w-8 items-center justify-center rounded-full bg-[#f1f3f7] px-2.5 whitespace-nowrap text-[0.88rem] font-medium text-[#8d95a3]">
+                    {formatCompactCount(category.articles)}
+                  </span>
+                </Link>
               ))
             ) : homeContentLoadError ? (
               <div className="flex min-h-[180px] w-full flex-col items-center justify-center rounded-[28px] border border-[#e2e6ee] px-6 text-center">
@@ -1565,27 +2090,6 @@ export default function HomePageClient({
                   Retry
                 </button>
               </div>
-            ) : displayTrendingCategories.length > 0 ? (
-              displayTrendingCategories.map((category) => (
-                <Link
-                  key={category.slug}
-                  href={`/category/${category.slug}`}
-                  data-category-card
-                  className="category-card flex shrink-0 snap-start flex-col items-center text-center"
-                  aria-label={`Open ${category.title} category`}
-                >
-                  <div
-                    className="h-[84px] w-[84px] rounded-full border border-[#e3e3e3] bg-cover bg-center sm:h-[112px] sm:w-[112px] lg:h-[96px] lg:w-[96px]"
-                    style={{ backgroundImage: `url(${category.image})` }}
-                  />
-                  <h3 className="mt-3 text-[0.95rem] font-semibold leading-[1.2] text-[#141414] sm:mt-4 sm:text-[1.05rem]">
-                    {category.title}
-                  </h3>
-                  <p className="mt-1 text-[0.85rem] text-[#6a7280] sm:text-[0.9rem]">
-                    <span>{category.articles} articles</span>
-                  </p>
-                </Link>
-              ))
             ) : (
               <div className="flex min-h-[180px] w-full items-center justify-center rounded-[28px] border border-dashed border-[#d8dce2] bg-[#fafbfc] px-6 text-center text-[0.95rem] text-[#6a7280]">
                 No categories published yet.
@@ -1593,35 +2097,28 @@ export default function HomePageClient({
             )}
           </div>
 
-          <div className="mt-5 flex items-center justify-between gap-3 sm:hidden">
+          <div className="mt-4 flex w-full items-center gap-2.5 sm:hidden">
             <Link
               href="/category"
-              className="rounded-full border border-[#d8dce2] bg-white px-4 py-2 text-[0.88rem] text-[#101010]"
+              className="inline-flex h-[44px] flex-1 items-center justify-center rounded-full border border-[#e5e8ef] bg-white px-4 text-[0.88rem] font-medium text-[#111111] transition-colors hover:border-[#cfd5df] hover:bg-[#f7f9fc]"
             >
-              Explore all categories
+              Explore all Categories
             </Link>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 aria-label="Scroll categories left"
                 onClick={() => scrollCategories('prev')}
-                className="flex h-[46px] w-[46px] items-center justify-center rounded-full border border-[#d9d9d4] text-[#1b1b1b]"
+                className="flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#e5e8ef] bg-white text-[#161a22] transition-colors hover:border-[#cfd5df] hover:bg-[#f7f9fc]"
               >
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
                   <path
-                    d="M15 5.5 8.5 12 15 18.5"
+                    d="M14.5 5.5 8 12l6.5 6.5"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="1.9"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                  />
-                  <path
-                    d="M9.5 12h9"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.9"
-                    strokeLinecap="round"
                   />
                 </svg>
               </button>
@@ -1629,51 +2126,87 @@ export default function HomePageClient({
                 type="button"
                 aria-label="Scroll categories right"
                 onClick={() => scrollCategories('next')}
-                className="flex h-[46px] w-[46px] items-center justify-center rounded-full border border-[#d9d9d4] text-[#1b1b1b]"
+                className="flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#e5e8ef] bg-white text-[#161a22] transition-colors hover:border-[#cfd5df] hover:bg-[#f7f9fc]"
               >
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
                   <path
-                    d="M9 5.5 15.5 12 9 18.5"
+                    d="M9.5 5.5 16 12l-6.5 6.5"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="1.9"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
-                  <path
-                    d="M14.5 12h-9"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.9"
-                    strokeLinecap="round"
-                  />
                 </svg>
               </button>
             </div>
           </div>
+
         </div>
       </section>
 
       <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <div className="page-container-wide">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
             <h2 className="section-heading-medium text-[2rem] leading-[1.05] tracking-[-0.05em] text-[#101010] sm:text-[2.25rem] lg:text-[2.5rem]">
-              Trending prompts
+              Trending Gemini AI Prompts
             </h2>
-            <Link
-              href="/prompt"
-              className="whitespace-nowrap rounded-full border border-[#d8dce2] bg-white px-4 py-2 text-[0.92rem] text-[#101010] transition-colors duration-300 hover:border-[#101010] hover:bg-[#101010] hover:text-white sm:px-6 sm:py-3 sm:text-[1rem]"
-            >
-              Explore all prompts
-            </Link>
+            <div className="flex w-full items-center gap-2.5 sm:w-auto sm:gap-3">
+              <Link
+                href="/prompts"
+                className="whitespace-nowrap rounded-full border border-[#d8dce2] bg-white px-4 py-2 text-[0.88rem] text-[#101010] transition-colors duration-300 hover:border-[#101010] hover:bg-[#101010] hover:text-white sm:px-6 sm:py-3 sm:text-[1rem]"
+              >
+                Explore all prompts
+              </Link>
+              <div className="hidden items-center gap-2.5 sm:flex sm:gap-3">
+                <button
+                  type="button"
+                  onClick={() => scrollTrendingPrompts('prev')}
+                  aria-label="Scroll trending prompts left"
+                  className="flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#dfe3ea] bg-white text-[#12161c] transition-colors hover:border-[#cfd5df] hover:bg-[#f8f9fb]"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4">
+                    <path
+                      d="M11.75 4.5 6.25 10l5.5 5.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.9"
+                    />
+                  </svg>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => scrollTrendingPrompts('next')}
+                  aria-label="Scroll trending prompts right"
+                  className="flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#dfe3ea] bg-white text-[#12161c] transition-colors hover:border-[#cfd5df] hover:bg-[#f8f9fb]"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4">
+                    <path
+                      d="M8.25 4.5 13.75 10l-5.5 5.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.9"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className="mt-7 grid gap-7 sm:grid-cols-2 lg:gap-8 lg:grid-cols-4">
+          <div
+            ref={trendingPromptsSliderRef}
+            className="no-scrollbar mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 sm:mt-7 sm:gap-6 lg:gap-7"
+          >
             {isHomeContentLoading ? (
               Array.from({ length: trendingPromptSkeletonCount }).map((_, index) => (
                 <article
                   key={`trending-prompt-skeleton-${index}`}
-                  className="flex flex-col rounded-[24px] bg-transparent"
+                  className="w-[88vw] max-w-[20rem] shrink-0 snap-start rounded-[24px] bg-transparent sm:w-[20rem] sm:max-w-none lg:w-[22rem]"
                 >
                   <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[24px]">
                     <Skeleton className="h-full w-full rounded-[24px]" />
@@ -1715,7 +2248,7 @@ export default function HomePageClient({
                 </article>
               ))
             ) : homeContentLoadError ? (
-              <div className="sm:col-span-2 lg:col-span-4 rounded-[22px] border border-[#e2e6ee] px-6 py-7 text-center">
+              <div className="w-full shrink-0 rounded-[22px] border border-[#e2e6ee] px-6 py-7 text-center">
                 <p className="text-[0.96rem] text-[#5f6978]">{homeContentLoadError}</p>
                 <button
                   type="button"
@@ -1727,10 +2260,16 @@ export default function HomePageClient({
               </div>
             ) : displayTrendingPrompts.length > 0 ? (
               displayTrendingPrompts.map((prompt) => (
-                <PromptCardUI key={prompt.id} prompt={prompt} />
+                <div
+                  key={prompt.id}
+                  data-trending-prompt-card
+                  className="w-[88vw] max-w-[20rem] shrink-0 snap-start sm:w-[20rem] sm:max-w-none lg:w-[22rem]"
+                >
+                  <PromptCardUI prompt={prompt} />
+                </div>
               ))
             ) : (
-              <div className="sm:col-span-2 lg:col-span-4 rounded-[22px] border border-dashed border-[#d8dee8] px-6 py-7 text-center text-[0.96rem] text-[#677386]">
+              <div className="w-full shrink-0 rounded-[22px] border border-dashed border-[#d8dee8] px-6 py-7 text-center text-[0.96rem] text-[#677386]">
                 No prompts available yet.
               </div>
             )}
@@ -1877,7 +2416,7 @@ export default function HomePageClient({
                           <div key={group.author.id}>
                             <div className="mb-4">
                               <Link
-                                href={`/author/${group.author.slug}`}
+                                href={`/u/${group.author.slug}`}
                                 className="text-[1rem] font-medium text-[#0f1116] transition-colors duration-300 hover:text-[#313a4a]"
                               >
                                 {group.author.name}
@@ -1954,12 +2493,12 @@ export default function HomePageClient({
 
             <div className="rounded-[28px] bg-[#f4f3ef] p-5 sm:rounded-[32px] sm:p-8 lg:rounded-[34px] lg:p-10">
               <h2 className="section-heading-medium text-[2rem] leading-[0.96] tracking-[-0.07em] text-[#080808] sm:text-[2.25rem] lg:text-[2.5rem]">
-                Why Choose Us
+                Why Choose GeminiPrompts.io
               </h2>
               <p className="mt-4 max-w-[36rem] text-[0.98rem] leading-7 text-[#5d636c] sm:mt-5 sm:text-[1.08rem] sm:leading-8">
-                We pride ourselves on offering products that meet the highest standards of quality.
-                Each item is carefully selected, tested, and crafted to ensure durability and
-                customer satisfaction.
+                Build better output with a focused gemini prompt library. From prompt for gemini ai
+                girl and prompt for gemini ai boy to gemini ai photo prompt workflows, every block
+                is designed for practical creator use.
               </p>
 
               <div className="mt-7 divide-y divide-[#d8d4ca] sm:mt-8">
@@ -1975,10 +2514,12 @@ export default function HomePageClient({
                         type="button"
                         aria-expanded={isOpen}
                         aria-controls={panelId}
-                        onClick={() => setOpenWhyChoose(item.title)}
+                        onClick={() =>
+                          setOpenWhyChoose((current) => (current === item.title ? '' : item.title))
+                        }
                         className="flex w-full items-center justify-between gap-4 py-7 text-left sm:py-8"
                       >
-                        <span className="pr-4 text-[1.3rem] leading-[1.05] tracking-[-0.04em] text-[#111111] sm:text-[1.55rem]">
+                        <span className="pr-4 text-[1.12rem] leading-[1.08] tracking-[-0.035em] text-[#111111] sm:text-[1.32rem]">
                           {item.title}
                         </span>
                         <span
@@ -2007,46 +2548,46 @@ export default function HomePageClient({
             </div>
           </div>
 
-          <div className="mt-5 grid gap-5 md:grid-cols-2 xl:mt-6 xl:grid-cols-[repeat(3,minmax(0,1fr))_1.45fr] xl:gap-6">
-            {benefitCards.map((card) => (
+          <div className="mt-5 grid gap-5 md:grid-cols-2 xl:mt-6 xl:grid-cols-4 xl:gap-6">
+            {benefitCards.map((card, index) => (
               <article
                 key={card.title}
-                className={`${card.tone} flex min-h-[280px] flex-col rounded-[24px] p-5 sm:min-h-[320px] sm:rounded-[28px] sm:p-8`}
+                className={`${card.tone} relative flex min-h-[220px] flex-col overflow-hidden rounded-[24px] p-5 sm:min-h-[248px] sm:rounded-[28px] sm:p-7`}
               >
+                {index < 3 ? (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute right-4 top-2 text-[4.2rem] font-semibold leading-none tracking-[-0.06em] text-[#101010]/10 sm:right-5 sm:top-3 sm:text-[5rem]"
+                  >
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                ) : null}
                 <h3 className="max-w-[12rem] text-[1.75rem] leading-[1.05] tracking-[-0.05em] text-[#090909] sm:text-[2rem]">
                   {card.title}
                 </h3>
                 <p className="mt-6 max-w-[16rem] text-[0.98rem] leading-7 text-[#5f6773] sm:mt-8 sm:text-[1rem] sm:leading-8">
                   {card.description}
                 </p>
-                <div className="mt-auto pt-6 sm:pt-8">
-                  <button
-                    type="button"
-                    className="rounded-full border border-[#121212] px-6 py-2.5 text-[0.98rem] text-[#111111] transition-colors duration-300 hover:bg-[#111111] hover:text-white sm:px-7 sm:py-3 sm:text-[1rem]"
-                  >
-                    See More
-                  </button>
-                </div>
               </article>
             ))}
 
             <article
-              className="relative min-h-[280px] overflow-hidden rounded-[24px] bg-cover bg-center p-5 sm:min-h-[320px] sm:rounded-[30px] sm:p-8"
+              className="relative min-h-[220px] overflow-hidden rounded-[24px] bg-cover bg-center p-5 sm:min-h-[248px] sm:rounded-[30px] sm:p-7"
               style={{
                 backgroundImage:
                   'url(https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1200)',
               }}
             >
               <div className="absolute inset-0 bg-gradient-to-t from-[#0f172acc] via-[#0f172a26] to-transparent" />
-              <div className="relative z-10 flex h-full min-h-[256px] flex-col justify-end">
+              <div className="relative z-10 flex h-full min-h-[196px] flex-col justify-end sm:min-h-[220px]">
                 <h3 className="max-w-[10rem] text-[2.5rem] leading-[0.95] tracking-[-0.06em] text-white sm:text-[3.6rem]">
-                  Summer Cloth
+                  Gemini Prompt Trends
                 </h3>
               </div>
               <div className="absolute bottom-4 right-4 z-10 flex h-[92px] w-[92px] items-center justify-center bg-[#ff6631] text-center text-[0.88rem] font-medium uppercase leading-tight text-white [clip-path:polygon(50%_0%,61%_24%,86%_7%,74%_32%,100%_34%,77%_50%,100%_66%,74%_68%,86%_93%,61%_76%,50%_100%,39%_76%,14%_93%,26%_68%,0%_66%,23%_50%,0%_34%,26%_32%,14%_7%,39%_24%)] sm:bottom-5 sm:right-5 sm:h-[118px] sm:w-[118px] sm:text-[1rem]">
-                30%
+                NEW
                 <br />
-                OFF
+                WEEKLY
               </div>
             </article>
           </div>
@@ -2149,7 +2690,7 @@ export default function HomePageClient({
               displayTrendingAuthors.map((author) => (
                 <Link
                   key={author.id}
-                  href={`/author/${author.slug}`}
+                  href={`/u/${author.slug}`}
                   data-author-card
                   className="category-card flex shrink-0 snap-start flex-col items-center text-center"
                   aria-label={`Open ${author.title} author profile`}
@@ -2271,16 +2812,16 @@ export default function HomePageClient({
       <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <div className="page-container-wide">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <h2 className="section-heading-medium text-[1.65rem] leading-[1.18] tracking-[-0.04em] text-[#111111] sm:text-[2.25rem] lg:text-[2.5rem]">
+            <h2 className="section-heading-medium text-[1.45rem] leading-[1.2] tracking-[-0.03em] text-[#111111] sm:text-[2.25rem] sm:tracking-[-0.04em] lg:text-[2.5rem]">
               <span className="text-[#111111]">More posts.</span>{' '}
               <span className="text-[#687082]">You may also be interested in.</span>
             </h2>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
               <Link
                 href="/blog"
-                className="rounded-full border border-[#d5d8de] bg-white px-4 py-2 text-[0.9rem] text-[#111111] transition-colors duration-300 hover:border-[#111111] hover:bg-[#111111] hover:text-white sm:px-5 sm:py-2.5 sm:text-[0.96rem]"
+                className="rounded-full border border-[#d5d8de] bg-white px-4 py-2 text-[0.86rem] text-[#111111] transition-colors duration-300 hover:border-[#111111] hover:bg-[#111111] hover:text-white sm:px-5 sm:py-2.5 sm:text-[0.96rem]"
               >
-                Explore more
+                Explore All Blogs
               </Link>
               <div className="hidden items-center gap-2 sm:flex">
                 <button
@@ -2331,7 +2872,7 @@ export default function HomePageClient({
                 <article
                   key={`recent-post-skeleton-${index}`}
                   data-recent-card
-                  className="w-[260px] shrink-0 snap-start sm:w-[320px] lg:w-[calc((100%-2.5rem)/3)]"
+                  className="w-[260px] shrink-0 snap-start sm:w-[320px] lg:w-[calc((100%-3.75rem)/4)]"
                 >
                   <div className="rounded-[20px] bg-white p-2.5">
                     <Skeleton className="aspect-[16/9] w-full rounded-[20px] bg-[#e5ebf2]" />
@@ -2361,7 +2902,7 @@ export default function HomePageClient({
               displayRecentPosts.map((post) => (
                 <PostCardUI
                   key={post.title}
-                  className="w-[260px] shrink-0 snap-start sm:w-[320px] lg:w-[calc((100%-2.5rem)/3)]"
+                  className="w-[260px] shrink-0 snap-start sm:w-[320px] lg:w-[calc((100%-3.75rem)/4)]"
                   href={`/blog/${post.slug}`}
                   imageUrl={post.image}
                   readTime={post.readTime}
@@ -2437,12 +2978,13 @@ export default function HomePageClient({
           <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14">
             <div className="max-w-[28rem]">
               <h2 className="text-[2rem] font-medium leading-[0.96] tracking-[-0.07em] text-[#090909] sm:text-[2.25rem] lg:text-[4rem]">
-                <span className="block">From our</span>
-                <span className="block">community.</span>
+                <span className="block">From image</span>
+                <span className="block">creators.</span>
               </h2>
 
               <p className="mt-6 max-w-[22rem] text-[1.05rem] leading-[1.7] text-[#1c1c1c] sm:text-[1.18rem] lg:mt-8 lg:text-[1.28rem]">
-                Here’s what other subscribers had to say about Gemini Prompts.
+                Honest feedback from members using Gemini Prompts for portraits, reels, edits, and
+                daily visual content.
               </p>
 
               <div className="mt-8 flex items-center gap-3 lg:mt-12">
@@ -2588,18 +3130,50 @@ export default function HomePageClient({
 
       <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <div className="page-container-wide">
-          <h2 className="section-heading-medium text-[2rem] leading-[1.05] tracking-[-0.05em] text-[#101010] sm:text-[2.25rem] lg:text-[2.5rem]">
-            Watch, Read, Listen
-          </h2>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="section-heading-medium text-[2rem] leading-[1.05] tracking-[-0.05em] text-[#101010] sm:text-[2.25rem] lg:text-[2.5rem]">
+              Watch, Read, Listen
+            </h2>
+            {topWatchReadListenCategories.length > 0 ? (
+              <div className="no-scrollbar flex max-w-full items-center gap-2 overflow-x-auto pb-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveWatchReadListenCategory('all')}
+                  className={`shrink-0 rounded-full border px-3 py-1.5 text-[0.86rem] transition-colors ${
+                    activeWatchReadListenCategory === 'all'
+                      ? 'border-[#101317] bg-[#101317] text-white'
+                      : 'border-[#d9dde5] bg-white text-[#1b2230] hover:border-[#c8ceda] hover:bg-[#f6f8fc]'
+                  }`}
+                >
+                  All
+                </button>
+                {topWatchReadListenCategories.map((category) => (
+                  <button
+                    key={category.slug}
+                    type="button"
+                    onClick={() => setActiveWatchReadListenCategory(category.slug)}
+                    className={`shrink-0 rounded-full border px-3 py-1.5 text-[0.86rem] transition-colors ${
+                      activeWatchReadListenCategory === category.slug
+                        ? 'border-[#101317] bg-[#101317] text-white'
+                        : 'border-[#d9dde5] bg-white text-[#1b2230] hover:border-[#c8ceda] hover:bg-[#f6f8fc]'
+                    }`}
+                  >
+                    {category.title}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
 
-          <div className="mt-7 grid gap-5 lg:grid-cols-2">
+          <div className="mt-7 grid gap-x-6 gap-y-6 lg:grid-cols-2 lg:gap-x-7 lg:gap-y-7">
             {isWatchReadListenLoadingInitial && watchReadListenPrompts.length === 0
               ? Array.from({ length: watchReadListenSkeletonCount }).map((_, index) => (
                   <article
                     key={`watch-read-listen-skeleton-${index}`}
-                    className="rounded-[20px] border border-[#dfe2e8] bg-white p-4 sm:p-5 lg:p-6"
+                    className="rounded-[20px] border border-[#dfe2e8] bg-white p-[10px]"
                   >
-                    <div className="grid gap-4 sm:grid-cols-[1fr_220px] sm:items-stretch">
+                    <div className="grid gap-4 sm:grid-cols-[220px_1fr] sm:items-stretch">
+                      <Skeleton className="h-[190px] rounded-[20px]" />
                       <div className="flex flex-col">
                         <div className="flex gap-2">
                           <Skeleton className="h-7 w-28 rounded-full" />
@@ -2631,11 +3205,10 @@ export default function HomePageClient({
                           </div>
                         </div>
                       </div>
-                      <Skeleton className="min-h-[170px] rounded-[20px]" />
                     </div>
                   </article>
                 ))
-              : watchReadListenPrompts.map((prompt) => (
+              : filteredWatchReadListenPrompts.map((prompt) => (
                   <WatchReadListenPromptCard key={prompt.id} prompt={prompt} />
                 ))}
           </div>
@@ -2644,13 +3217,14 @@ export default function HomePageClient({
           watchReadListenPrompts.length === 0 &&
           watchReadListenLoadError ? (
             <div className="mt-7">
-              <div className="grid gap-5 lg:grid-cols-2">
+              <div className="grid gap-x-6 gap-y-6 lg:grid-cols-2 lg:gap-x-7 lg:gap-y-7">
                 {Array.from({ length: watchReadListenSkeletonCount }).map((_, index) => (
                   <article
                     key={`watch-read-listen-retry-skeleton-${index}`}
-                    className="rounded-[20px] border border-[#dfe2e8] bg-white p-4 sm:p-5 lg:p-6"
+                    className="rounded-[20px] border border-[#dfe2e8] bg-white p-[10px]"
                   >
-                    <div className="grid gap-4 sm:grid-cols-[1fr_220px] sm:items-stretch">
+                    <div className="grid gap-4 sm:grid-cols-[220px_1fr] sm:items-stretch">
+                      <Skeleton className="h-[190px] rounded-[20px]" />
                       <div className="flex flex-col">
                         <div className="flex gap-2">
                           <Skeleton className="h-7 w-28 rounded-full" />
@@ -2666,7 +3240,6 @@ export default function HomePageClient({
                           <Skeleton className="h-4 w-24 rounded-full" />
                         </div>
                       </div>
-                      <Skeleton className="min-h-[170px] rounded-[20px]" />
                     </div>
                   </article>
                 ))}
@@ -2687,23 +3260,22 @@ export default function HomePageClient({
           ) : null}
 
           {!isWatchReadListenLoadingInitial &&
-          watchReadListenPrompts.length === 0 &&
+          filteredWatchReadListenPrompts.length === 0 &&
           !watchReadListenLoadError ? (
             <div className="mt-7 rounded-[20px] border border-dashed border-[#d8dee8] px-5 py-6 text-[0.96rem] text-[#677386]">
-              No prompts available yet.
+              {activeWatchReadListenCategory === 'all'
+                ? 'No prompts available yet.'
+                : 'No prompts in this category yet.'}
             </div>
           ) : null}
 
-          {watchReadListenPrompts.length > 0 && watchReadListenHasMore ? (
-            <div className="mt-7 flex justify-center">
-              <button
-                type="button"
-                onClick={loadMoreWatchReadListen}
-                disabled={isWatchReadListenLoadingMore}
-                className="rounded-full border border-[#d3d8df] bg-white px-7 py-3 text-[1rem] text-[#13161d] transition-colors duration-300 hover:border-[#13161d] hover:bg-[#13161d] hover:text-white disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isWatchReadListenLoadingMore ? 'Loading...' : 'Load more'}
-              </button>
+          {watchReadListenPrompts.length > 0 ? (
+            <div ref={watchReadListenSentinelRef} className="mt-6 h-px w-full" aria-hidden="true" />
+          ) : null}
+
+          {isWatchReadListenLoadingMore ? (
+            <div className="mt-5 flex justify-center">
+              <p className="text-[0.92rem] text-[#566173]">Loading more prompts...</p>
             </div>
           ) : null}
 
@@ -2722,19 +3294,50 @@ export default function HomePageClient({
         </div>
       </section>
 
+      <section className="reveal-section px-4 pb-4 pt-10 sm:px-6 sm:pb-6 sm:pt-12 lg:px-8 lg:pb-8 lg:pt-14">
+        <div className="page-container-wide rounded-[30px] bg-white px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+          <div className="mx-auto max-w-[47rem] text-center">
+            <h2 className="section-heading-medium text-[2rem] leading-[1.06] tracking-[-0.05em] text-[#111827] sm:text-[2.25rem] lg:text-[2.5rem]">
+              Real Image Use Cases
+            </h2>
+            <p className="mx-auto mt-4 max-w-[44rem] text-[0.98rem] leading-7 text-[#667085] sm:text-[1.04rem]">
+              See how creators use Gemini Prompts to plan concepts, generate better visuals, and
+              get consistent image results with less guesswork.
+            </p>
+          </div>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:mt-10 lg:grid-cols-3 lg:gap-5">
+            {useCaseCards.map((card) => (
+              <article
+                key={card.title}
+                className="rounded-[24px] border border-transparent bg-[#fbfcff] px-5 py-6 transition-colors duration-200 hover:border-[#111111] sm:px-6"
+              >
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-[14px] bg-[#eef2f8] text-[#4a5568]">
+                  {renderUseCaseIcon(card.icon)}
+                </div>
+                <h3 className="mt-5 text-[1.5rem] leading-[1.22] tracking-[-0.03em] text-[#151923]">
+                  {card.title}
+                </h3>
+                <p className="mt-3 text-[0.98rem] leading-8 text-[#5b6577]">{card.description}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <div className="page-container-wide rounded-[30px] border border-[#e6e9ef] bg-white px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
           <div className="text-center">
             <h2 className="section-heading-medium text-[2rem] leading-[1.08] tracking-[-0.05em] text-[#111827] sm:text-[2.25rem] lg:text-[2.5rem]">
-              Questions? Look here.
+              Gemini Prompt FAQs
             </h2>
             <p className="mx-auto mt-4 max-w-[46rem] text-[0.98rem] leading-7 text-[#7a8191] sm:text-[1.05rem]">
-              Can&apos;t find an answer? Call us at (855) 692-5326 or email
-              contact@geminiprompts.com.
+              Learn how to use every gemini prompt faster, from google gemini prompt basics to
+              gemini ai photo prompt styles for boys, girls, and creative niche concepts.
             </p>
           </div>
 
-          <div className="mt-8 grid gap-8 lg:grid-cols-[230px_1fr] lg:gap-10">
+          <div className="mt-8 grid gap-8 lg:grid-cols-[290px_minmax(0,1fr)] lg:gap-10">
             <aside className="rounded-[18px] border border-[#eceff4] bg-[#fafbfd] p-4 sm:p-5">
               <p className="text-[1.1rem] leading-none text-[#161b24] sm:text-[1.18rem]">
                 Table of Contents
@@ -2748,7 +3351,7 @@ export default function HomePageClient({
                       key={category}
                       type="button"
                       onClick={() => setFaqCategory(category)}
-                      className={`w-full rounded-[10px] px-3 py-2 text-left text-[0.96rem] transition-colors sm:text-[1rem] ${isActive ? 'bg-[#eef4ff] text-[#2d57da]' : 'text-[#394150] hover:bg-[#f2f4f8]'}`}
+                      className={`w-full rounded-[10px] px-3 py-2 text-left text-[0.96rem] transition-colors sm:text-[1rem] ${isActive ? 'bg-[#d5ea52] text-[#101010]' : 'text-[#101010] hover:bg-[#f2f4f8]'}`}
                     >
                       {category}
                     </button>
@@ -2771,7 +3374,7 @@ export default function HomePageClient({
                       onClick={() => toggleFaq(item.id)}
                       className="flex w-full items-start gap-4 text-left"
                     >
-                      <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#eef4ff] text-[1.15rem] leading-none text-[#2d57da]">
+                      <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#d5ea52] text-[1.15rem] leading-none text-[#101010]">
                         {isOpen ? '−' : '+'}
                       </span>
                       <span className="text-[1.2rem] leading-[1.35] tracking-[-0.01em] text-[#141922] sm:text-[1.45rem]">

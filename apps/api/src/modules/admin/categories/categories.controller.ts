@@ -10,12 +10,16 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CategoriesService, CategoryCreateInput, CategoryUpdateInput } from './categories.service';
+import { CategoriesService } from './categories.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../../auth/types/auth-user.type';
+import { ListCategoriesQueryDto } from './dto/list-categories-query.dto';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
+import { IdParamDto } from '../../../common/dto/id-param.dto';
 
 @ApiTags('Admin Categories')
 @ApiBearerAuth()
@@ -26,31 +30,25 @@ export class CategoriesController {
 
   @Get()
   @Permissions('categories:read')
-  findAll(
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
-    @Query('search') search?: string,
-    @Query('trash') trash?: string,
-    @Query('sort') sort?: 'recent' | 'name',
-  ) {
+  findAll(@Query() query: ListCategoriesQueryDto) {
     return this.categoriesService.findAll({
-      skip: skip ? parseInt(skip, 10) : 0,
-      take: take ? parseInt(take, 10) : 20,
-      search,
-      trash: trash === 'true' || trash === '1',
-      sort,
+      skip: query.skip,
+      take: query.take,
+      search: query.search,
+      trash: query.trash,
+      sort: query.sort,
     });
   }
 
   @Get(':id')
   @Permissions('categories:read')
-  findOne(@Param('id') id: string) {
-    return this.categoriesService.findOne(id);
+  findOne(@Param() params: IdParamDto) {
+    return this.categoriesService.findOne(params.id);
   }
 
   @Post()
   @Permissions('categories:manage')
-  create(@CurrentUser() user: AuthUser, @Body() body: CategoryCreateInput) {
+  create(@CurrentUser() user: AuthUser, @Body() body: CreateCategoryDto) {
     return this.categoriesService.create(user.sub, body);
   }
 
@@ -58,21 +56,21 @@ export class CategoriesController {
   @Permissions('categories:manage')
   update(
     @CurrentUser() user: AuthUser,
-    @Param('id') id: string,
-    @Body() body: CategoryUpdateInput,
+    @Param() params: IdParamDto,
+    @Body() body: UpdateCategoryDto,
   ) {
-    return this.categoriesService.update(user.sub, id, body);
+    return this.categoriesService.update(user.sub, params.id, body);
   }
 
   @Patch(':id/restore')
   @Permissions('categories:manage')
-  restore(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.categoriesService.restore(user.sub, id);
+  restore(@CurrentUser() user: AuthUser, @Param() params: IdParamDto) {
+    return this.categoriesService.restore(user.sub, params.id);
   }
 
   @Delete(':id')
   @Permissions('categories:manage')
-  remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.categoriesService.remove(user.sub, id);
+  remove(@CurrentUser() user: AuthUser, @Param() params: IdParamDto) {
+    return this.categoriesService.remove(user.sub, params.id);
   }
 }

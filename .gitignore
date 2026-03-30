@@ -18,6 +18,7 @@ yarn-error.log*
 apps/web/.next.broken-*/
 apps/web/.next.rebuild-*/
 apps/web/.next.stale-*/
+apps/web/.next_stale_*/
 dist
 coverage
 .turbo
@@ -25,6 +26,12 @@ coverage
 # Logs
 logs
 *.log
+!apps/api/src/modules/admin/logs/
+!apps/api/src/modules/admin/logs/**
+!apps/web/features/dashboard/logs/
+!apps/web/features/dashboard/logs/**
+!apps/web/app/dashboard/logs/
+!apps/web/app/dashboard/logs/**
 
 # Local npm cache (should never be committed)
 .npm-cache/

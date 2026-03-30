@@ -3,14 +3,17 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { FaRegComment } from 'react-icons/fa6';
+import { Suspense } from 'react';
 import { auth } from '../../../auth';
 import AISummarizeWidget from '../../components/ai-summarize-widget';
 import { AuthorAvatar } from '../../components/author-avatar';
 import { ContentViewTracker } from '../../components/content-view-tracker';
 import { ExclusiveAccessCard } from '../../components/exclusive-access-card';
 import { PostCardUI } from '../../components/post-card';
-import { SocialShareMenu } from '../../components/social-share-menu';
 import { PromptWidgetHydrator } from '../../components/prompt-widget-hydrator';
+import { SeoSchemaScripts } from '../../components/seo-schema-script';
+import { SocialShareMenu } from '../../components/social-share-menu';
+import { Skeleton } from '../../components/ui/skeleton';
 import { BlogCommentsSection } from './blog-comments-section';
 import {
   estimateReadTime,
@@ -19,6 +22,12 @@ import {
   getPostDetail,
   stripHtml,
 } from '../../../lib/public-content';
+import { buildMetadata, getNormalizedBaseUrl, getSeoSettings } from '../../../lib/seo';
+import {
+  buildArticleSchema,
+  buildBreadcrumbSchema,
+  buildWebPageSchema,
+} from '../../../lib/structured-data';
 
 type TocHeading = {
   id: string;
@@ -95,25 +104,97 @@ type PageProps = {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const post = await getPostDetail(slug);
+  const settings = await getSeoSettings();
 
   if (!post) {
-    return {
-      title: 'Post Not Found — Gemini Prompts',
-    };
+    return buildMetadata({
+      title: 'Post Not Found',
+      description: 'The requested blog post could not be found.',
+      path: '/blog',
+      noIndex: true,
+    });
   }
 
-  return {
-    title: `${post.seoTitle || post.title} — Gemini Prompts`,
+  return buildMetadata({
+    title: post.metaTitle || post.seoTitle || post.title,
     description:
+      post.metaDescription ||
       post.seoDescription ||
       post.excerpt ||
       stripHtml(post.content).slice(0, 160) ||
       'A published post synced from the Gemini Prompts dashboard.',
-  };
+    path: `/blog/${post.slug}`,
+    canonicalUrl: post.seoCanonicalUrl || undefined,
+    image: post.image,
+    type: 'article',
+    noIndex: settings.noindexBlogPostPages || Boolean(post.seoNoIndex),
+  });
 }
 
-export default async function BlogPostPage({ params }: PageProps) {
+function BlogPostPageFallback() {
+  return (
+    <main className="page-shell bg-white">
+      <div className="page-container">
+        <nav aria-label="Breadcrumb" className="text-[0.9rem] text-[#8b8f99]">
+          <ol className="flex flex-wrap items-center gap-2">
+            <li>
+              <Link href="/" className="transition-colors hover:text-[#101010]">
+                Home
+              </Link>
+            </li>
+            <li className="text-[#c0c6d1]">/</li>
+            <li>
+              <Link href="/blog" className="transition-colors hover:text-[#101010]">
+                Blog
+              </Link>
+            </li>
+          </ol>
+        </nav>
+
+        <div className="mt-8 grid gap-8 sm:gap-10 lg:grid-cols-[1fr_340px] lg:items-start">
+          <article className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
+              <Skeleton className="h-9 w-28 rounded-full" />
+              <Skeleton className="h-9 w-24 rounded-full" />
+              <Skeleton className="h-5 w-28 rounded-full" />
+            </div>
+            <div className="mt-5 space-y-3">
+              <Skeleton className="h-14 w-[min(48rem,95%)] rounded-[14px]" />
+              <Skeleton className="h-14 w-[min(42rem,92%)] rounded-[14px]" />
+            </div>
+            <Skeleton className="mt-5 h-6 w-[min(46rem,95%)] rounded-full" />
+            <Skeleton className="mt-2 h-6 w-[min(40rem,90%)] rounded-full" />
+            <div className="mt-7 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-28 rounded-full" />
+                  <Skeleton className="h-3.5 w-24 rounded-full" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-10 w-24 rounded-full" />
+                <Skeleton className="h-10 w-24 rounded-full" />
+                <Skeleton className="h-10 w-10 rounded-full" />
+              </div>
+            </div>
+            <Skeleton className="mt-10 aspect-[16/9] w-full rounded-[26px]" />
+            <Skeleton className="mt-12 h-64 w-full rounded-[20px]" />
+          </article>
+
+          <aside className="space-y-5 lg:sticky lg:top-8">
+            <Skeleton className="h-44 w-full rounded-[20px]" />
+            <Skeleton className="h-64 w-full rounded-[20px]" />
+          </aside>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+async function BlogPostPageContent({ params }: PageProps) {
   const { slug } = await params;
+  const seoSettings = await getSeoSettings();
   const session = await auth();
   const post = await getPostDetail(slug, {
     accessToken: session?.apiAccessToken ?? null,
@@ -124,7 +205,7 @@ export default async function BlogPostPage({ params }: PageProps) {
     notFound();
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
+  const baseUrl = getNormalizedBaseUrl(seoSettings);
   const canonicalUrl = `${baseUrl}/blog/${encodeURIComponent(post.slug)}`;
   const categoryName = getPostCategoryName(post);
   const dateLabel = formatDisplayDate(post.publishedAt || post.updatedAt);
@@ -134,41 +215,47 @@ export default async function BlogPostPage({ params }: PageProps) {
     ? buildContentWithToc(post.content)
     : { html: '', headings: [] };
   const isSignedIn = Boolean(session?.user?.email);
+  const isPremiumMember = session?.user?.plan === 'PREMIUM';
+  const shouldNoIndex = seoSettings.noindexBlogPostPages || Boolean(post.seoNoIndex);
 
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: `${baseUrl}/` },
-      { '@type': 'ListItem', position: 2, name: 'Blog', item: `${baseUrl}/blog` },
-      { '@type': 'ListItem', position: 3, name: post.title, item: canonicalUrl },
-    ],
-  };
-
-  const articleSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: post.title,
-    description: excerpt,
-    datePublished: post.publishedAt || post.updatedAt,
-    dateModified: post.updatedAt,
-    author: { '@type': 'Person', name: post.author.name },
-    mainEntityOfPage: canonicalUrl,
-    image: post.image ? [post.image] : undefined,
-  };
+  const schemaItems = [
+    {
+      family: 'webpage' as const,
+      schema: buildWebPageSchema({
+        url: canonicalUrl,
+        name: post.title,
+        description: excerpt,
+        keywords: [categoryName, ...post.tags.map((tag) => tag.name)],
+      }),
+    },
+    {
+      family: 'breadcrumb' as const,
+      schema: buildBreadcrumbSchema(
+        [
+          { name: 'Home', item: `${baseUrl}/` },
+          { name: 'Blog', item: `${baseUrl}/blog` },
+          { name: post.title, item: canonicalUrl },
+        ],
+        canonicalUrl,
+      ),
+    },
+    {
+      family: 'article' as const,
+      schema: buildArticleSchema({
+        url: canonicalUrl,
+        title: post.title,
+        description: excerpt,
+        publishedAt: post.publishedAt,
+        updatedAt: post.updatedAt,
+        authorName: post.author.name,
+        image: post.image,
+      }),
+    },
+  ].filter((entry) => Boolean(entry.schema));
 
   return (
     <main className="page-shell bg-white">
-      <script
-        type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
-      />
+      <SeoSchemaScripts items={schemaItems} noIndex={shouldNoIndex} />
       <ContentViewTracker target="post" contentId={post.id} />
       <PromptWidgetHydrator />
 
@@ -200,7 +287,7 @@ export default async function BlogPostPage({ params }: PageProps) {
               <span
                 className={`rounded-full px-4 py-2 text-[0.82rem] font-medium ${
                   post.visibility === 'EXCLUSIVE'
-                    ? 'bg-[#111111] text-white'
+                    ? 'bg-[#d5ea52] text-black'
                     : 'bg-[#eef2f7] text-[#455065]'
                 }`}
               >
@@ -224,7 +311,7 @@ export default async function BlogPostPage({ params }: PageProps) {
             </p>
 
             <div className="mt-7 flex flex-wrap items-center justify-between gap-4">
-              <Link href={`/author/${post.author.slug}`} className="flex items-center gap-3">
+              <Link href={`/u/${post.author.slug}`} className="flex items-center gap-3">
                 <AuthorAvatar
                   name={post.author.name}
                   avatarUrl={post.author.avatarUrl}
@@ -283,7 +370,7 @@ export default async function BlogPostPage({ params }: PageProps) {
               </div>
             ) : null}
 
-            {post.isLocked ? (
+            {post.isLocked && !isPremiumMember ? (
               <div className="mt-12">
                 <ExclusiveAccessCard contentLabel="article" isSignedIn={isSignedIn} />
               </div>
@@ -349,7 +436,7 @@ export default async function BlogPostPage({ params }: PageProps) {
           </article>
 
           <aside className="space-y-5 lg:sticky lg:top-8">
-            {post.isLocked ? (
+            {post.isLocked && !isPremiumMember ? (
               <ExclusiveAccessCard
                 contentLabel="premium library"
                 isSignedIn={isSignedIn}
@@ -403,5 +490,13 @@ export default async function BlogPostPage({ params }: PageProps) {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function BlogPostPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<BlogPostPageFallback />}>
+      <BlogPostPageContent params={params} />
+    </Suspense>
   );
 }

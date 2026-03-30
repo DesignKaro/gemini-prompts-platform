@@ -4,6 +4,9 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import { RolesService } from './roles.service';
+import { CreateRoleDto } from './dto/create-role.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
+import { IdParamDto } from '../../../common/dto/id-param.dto';
 
 @ApiTags('Admin Roles')
 @ApiBearerAuth()
@@ -26,29 +29,19 @@ export class RolesController {
 
   @Post()
   @Permissions('roles:manage')
-  createRole(
-    @Body()
-    body: {
-      name: string;
-      description?: string | null;
-      permissionCodes?: string[];
-    },
-  ) {
+  createRole(@Body() body: CreateRoleDto) {
     return this.rolesService.createRole(body);
   }
 
   @Patch(':id')
   @Permissions('roles:manage')
-  updateRole(
-    @Param('id') id: string,
-    @Body() body: { name?: string; description?: string | null; permissionCodes?: string[] },
-  ) {
-    return this.rolesService.updateRole(id, body);
+  updateRole(@Param() params: IdParamDto, @Body() body: UpdateRoleDto) {
+    return this.rolesService.updateRole(params.id, body);
   }
 
   @Delete(':id')
   @Permissions('roles:manage')
-  deleteRole(@Param('id') id: string) {
-    return this.rolesService.deleteRole(id);
+  deleteRole(@Param() params: IdParamDto) {
+    return this.rolesService.deleteRole(params.id);
   }
 }

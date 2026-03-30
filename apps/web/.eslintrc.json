@@ -6,5 +6,29 @@
     "react": {
       "version": "detect"
     }
-  }
+  },
+  "overrides": [
+    {
+      "files": ["app/dashboard/**/page.tsx", "app/dashboard/page.tsx"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": ["../*", "../../*", "../../../*", "../../../../*", "@/app/*"]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["features/dashboard/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": ["@/app/dashboard/**/page", "@/app/dashboard/**/page.tsx"]
+          }
+        ]
+      }
+    }
+  ]
 }

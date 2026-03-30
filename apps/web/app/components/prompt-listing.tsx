@@ -9,7 +9,8 @@ import {
   type PublicPrompt,
 } from '../../lib/public-content';
 import { usePromptInteractions } from './prompt-interactions/use-prompt-interactions';
-import { AuthorFollowButton } from '../author/[slug]/author-follow-button';
+import { AuthorFollowButton } from './author-follow-button';
+import { Skeleton } from './ui/skeleton';
 
 /* ─── Prompt Card UI ────────────────────────────────────────── */
 type PromptCardProps = { prompt: PublicPrompt; showReadTime?: boolean };
@@ -22,6 +23,8 @@ const FALLBACK_PROMPT_IMAGE =
 export function PromptCardUI({ prompt, showReadTime = true }: PromptCardProps) {
   const categoryName = getPromptCategoryName(prompt);
   const categorySlug = prompt.primaryCategory?.slug || prompt.categories[0]?.slug || null;
+  const isExclusive = prompt.visibility === 'EXCLUSIVE';
+  const promptHref = categorySlug ? `/${categorySlug}/${prompt.slug}` : `/prompt/${prompt.slug}`;
   const dateSource = prompt.publishedAt || prompt.updatedAt;
   const dateLabel = formatDisplayDate(prompt.publishedAt || prompt.updatedAt);
   const dateArchiveKey = dateSource
@@ -65,7 +68,7 @@ export function PromptCardUI({ prompt, showReadTime = true }: PromptCardProps) {
           className="object-cover"
         />
         <Link
-          href={`/prompt/${prompt.slug}`}
+          href={promptHref}
           aria-label={`Open prompt: ${prompt.title}`}
           className="absolute inset-0 z-10"
         />
@@ -75,7 +78,7 @@ export function PromptCardUI({ prompt, showReadTime = true }: PromptCardProps) {
         />
         {categorySlug ? (
           <Link
-            href={`/category/${categorySlug}`}
+            href={`/${categorySlug}`}
             className="absolute left-4 top-4 z-20 inline-flex h-9 items-center rounded-full bg-white/95 px-4 text-[0.78rem] font-[500] leading-none text-[#0b0f18] transition-colors hover:bg-white"
           >
             {categoryName}
@@ -85,10 +88,15 @@ export function PromptCardUI({ prompt, showReadTime = true }: PromptCardProps) {
             {categoryName}
           </span>
         )}
+        {isExclusive ? (
+          <span className="absolute right-4 top-4 z-20 inline-flex h-9 items-center rounded-full bg-[#d5ea52] px-4 text-[0.78rem] font-[500] leading-none text-black">
+            Exclusive
+          </span>
+        ) : null}
       </div>
 
-      <div className="flex flex-1 flex-col px-1 pb-1 pt-4 sm:px-2">
-        <Link href={`/prompt/${prompt.slug}`} className="block">
+      <div className="flex flex-1 flex-col px-1 pb-1 pt-3 sm:px-2 sm:pt-4">
+        <Link href={promptHref} className="block">
           <h3 className="text-[1.12rem] leading-[1.3] tracking-[-0.015em] text-[#0f1118] sm:text-[1.2rem]">
             {prompt.title}
           </h3>
@@ -108,16 +116,16 @@ export function PromptCardUI({ prompt, showReadTime = true }: PromptCardProps) {
           )}
         </div>
 
-        <div className="mt-auto pt-5">
-          <div className="flex items-center justify-between gap-4 text-[#374151]">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
+        <div className="mt-auto pt-4 sm:pt-5">
+          <div className="flex items-center justify-between gap-2.5 text-[#374151] sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
                   type="button"
                   onClick={() => void likePrompt()}
                   disabled={likedByIp || likePending}
                   aria-label={likedByIp ? 'Liked' : 'Like prompt'}
-                  className={`flex h-10 w-10 items-center justify-center rounded-full text-[#4b5563] transition-colors ${
+                  className={`flex h-9 w-9 items-center justify-center rounded-full text-[#4b5563] transition-colors sm:h-10 sm:w-10 ${
                     likedByIp
                       ? 'bg-[#ffecef] text-[#e11d48] hover:bg-[#ffdfe5]'
                       : 'bg-[#f3f4f6] hover:bg-[#e5e7eb]'
@@ -139,11 +147,11 @@ export function PromptCardUI({ prompt, showReadTime = true }: PromptCardProps) {
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <Link
-                  href={`/prompt/${prompt.slug}#comments`}
+                  href={`${promptHref}#comments`}
                   aria-label={`View comments for ${prompt.title}`}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f3f4f6] text-[#4b5563] transition-colors hover:bg-[#e5e7eb]"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3f4f6] text-[#4b5563] transition-colors hover:bg-[#e5e7eb] sm:h-10 sm:w-10"
                 >
                   <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]">
                     <path
@@ -162,9 +170,9 @@ export function PromptCardUI({ prompt, showReadTime = true }: PromptCardProps) {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3">
               {showReadTime ? (
-                <span className="text-[0.86rem] font-[400] leading-none text-[#445064] sm:text-[0.9rem]">
+                <span className="hidden text-[0.82rem] font-[400] leading-none text-[#445064] min-[390px]:inline sm:text-[0.9rem]">
                   {durationLabel}
                 </span>
               ) : null}
@@ -174,7 +182,7 @@ export function PromptCardUI({ prompt, showReadTime = true }: PromptCardProps) {
                 disabled={savePending}
                 aria-label={savedByUser ? 'Unsave prompt' : 'Save prompt'}
                 aria-pressed={savedByUser}
-                className={`flex h-10 w-10 items-center justify-center rounded-full text-[#4b5563] transition-colors ${
+                className={`flex h-9 w-9 items-center justify-center rounded-full text-[#4b5563] transition-colors sm:h-10 sm:w-10 ${
                   savedByUser ? 'bg-[#111111] text-white' : 'bg-[#f3f4f6] hover:bg-[#e5e7eb]'
                 } disabled:cursor-not-allowed disabled:opacity-80`}
               >
@@ -335,6 +343,9 @@ type PromptPageShellProps = {
   prompts: PublicPrompt[];
   followAuthorId?: string;
   followInitialFollowerCount?: number;
+  isLoading?: boolean;
+  loadingCardCount?: number;
+  emptyMessage?: string;
 };
 
 const PAGE_SIZE = 12;
@@ -350,6 +361,9 @@ export function PromptPageShell({
   prompts,
   followAuthorId,
   followInitialFollowerCount = 0,
+  isLoading = false,
+  loadingCardCount = 8,
+  emptyMessage = 'No prompts available yet.',
 }: PromptPageShellProps) {
   const [activeCategory, setActiveCategory] = useState('all');
   const [sort, setSort] = useState<SortKey>(defaultSort);
@@ -485,27 +499,54 @@ export function PromptPageShell({
           categories={categories}
           activeCategory={activeCategory}
           sort={sort}
-          total={filtered.length}
+          total={isLoading ? 0 : filtered.length}
           onCategory={handleCategory}
           onSort={handleSort}
         />
 
         {/* Grid */}
         <div className="site-section-sub grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {visible.map((prompt) => (
-            <PromptCardUI key={prompt.id} prompt={prompt} />
-          ))}
+          {isLoading
+            ? Array.from({ length: loadingCardCount }).map((_, index) => (
+                <article
+                  key={`prompt-page-shell-loading-${index}`}
+                  className="flex flex-col rounded-[24px] bg-transparent"
+                >
+                  <Skeleton className="aspect-[4/3] w-full rounded-[24px]" />
+                  <div className="mt-4 space-y-3 px-1 sm:px-2">
+                    <Skeleton className="h-5 w-full rounded-full" />
+                    <Skeleton className="h-5 w-[82%] rounded-full" />
+                    <Skeleton className="h-4 w-28 rounded-full" />
+                  </div>
+                  <div className="mt-5 flex items-center justify-between gap-3 px-1 sm:px-2">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                    </div>
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                  </div>
+                </article>
+              ))
+            : visible.length > 0
+              ? visible.map((prompt) => <PromptCardUI key={prompt.id} prompt={prompt} />)
+              : (
+                  <div className="col-span-full rounded-[22px] border border-dashed border-[#d8dee8] px-6 py-7 text-center text-[0.96rem] text-[#677386]">
+                    {emptyMessage}
+                  </div>
+                )}
         </div>
 
         {/* Pagination */}
-        <Pagination
-          page={safePage}
-          total={totalPages}
-          onPage={(p) => {
-            setPage(p);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-        />
+        {!isLoading ? (
+          <Pagination
+            page={safePage}
+            total={totalPages}
+            onPage={(p) => {
+              setPage(p);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        ) : null}
       </div>
     </main>
   );

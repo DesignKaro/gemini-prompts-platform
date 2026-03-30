@@ -1,8 +1,59 @@
-const API_BASE_URL =
-  process.env.API_URL?.replace(/\/$/, '') ??
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ??
-  'http://localhost:4000';
+import { resolveApiBaseUrl } from './utils/api-base-url';
+
+const API_BASE_URL = resolveApiBaseUrl();
 const DEFAULT_PUBLIC_REVALIDATE_SECONDS = 600;
+const DEV_WARNING_THROTTLE_MS = 15_000;
+const DEV_API_UNAVAILABLE_COOLDOWN_MS = 2_500;
+
+let devApiUnavailableUntil = 0;
+const devWarningCooldownByKey = new Map<string, number>();
+
+function isDevelopment() {
+  return process.env.NODE_ENV !== 'production';
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function markApiTemporarilyUnavailable() {
+  if (!isDevelopment()) return;
+  devApiUnavailableUntil = Date.now() + DEV_API_UNAVAILABLE_COOLDOWN_MS;
+}
+
+function shouldSkipApiRequest() {
+  return isDevelopment() && Date.now() < devApiUnavailableUntil;
+}
+
+function logFetchWarning(key: string, message: string) {
+  if (!isDevelopment()) return;
+
+  const now = Date.now();
+  const nextAllowedAt = devWarningCooldownByKey.get(key) ?? 0;
+  if (now < nextAllowedAt) return;
+  devWarningCooldownByKey.set(key, now + DEV_WARNING_THROTTLE_MS);
+
+  console.warn(message);
+}
+
+async function fetchWithRetries(url: string, init: RequestInit): Promise<Response> {
+  const attempts = isDevelopment() ? 4 : 1;
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await fetch(url, init);
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts) {
+        throw error;
+      }
+      await sleep(120 * attempt);
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('fetch failed');
+}
 
 export type PublicAuthor = {
   id: string;
@@ -49,6 +100,9 @@ export type PublicPrompt = {
   promptType: string;
   visibility: 'FREE' | 'EXCLUSIVE';
   image: string | null;
+  galleryImages: string[];
+  metaTitle?: string | null;
+  metaDescription?: string | null;
   publishedAt: string | null;
   updatedAt: string;
   viewCount: number;
@@ -64,6 +118,9 @@ export type PublicPrompt = {
   content?: string | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
+  seoFocusKeyword?: string | null;
+  seoCanonicalUrl?: string | null;
+  seoNoIndex?: boolean;
   relatedPrompts?: PublicPrompt[];
 };
 
@@ -76,6 +133,8 @@ export type PublicPost = {
   postFormat: string;
   visibility: 'FREE' | 'EXCLUSIVE';
   image: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
   publishedAt: string | null;
   updatedAt: string;
   viewCount: number;
@@ -89,6 +148,9 @@ export type PublicPost = {
   content: string | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
+  seoFocusKeyword?: string | null;
+  seoCanonicalUrl?: string | null;
+  seoNoIndex?: boolean;
   relatedPosts?: PublicPost[];
 };
 
@@ -126,6 +188,10 @@ async function fetchPublicApi<T>(
   params?: Record<string, string | number | undefined | null>,
   options: FetchOptions = {},
 ): Promise<T | null> {
+  if (shouldSkipApiRequest()) {
+    return null;
+  }
+
   const searchParams = new URLSearchParams();
 
   if (params) {
@@ -147,17 +213,16 @@ async function fetchPublicApi<T>(
     const requestHeaders = options.accessToken
       ? { authorization: `Bearer ${options.accessToken}` }
       : undefined;
-    response = await fetch(
+    response = await fetchWithRetries(
       url,
       resolvedRevalidate
         ? { headers: requestHeaders, next: { revalidate: resolvedRevalidate } }
         : { headers: requestHeaders, cache: 'no-store' },
     );
   } catch (error) {
-    if (process.env.NODE_ENV !== 'production') {
-      const message = error instanceof Error ? error.message : String(error);
-      console.warn(`[public-content] fetch failed for ${url}: ${message}`);
-    }
+    markApiTemporarilyUnavailable();
+    const message = error instanceof Error ? error.message : String(error);
+    logFetchWarning(`fetch-failed:${url}`, `[public-content] fetch failed for ${url}: ${message}`);
     return null;
   }
 
@@ -166,19 +231,18 @@ async function fetchPublicApi<T>(
   }
 
   if (!response.ok) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn(`[public-content] non-ok response for ${url}: ${response.status}`);
-    }
+    logFetchWarning(
+      `non-ok:${url}:${response.status}`,
+      `[public-content] non-ok response for ${url}: ${response.status}`,
+    );
     return null;
   }
 
   try {
     return (await response.json()) as T;
   } catch (error) {
-    if (process.env.NODE_ENV !== 'production') {
-      const message = error instanceof Error ? error.message : String(error);
-      console.warn(`[public-content] invalid JSON for ${url}: ${message}`);
-    }
+    const message = error instanceof Error ? error.message : String(error);
+    logFetchWarning(`invalid-json:${url}`, `[public-content] invalid JSON for ${url}: ${message}`);
     return null;
   }
 }
@@ -224,8 +288,51 @@ export function estimateReadTime(value?: string | null) {
   return `${minutes} min read`;
 }
 
-export async function getHomeContent() {
-  return fetchPublicApi<HomeResponse>('home');
+export async function getHomeContent(options?: FetchOptions) {
+  const directHome = await fetchPublicApi<HomeResponse>('home', undefined, options);
+  if (directHome) {
+    return directHome;
+  }
+
+  // Fallback path: compose homepage payload from individual endpoints when
+  // `/api/public/home` is temporarily unavailable.
+  const [categoriesResponse, latestPromptsResponse, trendingPromptsResponse, latestPostsResponse, popularTagsResponse] =
+    await Promise.all([
+      fetchPublicApi<ListResponse<PublicCategory>>('categories', { take: 12, sort: 'popular' }, options),
+      fetchPublicApi<ListResponse<PublicPrompt>>(
+        'prompts',
+        { take: 8, sort: 'latest', includeTags: 1 },
+        options,
+      ),
+      fetchPublicApi<ListResponse<PublicPrompt>>(
+        'prompts',
+        { take: 8, sort: 'trending', includeTags: 1 },
+        options,
+      ),
+      fetchPublicApi<ListResponse<PublicPost>>(
+        'posts',
+        { take: 6, sort: 'latest', includeTags: 1 },
+        options,
+      ),
+      fetchPublicApi<ListResponse<PublicTag>>('tags', { take: 18, sort: 'popular' }, options),
+    ]);
+
+  const fallbackHome: HomeResponse = {
+    categories: categoriesResponse?.items ?? [],
+    latestPrompts: latestPromptsResponse?.items ?? [],
+    trendingPrompts: trendingPromptsResponse?.items ?? [],
+    latestPosts: latestPostsResponse?.items ?? [],
+    popularTags: popularTagsResponse?.items ?? [],
+  };
+
+  const hasAnyData =
+    fallbackHome.categories.length > 0 ||
+    fallbackHome.latestPrompts.length > 0 ||
+    fallbackHome.trendingPrompts.length > 0 ||
+    fallbackHome.latestPosts.length > 0 ||
+    fallbackHome.popularTags.length > 0;
+
+  return hasAnyData ? fallbackHome : null;
 }
 
 export async function getPromptList(
@@ -238,6 +345,78 @@ export async function getPromptList(
       total: 0,
     }
   );
+}
+
+type FetchAllPromptListOptions = {
+  pageSize?: number;
+  maxPages?: number;
+};
+
+export async function getAllPromptList(
+  params?: Record<string, string | number | undefined | null>,
+  options?: FetchOptions,
+  config?: FetchAllPromptListOptions,
+) {
+  const baseParams = { ...(params ?? {}) };
+  const requestedTakeRaw = baseParams.take;
+  delete baseParams.take;
+  delete baseParams.skip;
+
+  const requestedTake =
+    typeof requestedTakeRaw === 'number'
+      ? requestedTakeRaw
+      : typeof requestedTakeRaw === 'string'
+        ? Number.parseInt(requestedTakeRaw, 10)
+        : NaN;
+  const pageSize = Math.max(
+    1,
+    Number.isFinite(config?.pageSize)
+      ? Number(config?.pageSize)
+      : Number.isFinite(requestedTake)
+        ? requestedTake
+        : 72,
+  );
+  const maxPages = Math.max(
+    1,
+    Number.isFinite(config?.maxPages) ? Number(config?.maxPages) : 50,
+  );
+
+  const items: PublicPrompt[] = [];
+  let total = 0;
+  let skip = 0;
+  let pagesFetched = 0;
+
+  while (pagesFetched < maxPages) {
+    const response = await getPromptList(
+      {
+        ...baseParams,
+        skip,
+        take: pageSize,
+      },
+      options,
+    );
+
+    if (pagesFetched === 0) {
+      total = response.total;
+    }
+
+    if (response.items.length === 0) {
+      break;
+    }
+
+    items.push(...response.items);
+    skip += response.items.length;
+    pagesFetched += 1;
+
+    if (items.length >= total || response.items.length < pageSize) {
+      break;
+    }
+  }
+
+  return {
+    items: total > 0 ? items.slice(0, total) : items,
+    total: total || items.length,
+  };
 }
 
 export async function getPromptDetail(slug: string, options?: FetchOptions) {
@@ -270,9 +449,12 @@ export async function getPostDetail(slug: string, options?: FetchOptions) {
   });
 }
 
-export async function getCategoryList(params?: Record<string, string | number | undefined | null>) {
+export async function getCategoryList(
+  params?: Record<string, string | number | undefined | null>,
+  options?: FetchOptions,
+) {
   return (
-    (await fetchPublicApi<ListResponse<PublicCategory>>('categories', params)) ?? {
+    (await fetchPublicApi<ListResponse<PublicCategory>>('categories', params, options)) ?? {
       items: [],
       total: 0,
     }
@@ -285,9 +467,12 @@ export async function getCategoryDetail(slug: string) {
   });
 }
 
-export async function getTagList(params?: Record<string, string | number | undefined | null>) {
+export async function getTagList(
+  params?: Record<string, string | number | undefined | null>,
+  options?: FetchOptions,
+) {
   return (
-    (await fetchPublicApi<ListResponse<PublicTag>>('tags', params)) ?? {
+    (await fetchPublicApi<ListResponse<PublicTag>>('tags', params, options)) ?? {
       items: [],
       total: 0,
     }
@@ -300,9 +485,12 @@ export async function getTagDetail(slug: string) {
   });
 }
 
-export async function getAuthorList(params?: Record<string, string | number | undefined | null>) {
+export async function getAuthorList(
+  params?: Record<string, string | number | undefined | null>,
+  options?: FetchOptions,
+) {
   return (
-    (await fetchPublicApi<ListResponse<PublicAuthor>>('authors', params)) ?? {
+    (await fetchPublicApi<ListResponse<PublicAuthor>>('authors', params, options)) ?? {
       items: [],
       total: 0,
     }

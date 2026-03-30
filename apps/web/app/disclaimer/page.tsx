@@ -1,23 +1,50 @@
 import Link from 'next/link';
+import { SeoSchemaScripts } from '../components/seo-schema-script';
+import { LEGAL_CONTENT_CLASS } from '../components/legal-page-styles';
+import { buildMetadata, getNormalizedBaseUrl, getSeoSettings } from '../../lib/seo';
+import { buildBreadcrumbSchema, buildWebPageSchema } from '../../lib/structured-data';
 
-const sections = [
-  {
-    title: 'General information',
-    body: 'Gemini Prompts provides prompts, editorial content, and product information for general educational and creative use. It should not be treated as legal, financial, medical, or other regulated professional advice.',
-  },
-  {
-    title: 'AI output responsibility',
-    body: 'Outputs generated from prompts can vary by model, context, and user input. You are responsible for reviewing, validating, and adapting AI-generated content before using it in public, commercial, or client-facing work.',
-  },
-  {
-    title: 'Third-party links and tools',
-    body: 'Some pages may reference external platforms, tools, or examples. We are not responsible for the availability, accuracy, or policies of those third-party services.',
-  },
-];
+export async function generateMetadata() {
+  const settings = await getSeoSettings();
 
-export default function DisclaimerPage() {
+  return buildMetadata({
+    title: 'Disclaimer',
+    description:
+      'Read the full GeminiPrompts.io Disclaimer covering prompt usage, AI output limitations, external links, and liability.',
+    path: '/disclaimer',
+    noIndex: settings.noindexStaticPages,
+  });
+}
+
+export default async function DisclaimerPage() {
+  const settings = await getSeoSettings();
+  const baseUrl = getNormalizedBaseUrl(settings);
+  const pageUrl = `${baseUrl}/disclaimer`;
+  const schemaItems = [
+    {
+      family: 'webpage' as const,
+      schema: buildWebPageSchema({
+        url: pageUrl,
+        name: 'Disclaimer',
+        description:
+          'Read the full GeminiPrompts.io Disclaimer covering prompt usage, AI output limitations, external links, and liability.',
+      }),
+    },
+    {
+      family: 'breadcrumb' as const,
+      schema: buildBreadcrumbSchema(
+        [
+          { name: 'Home', item: `${baseUrl}/` },
+          { name: 'Disclaimer', item: pageUrl },
+        ],
+        pageUrl,
+      ),
+    },
+  ].filter((entry) => Boolean(entry.schema));
+
   return (
     <main className="page-shell-tight bg-white">
+      <SeoSchemaScripts items={schemaItems} noIndex={settings.noindexStaticPages} />
       <div className="mx-auto w-full max-w-[1300px]">
         <nav aria-label="Breadcrumb" className="text-[0.9rem] text-[#8b8f99]">
           <ol className="flex flex-wrap items-center gap-2">
@@ -31,28 +58,145 @@ export default function DisclaimerPage() {
           </ol>
         </nav>
 
-        <section className="mt-8 rounded-[28px] bg-white p-7 sm:p-10">
+        <section className="mt-8 rounded-[28px] border border-[#e8edf5] bg-white p-7 sm:p-10">
           <p className="inline-flex rounded-full bg-[#d5ea52] px-4 py-2 text-[0.9rem] text-[#111111]">
             Legal
           </p>
           <h1 className="section-heading-medium mt-5 text-[2.2rem] leading-[1.02] tracking-[-0.05em] text-[#111118] sm:text-[2.9rem]">
             Disclaimer
           </h1>
-          <p className="mt-4 max-w-[44rem] text-[1.03rem] leading-[1.8] text-[#5f6773]">
-            This page outlines the boundaries of the information and AI-related content shared on
-            Gemini Prompts. Please use the platform thoughtfully and verify important outputs
-            independently.
+          <p className="mt-5 inline-flex flex-col gap-1 rounded-[14px] border border-[#e7ebf2] bg-[#f8fafc] px-4 py-3 text-[0.94rem] leading-[1.6] text-[#5f6773] [&_strong]:font-medium">
+            <strong>Effective Date:</strong> March 29, 2026
+            <br />
+            <strong>Last Updated:</strong> March 29, 2026
           </p>
 
-          <div className="mt-10 grid gap-5">
-            {sections.map((section) => (
-              <article key={section.title} className="rounded-[22px] bg-[#fbfcfe] p-6">
-                <h2 className="text-[1.2rem] leading-[1.2] tracking-[-0.03em] text-[#111118]">
-                  {section.title}
-                </h2>
-                <p className="mt-3 text-[0.98rem] leading-[1.75] text-[#5f6773]">{section.body}</p>
-              </article>
-            ))}
+          <div className={LEGAL_CONTENT_CLASS}>
+            <h2>1. General Disclaimer</h2>
+            <p>
+              The information and content available on <strong>GeminiPrompts.io</strong> (&quot;we,&quot;
+              &quot;our,&quot; or &quot;us&quot;) are provided strictly for{' '}
+              <strong>general informational and educational purposes only</strong>. While we make
+              every effort to keep the content accurate, up to date, and useful, we make no
+              representations or warranties of any kind — express or implied — about the
+              completeness, accuracy, reliability, suitability, or availability of any content,
+              prompts, or related materials found on this website.
+            </p>
+            <p>Any reliance you place on such information is strictly at your own risk.</p>
+
+            <h2>2. Prompt Content Disclaimer</h2>
+            <p>
+              GeminiPrompts.io is a platform that provides AI prompt templates and collections
+              designed for use with Google Gemini and other AI tools. Please note:
+            </p>
+            <ul>
+              <li>
+                <strong>Prompts are templates only.</strong> The prompts published on this site are
+                starting points and creative suggestions. They do not guarantee any specific output,
+                result, or performance from any AI model.
+              </li>
+              <li>
+                <strong>AI outputs are unpredictable.</strong> The responses generated by AI models
+                using our prompts may vary significantly based on the AI platform, version,
+                configuration, and user input. We are not responsible for any outputs produced.
+              </li>
+              <li>
+                <strong>No professional advice.</strong> Prompts related to legal, medical,
+                financial, psychological, or any other professional domain are provided for
+                informational and creative exploration purposes only. They do not constitute — and
+                should not be treated as — professional advice. Always consult a qualified
+                professional for such matters.
+              </li>
+              <li>
+                <strong>User responsibility.</strong> It is entirely the user&apos;s responsibility
+                to review, validate, and appropriately use any AI-generated output produced with our
+                prompts.
+              </li>
+            </ul>
+
+            <h2>3. No Affiliation with Google or Gemini</h2>
+            <p>
+              GeminiPrompts.io is an <strong>independent platform</strong> and is{' '}
+              <strong>not affiliated, associated, endorsed, or sponsored by Google LLC</strong> or
+              any of its subsidiaries or affiliates. &quot;Gemini&quot; is a trademark of Google
+              LLC. All references to Gemini on this site are solely for descriptive and
+              informational purposes to identify the AI tool our prompts are compatible with.
+            </p>
+
+            <h2>4. Accuracy and Completeness</h2>
+            <p>We strive to provide accurate and current information, but we do not warrant that:</p>
+            <ul>
+              <li>All content on the site is error-free, complete, or current at all times.</li>
+              <li>The prompts will produce the intended results on any specific AI platform.</li>
+              <li>
+                The website will always be available, uninterrupted, or free from technical issues.
+              </li>
+            </ul>
+            <p>
+              We reserve the right to modify, update, or remove any content on the site at any time
+              without notice.
+            </p>
+
+            <h2>5. Intellectual Property Disclaimer</h2>
+            <p>
+              All original content, prompt collections, designs, and materials on GeminiPrompts.io
+              are the intellectual property of GeminiPrompts.io unless otherwise stated. You may use
+              prompts for personal and commercial projects as permitted under our Terms of Service.
+              Unauthorized reproduction, redistribution, or resale of our prompt collections in bulk
+              or as competing products is strictly prohibited.
+            </p>
+
+            <h2>6. External Links Disclaimer</h2>
+            <p>
+              Our website may contain links to third-party websites, tools, or resources for your
+              convenience and reference. These links do not imply our endorsement or approval of
+              those sites or their content. We have no control over the nature, content, or
+              availability of external sites and accept no responsibility for any loss or damage
+              that may arise from your use of them.
+            </p>
+
+            <h2>7. Results Disclaimer</h2>
+            <p>
+              Any examples, case studies, testimonials, or descriptions of prompt outcomes shared on
+              GeminiPrompts.io are illustrative only. They represent individual experiences and are{' '}
+              <strong>not guarantees</strong> that you will achieve the same or similar results.
+              Outcomes from using AI prompts depend on many factors outside our control, including
+              but not limited to the AI model used, user skill, and the specific use case.
+            </p>
+
+            <h2>8. Limitation of Liability</h2>
+            <p>
+              To the fullest extent permitted by applicable law, GeminiPrompts.io, its owners,
+              contributors, and affiliates shall not be liable for any direct, indirect, incidental,
+              consequential, or special damages arising out of or in connection with:
+            </p>
+            <ul>
+              <li>Your use of or inability to use this website or its content.</li>
+              <li>Any AI-generated outputs produced using prompts from this site.</li>
+              <li>Errors, omissions, or inaccuracies in any content.</li>
+              <li>Any unauthorized access to or alteration of your data.</li>
+            </ul>
+
+            <h2>9. Changes to This Disclaimer</h2>
+            <p>
+              We reserve the right to update or revise this Disclaimer at any time. Changes will be
+              reflected by updating the &quot;Last Updated&quot; date at the top of this page. We
+              encourage you to review this page periodically. Continued use of the site following
+              any changes constitutes your acceptance of the revised Disclaimer.
+            </p>
+
+            <h2>10. Contact Us</h2>
+            <p>If you have any questions or concerns about this Disclaimer, please reach out to us:</p>
+            <p>
+              <strong>GeminiPrompts.io</strong>
+              <br />
+              Email: <a href="mailto:info@geminiprompts.io">info@geminiprompts.io</a>
+              <br />
+              Website: <a href="https://geminiprompts.io">geminiprompts.io</a>
+            </p>
+            <p>
+              <em>This Disclaimer was last reviewed and updated on March 29, 2026.</em>
+            </p>
           </div>
         </section>
       </div>

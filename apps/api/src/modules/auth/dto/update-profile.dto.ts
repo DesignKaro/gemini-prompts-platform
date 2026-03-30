@@ -1,4 +1,11 @@
-import { IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -9,6 +16,9 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   @MaxLength(40)
+  @Matches(/^[a-zA-Z0-9._-]+$/, {
+    message: 'Handle can only contain letters, numbers, dots, underscores, and hyphens.',
+  })
   handle?: string;
 
   @IsOptional()
@@ -23,7 +33,9 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(30)
   @IsString({ each: true })
+  @MaxLength(40, { each: true })
   focusTags?: string[];
 
   @IsOptional()

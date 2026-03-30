@@ -1,0 +1,3 @@
+import { PaginationQueryDto } from '../../dto/pagination-query.dto';
+
+export class ListUsersQueryDto extends PaginationQueryDto {}

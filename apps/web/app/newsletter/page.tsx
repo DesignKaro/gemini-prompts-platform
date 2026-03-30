@@ -1,10 +1,30 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
+import { Skeleton } from '../components/ui/skeleton';
+import { NewsletterSubscribeForm } from '../components/newsletter-subscribe-form';
+import { SeoSchemaScripts } from '../components/seo-schema-script';
 import { getPostList } from '../../lib/public-content';
+import { buildMetadata, getNormalizedBaseUrl, getSeoSettings } from '../../lib/seo';
+import {
+  buildBreadcrumbSchema,
+  buildCollectionPageSchema,
+  buildWebPageSchema,
+} from '../../lib/structured-data';
 const NEWSLETTER_TAG = 'newsletter';
 
-export default async function NewsletterPage() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
+export async function generateMetadata() {
+  const settings = await getSeoSettings();
 
+  return buildMetadata({
+    title: 'Newsletter',
+    description:
+      'Subscribe to the Gemini Prompts newsletter for weekly prompt drops, curated collections, and practical AI reads.',
+    path: '/newsletter',
+    noIndex: settings.noindexStaticPages,
+  });
+}
+
+async function NewsletterIssueCountBadge() {
   let response = await getPostList({
     take: 1,
     skip: 0,
@@ -24,32 +44,55 @@ export default async function NewsletterPage() {
     });
   }
 
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'Home',
-        item: `${baseUrl}/`,
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
+  return (
+    <div className="rounded-full border border-[#e1e5ee] bg-[#f8fafc] px-4 py-2 text-[0.9rem] text-[#4b525e] sm:text-[0.95rem]">
+      {response.total} issues
+    </div>
+  );
+}
+
+function NewsletterIssueCountFallback() {
+  return <Skeleton className="h-[38px] w-[110px] rounded-full" />;
+}
+
+export default async function NewsletterPage() {
+  const seoSettings = await getSeoSettings();
+  const baseUrl = getNormalizedBaseUrl(seoSettings);
+  const pageUrl = `${baseUrl}/newsletter`;
+  const shouldNoIndex = seoSettings.noindexStaticPages;
+  const schemaItems = [
+    {
+      family: 'webpage' as const,
+      schema: buildWebPageSchema({
+        url: pageUrl,
         name: 'Newsletter',
-        item: `${baseUrl}/newsletter`,
-      },
-    ],
-  };
+        description:
+          'Subscribe to the Gemini Prompts newsletter for weekly prompt drops, curated collections, and practical AI reads.',
+      }),
+    },
+    {
+      family: 'breadcrumb' as const,
+      schema: buildBreadcrumbSchema(
+        [
+          { name: 'Home', item: `${baseUrl}/` },
+          { name: 'Newsletter', item: pageUrl },
+        ],
+        pageUrl,
+      ),
+    },
+    {
+      family: 'collection' as const,
+      schema: buildCollectionPageSchema({
+        url: pageUrl,
+        name: 'Newsletter issues',
+        description: 'Weekly newsletter issues from Gemini Prompts.',
+      }),
+    },
+  ].filter((entry) => Boolean(entry.schema));
 
   return (
     <main className="page-shell-tight bg-white">
-      <script
-        type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
+      <SeoSchemaScripts items={schemaItems} noIndex={shouldNoIndex} />
 
       <div className="mx-auto w-full max-w-[1300px]">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -79,9 +122,9 @@ export default async function NewsletterPage() {
             <div className="rounded-full border border-[#e1e5ee] bg-[#f8fafc] px-4 py-2 text-[0.9rem] text-[#4b525e] sm:text-[0.95rem]">
               Weekly • 1 email
             </div>
-            <div className="rounded-full border border-[#e1e5ee] bg-[#f8fafc] px-4 py-2 text-[0.9rem] text-[#4b525e] sm:text-[0.95rem]">
-              {response.total} issues
-            </div>
+            <Suspense fallback={<NewsletterIssueCountFallback />}>
+              <NewsletterIssueCountBadge />
+            </Suspense>
           </div>
         </div>
 
@@ -110,26 +153,15 @@ export default async function NewsletterPage() {
             </div>
 
             <div className="rounded-[26px] border border-white/70 bg-white/55 p-5 shadow-[0_18px_60px_rgba(16,24,40,0.07)] backdrop-blur sm:p-6">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <label className="sr-only" htmlFor="newsletter-email">
-                  Email address
-                </label>
-                <input
-                  id="newsletter-email"
-                  name="email"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  placeholder="you@company.com"
-                  className="h-[52px] w-full rounded-full border border-[#d8dce2] bg-white px-5 text-[1rem] text-[#101418] outline-none transition focus:border-[#101010]"
-                />
-                <button
-                  type="button"
-                  className="h-[52px] w-full rounded-full bg-black px-6 text-[0.95rem] font-medium text-white transition hover:opacity-90 sm:w-auto"
-                >
-                  Subscribe
-                </button>
-              </div>
+              <NewsletterSubscribeForm
+                source="newsletter_page_hero"
+                inputId="newsletter-page-email"
+                fieldGroupClassName="flex flex-col gap-3 sm:flex-row sm:items-center"
+                inputClassName="h-[52px] w-full rounded-full border border-[#d8dce2] bg-white px-5 text-[1rem] text-[#101418] outline-none transition focus:border-[#101010]"
+                buttonClassName="h-[52px] w-full rounded-full bg-black px-6 text-[0.95rem] font-medium text-white transition hover:opacity-90 sm:w-auto"
+                successClassName="mt-3 text-[0.86rem] text-[#1f4f1f]"
+                errorClassName="mt-3 text-[0.86rem] text-[#9d1c1c]"
+              />
 
               <div className="mt-4 flex flex-wrap items-center gap-4 text-[0.88rem] text-black">
                 <span className="inline-flex items-center gap-2">

@@ -20,6 +20,8 @@ const DASHBOARD_PERMISSION_HINTS = [
   'comments:moderate',
   'analytics:read',
   'activity:read',
+  'contacts:read',
+  'contacts:manage',
 ] as const;
 
 export function isProtectedSuperadminEmail(email?: string | null): boolean {

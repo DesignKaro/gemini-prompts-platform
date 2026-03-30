@@ -269,6 +269,75 @@ async function ensurePostColumnsAndIndexes(schema: SchemaState): Promise<void> {
   }
 }
 
+async function ensurePostCategoriesRelationOrientation(): Promise<void> {
+  const tables = await prisma.$queryRawUnsafe<Array<{ tableName: string }>>(
+    "SELECT table_name as tableName FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '_PostCategories'",
+  );
+  if (tables.length === 0) {
+    return;
+  }
+
+  const references = await prisma.$queryRawUnsafe<
+    Array<{ columnName: string; referencedTableName: string }>
+  >(
+    `SELECT column_name as columnName, referenced_table_name as referencedTableName
+     FROM information_schema.key_column_usage
+     WHERE table_schema = DATABASE()
+       AND table_name = '_PostCategories'
+       AND column_name IN ('A', 'B')
+       AND referenced_table_name IS NOT NULL`,
+  );
+
+  const referenceMap = new Map<string, string>();
+  for (const row of references) {
+    referenceMap.set(row.columnName, row.referencedTableName);
+  }
+
+  const isExpected = referenceMap.get('A') === 'Category' && referenceMap.get('B') === 'Post';
+  if (isExpected) {
+    return;
+  }
+
+  const constraints = await prisma.$queryRawUnsafe<Array<{ constraintName: string }>>(
+    `SELECT DISTINCT constraint_name as constraintName
+     FROM information_schema.key_column_usage
+     WHERE table_schema = DATABASE()
+       AND table_name = '_PostCategories'
+       AND column_name IN ('A', 'B')
+       AND referenced_table_name IS NOT NULL`,
+  );
+
+  for (const { constraintName } of constraints) {
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE \`_PostCategories\` DROP FOREIGN KEY \`${constraintName}\``,
+    );
+  }
+
+  const isLegacyReversed = referenceMap.get('A') === 'Post' && referenceMap.get('B') === 'Category';
+  if (isLegacyReversed) {
+    await prisma.$executeRawUnsafe(
+      'CREATE TEMPORARY TABLE `_PostCategories_fix_tmp` (`A` VARCHAR(191) NOT NULL, `B` VARCHAR(191) NOT NULL, UNIQUE KEY `_PostCategories_fix_tmp_ab_unique` (`A`,`B`))',
+    );
+    await prisma.$executeRawUnsafe(
+      'INSERT IGNORE INTO `_PostCategories_fix_tmp` (`A`,`B`) SELECT `B`,`A` FROM `_PostCategories`',
+    );
+    await prisma.$executeRawUnsafe('TRUNCATE TABLE `_PostCategories`');
+    await prisma.$executeRawUnsafe(
+      'INSERT IGNORE INTO `_PostCategories` (`A`,`B`) SELECT `A`,`B` FROM `_PostCategories_fix_tmp`',
+    );
+    await prisma.$executeRawUnsafe('DROP TEMPORARY TABLE `_PostCategories_fix_tmp`');
+  }
+
+  await prisma.$executeRawUnsafe(
+    'ALTER TABLE `_PostCategories` ADD CONSTRAINT `_PostCategories_A_fkey` FOREIGN KEY (`A`) REFERENCES `Category`(`id`) ON DELETE CASCADE ON UPDATE CASCADE',
+  );
+  await prisma.$executeRawUnsafe(
+    'ALTER TABLE `_PostCategories` ADD CONSTRAINT `_PostCategories_B_fkey` FOREIGN KEY (`B`) REFERENCES `Post`(`id`) ON DELETE CASCADE ON UPDATE CASCADE',
+  );
+
+  console.log('Normalized _PostCategories FK orientation (A->Category, B->Post).');
+}
+
 async function main(): Promise<void> {
   const sql = await readFile(MIGRATION_PATH, 'utf8');
   const statements = expandAlterStatements(splitStatements(stripSqlComments(sql)));
@@ -277,6 +346,7 @@ async function main(): Promise<void> {
   let skipped = 0;
 
   await ensurePostColumnsAndIndexes(schema);
+  await ensurePostCategoriesRelationOrientation();
 
   for (const statement of statements) {
     if (shouldSkipStatement(statement, schema)) {

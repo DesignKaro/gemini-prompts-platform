@@ -237,6 +237,9 @@ type MediaItem = {
   title: string;
 };
 
+const LIBRARY_PAGE_SIZE = 100;
+const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
+
 /* ─── Image modal ─── */
 function ImagePicker({ editor, disabled }: { editor: Editor | null; disabled: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -278,6 +281,10 @@ function ImagePicker({ editor, disabled }: { editor: Editor | null; disabled: bo
   // Upload handler
   const handleUpload = async (file: File | null) => {
     if (!file || !file.type.startsWith('image/')) return;
+    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+      alert('Image must be 10MB or smaller.');
+      return;
+    }
     try {
       const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -286,7 +293,9 @@ function ImagePicker({ editor, disabled }: { editor: Editor | null; disabled: bo
         reader.readAsDataURL(file);
       });
 
-      const response = await request<{ url: string }>('/api/admin/media', {
+      const response = await request<{ id?: string; url: string; title?: string | null }>(
+        '/api/admin/media',
+        {
         method: 'POST',
         body: JSON.stringify({
           url: dataUrl,
@@ -294,13 +303,14 @@ function ImagePicker({ editor, disabled }: { editor: Editor | null; disabled: bo
           mime: file.type,
           size: file.size,
         }),
-      });
+        },
+      );
 
       // Instead of inserting directly, select it in the library and switch tabs
       const newItem: MediaItem = {
-        id: Math.random().toString(), // temporary id
+        id: response.id || Math.random().toString(), // fallback id for legacy response shapes
         url: response.url || dataUrl,
-        title: file.name,
+        title: response.title?.trim() || file.name,
       };
       setLibraryMedia((prev) => [newItem, ...prev]);
       setSelectedImage(newItem);
@@ -312,24 +322,48 @@ function ImagePicker({ editor, disabled }: { editor: Editor | null; disabled: bo
   };
 
   // Fetch Library
-  const loadLibrary = async () => {
+  const loadLibrary = useCallback(async () => {
     setIsLoadingLibrary(true);
     setLibraryError(null);
     try {
-      const data = await request<{ items: MediaItem[] }>('/api/admin/media?take=100&status=ACTIVE');
-      setLibraryMedia(data.items || []);
+      let skip = 0;
+      let total = Number.POSITIVE_INFINITY;
+      const allItems: MediaItem[] = [];
+
+      while (skip < total) {
+        const data = await request<{
+          items?: Array<{ id: string; url: string; title?: string | null }>;
+          total?: number;
+        }>(`/api/admin/media?take=${LIBRARY_PAGE_SIZE}&skip=${skip}&status=ACTIVE&sort=recent`);
+
+        const batch = (data.items ?? []).map((item) => ({
+          id: item.id,
+          url: item.url,
+          title: item.title?.trim() || 'Untitled image',
+        }));
+
+        allItems.push(...batch);
+        total = typeof data.total === 'number' ? data.total : allItems.length;
+
+        if (batch.length === 0 || batch.length < LIBRARY_PAGE_SIZE) {
+          break;
+        }
+        skip += batch.length;
+      }
+
+      setLibraryMedia(allItems);
     } catch (err) {
       setLibraryError(err instanceof Error ? err.message : 'Could not load library');
     } finally {
       setIsLoadingLibrary(false);
     }
-  };
+  }, [request]);
 
   useEffect(() => {
-    if (isOpen && tab === 'library' && libraryMedia.length === 0) {
+    if (isOpen && tab === 'library') {
       loadLibrary();
     }
-  }, [isOpen, tab]);
+  }, [isOpen, tab, loadLibrary]);
 
   return (
     <>

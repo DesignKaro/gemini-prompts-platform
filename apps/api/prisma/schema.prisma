@@ -70,6 +70,13 @@ enum SubmissionStatus {
   REJECTED
 }
 
+enum ContactSubmissionStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  SPAM
+}
+
 enum EngagementEventType {
   VIEW
   LIKE
@@ -131,6 +138,86 @@ model Permission {
   roles       RolePermission[]
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+}
+
+model SeoSettings {
+  id                        String   @id @db.VarChar(32)
+  siteTitle                 String   @default("Gemini Prompts") @db.VarChar(191)
+  titleSeparator            String   @default("|") @db.VarChar(10)
+  defaultMetaDescription    String   @default("Discover curated AI prompts, practical workflows, creator guides, and weekly prompt drops.") @db.VarChar(512)
+  homepageTitle             String?  @db.VarChar(191)
+  homepageDescription       String?  @db.VarChar(512)
+  defaultOgImageUrl         String?  @db.LongText
+  defaultOgImageAlt         String?  @db.VarChar(191)
+  twitterCardType           String   @default("summary_large_image") @db.VarChar(40)
+  schemaOrganizationEnabled Boolean  @default(true)
+  schemaWebsiteEnabled      Boolean  @default(true)
+  schemaWebPageEnabled      Boolean  @default(true)
+  schemaFaqEnabled          Boolean  @default(true)
+  schemaCollectionEnabled   Boolean  @default(true)
+  schemaArticleEnabled      Boolean  @default(true)
+  schemaProfileEnabled      Boolean  @default(true)
+  schemaBreadcrumbEnabled   Boolean  @default(true)
+  schemaPromptEnabled       Boolean  @default(true)
+  schemaSearchEnabled       Boolean  @default(true)
+  robotsSiteIndex           Boolean  @default(true)
+  robotsSiteFollow          Boolean  @default(true)
+  robotsBlockAiBots         Boolean  @default(false)
+  robotsDisallowPaths       Json?
+  robotsAdditionalRules     Json?
+  sitemapIncludePrompts     Boolean  @default(true)
+  sitemapIncludePages       Boolean  @default(true)
+  sitemapIncludePosts       Boolean  @default(true)
+  sitemapIncludeNewsletter  Boolean  @default(true)
+  sitemapIncludeTags        Boolean  @default(true)
+  sitemapIncludeCategories  Boolean  @default(true)
+  sitemapIncludeAuthors     Boolean  @default(true)
+  canonicalBaseUrl          String?  @db.LongText
+  googleSiteVerification    String?  @db.VarChar(191)
+  bingSiteVerification      String?  @db.VarChar(191)
+  organizationName          String?  @db.VarChar(191)
+  organizationLogoUrl       String?  @db.LongText
+  organizationSameAs        Json?
+  noindexSearchPages        Boolean  @default(true)
+  noindexPaginatedArchives  Boolean  @default(true)
+  noindexAuthorPages        Boolean  @default(false)
+  noindexTagPages           Boolean  @default(false)
+  noindexCategoryPages      Boolean  @default(false)
+  noindexBlogArchivePages   Boolean  @default(false)
+  noindexBlogPostPages      Boolean  @default(false)
+  noindexStaticPages        Boolean  @default(false)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+}
+
+model RedirectRule {
+  id              String   @id @default(cuid())
+  sourcePath      String   @unique @db.VarChar(512)
+  destinationPath String   @db.VarChar(2048)
+  isPermanent     Boolean  @default(true)
+  isActive        Boolean  @default(true)
+  hitCount        Int      @default(0)
+  lastHitAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model SeoIntegrationSettings {
+  id                         String   @id @default(cuid())
+  scope                      String   @unique @db.VarChar(20)
+  googleSiteVerification     String?  @db.VarChar(191)
+  bingSiteVerification       String?  @db.VarChar(191)
+  gaMeasurementId            String?  @db.VarChar(64)
+  googleAdsTagId             String?  @db.VarChar(64)
+  adsensePublisherId         String?  @db.VarChar(64)
+  clarityProjectId           String?  @db.VarChar(64)
+  customHeadScriptUrls       Json?
+  customHeadInlineScript     String?  @db.LongText
+  customBodyStartInlineScript String? @db.LongText
+  customBodyEndInlineScript  String?  @db.LongText
+  updatedByUserId            String?  @db.VarChar(191)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 }
 
 model RolePermission {
@@ -207,6 +294,7 @@ model User {
 
   submissions        Submission[]        @relation("SubmissionAuthor")
   reviewedSubmits    Submission[]        @relation("SubmissionReviewer")
+  reviewedContactSubmissions ContactSubmission[] @relation("ContactSubmissionReviewer")
   subscriptions      Subscription[]
   authAccounts       AuthAccount[]
   refreshTokens      RefreshToken[]
@@ -235,8 +323,14 @@ model Prompt {
   status     PromptStatus     @default(DRAFT)
 
   featuredImageUrl String? @db.LongText
+  metaTitle        String? @db.VarChar(191)
+  metaDescription  String? @db.VarChar(512)
+  galleryImageUrls Json?
   seoTitle         String? @db.VarChar(191)
   seoDescription   String? @db.VarChar(512)
+  seoFocusKeyword  String? @db.VarChar(191)
+  seoCanonicalUrl  String? @db.LongText
+  seoNoIndex       Boolean @default(false)
 
   authorId String
   author   User   @relation(fields: [authorId], references: [id])
@@ -367,8 +461,13 @@ model Post {
   postFormat PostFormat       @default(STANDARD)
 
   featuredImageUrl String? @db.LongText
+  metaTitle        String? @db.VarChar(191)
+  metaDescription  String? @db.VarChar(512)
   seoTitle         String? @db.VarChar(191)
   seoDescription   String? @db.VarChar(512)
+  seoFocusKeyword  String? @db.VarChar(191)
+  seoCanonicalUrl  String? @db.LongText
+  seoNoIndex       Boolean @default(false)
 
   authorId String
   author   User   @relation(fields: [authorId], references: [id])
@@ -544,6 +643,45 @@ model Submission {
   createdAt  DateTime  @default(now())
   reviewedAt DateTime?
 
+  @@index([status, createdAt])
+}
+
+model NewsletterSubmission {
+  id       String  @id @default(cuid())
+  email    String  @db.VarChar(320)
+  source   String  @db.VarChar(120)
+  pagePath String? @db.VarChar(512)
+
+  createdAt DateTime @default(now())
+
+  @@unique([email])
+  @@index([createdAt])
+  @@index([email])
+  @@index([source])
+}
+
+model ContactSubmission {
+  id           String                  @id @default(cuid())
+  name         String                  @db.VarChar(120)
+  email        String                  @db.VarChar(320)
+  subject      String                  @db.VarChar(160)
+  message      String                  @db.Text
+  status       ContactSubmissionStatus @default(NEW)
+  internalNote String?                 @db.Text
+  source       String                  @db.VarChar(120)
+  pagePath     String?                 @db.VarChar(512)
+  ipAddress    String?                 @db.VarChar(191)
+  userAgent    String?                 @db.VarChar(512)
+  reviewedById String?
+  reviewedBy   User?                   @relation("ContactSubmissionReviewer", fields: [reviewedById], references: [id])
+  reviewedAt   DateTime?
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([email])
+  @@index([source])
   @@index([status, createdAt])
 }
 

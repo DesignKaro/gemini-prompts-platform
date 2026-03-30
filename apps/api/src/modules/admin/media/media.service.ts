@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { MediaStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
@@ -77,10 +77,15 @@ export class MediaService {
   }
 
   async create(actorId: string, data: MediaCreateInput) {
+    const url = data.url?.trim();
+    if (!url) {
+      throw new BadRequestException('Media URL is required.');
+    }
+
     const created = await this.prisma.mediaAsset.create({
       data: {
         title: data.title ?? null,
-        url: data.url,
+        url,
         storageKey: data.storageKey ?? null,
         mime: data.mime ?? null,
         size: data.size ?? null,
@@ -104,11 +109,23 @@ export class MediaService {
   }
 
   async update(actorId: string, id: string, data: MediaUpdateInput) {
+    const existing = await this.prisma.mediaAsset.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('Media asset not found');
+    }
+
+    if (data.url !== undefined && !data.url.trim()) {
+      throw new BadRequestException('Media URL cannot be empty.');
+    }
+
     const updated = await this.prisma.mediaAsset.update({
       where: { id },
       data: {
         title: data.title,
-        url: data.url,
+        url: data.url?.trim(),
         storageKey: data.storageKey,
         mime: data.mime,
         size: data.size,
@@ -130,6 +147,14 @@ export class MediaService {
   }
 
   async remove(actorId: string, id: string) {
+    const existing = await this.prisma.mediaAsset.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('Media asset not found');
+    }
+
     const removed = await this.prisma.mediaAsset.update({
       where: { id },
       data: { status: 'TRASH', deletedAt: new Date() },
@@ -146,6 +171,14 @@ export class MediaService {
   }
 
   async restore(actorId: string, id: string) {
+    const existing = await this.prisma.mediaAsset.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('Media asset not found');
+    }
+
     const restored = await this.prisma.mediaAsset.update({
       where: { id },
       data: { status: 'ACTIVE', deletedAt: null },

@@ -36,6 +36,8 @@ type LitePrompt = {
   id: string;
   title: string;
   slug: string;
+  primaryCategory?: { slug: string } | null;
+  categories?: Array<{ slug: string }>;
 };
 
 type ListResponse<T> = {
@@ -50,12 +52,18 @@ type SearchResponse = {
   tags: LiteTag[];
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:4000';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:4000';
+const SEARCH_MIN_QUERY_LENGTH = 2;
+const SEARCH_CACHE_TTL_MS = 45_000;
+const TRENDING_CHIP_CACHE_TTL_MS = 5 * 60_000;
+const searchResultCache = new Map<string, { expiresAt: number; suggestions: Suggestion[] }>();
+let trendingChipCache: { expiresAt: number; chips: TrendingChip[] } | null = null;
 
 const DEFAULT_TRENDING_CHIPS: TrendingChip[] = [
-  { label: 'Marketing', href: '/category/marketing' },
-  { label: 'Technology', href: '/category/technology' },
-  { label: 'Business', href: '/category/business' },
+  { label: 'Marketing', href: '/marketing' },
+  { label: 'Technology', href: '/technology' },
+  { label: 'Business', href: '/business' },
   { label: '#SaaS', href: '/tag/saas' },
   { label: '#SEO', href: '/tag/seo' },
   { label: '#Email', href: '/tag/email' },
@@ -69,7 +77,7 @@ function prioritizeTrendingChips(chips: TrendingChip[], pathname: string | null)
   const categoryMatch = pathname.match(/^\/category\/([^/]+)/);
   const tagMatch = pathname.match(/^\/tag\/([^/]+)/);
   const preferredHref = categoryMatch
-    ? `/category/${categoryMatch[1]}`
+    ? `/${categoryMatch[1]}`
     : tagMatch
       ? `/tag/${tagMatch[1]}`
       : null;
@@ -95,18 +103,21 @@ function buildSuggestions(payload: SearchResponse): Suggestion[] {
     ...payload.categories.slice(0, 2).map((category) => ({
       type: 'category' as const,
       label: category.name,
-      href: `/category/${category.slug}`,
+      href: `/${category.slug}`,
     })),
     ...payload.tags.slice(0, 2).map((tag) => ({
       type: 'tag' as const,
       label: tag.name,
       href: `/tag/${tag.slug}`,
     })),
-    ...payload.prompts.slice(0, 4).map((prompt) => ({
-      type: 'prompt' as const,
-      label: prompt.title,
-      href: `/prompt/${prompt.slug}`,
-    })),
+    ...payload.prompts.slice(0, 4).map((prompt) => {
+      const categorySlug = prompt.primaryCategory?.slug || prompt.categories?.[0]?.slug || 'uncategorized';
+      return {
+        type: 'prompt' as const,
+        label: prompt.title,
+        href: `/${categorySlug}/${prompt.slug}`,
+      };
+    }),
   ];
 
   const seen = new Set<string>();
@@ -121,15 +132,7 @@ function buildSuggestions(payload: SearchResponse): Suggestion[] {
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
   category: (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="3" width="7" height="7" rx="1.5" />
       <rect x="14" y="3" width="7" height="7" rx="1.5" />
       <rect x="3" y="14" width="7" height="7" rx="1.5" />
@@ -137,29 +140,13 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
     </svg>
   ),
   tag: (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
       <line x1="7" y1="7" x2="7.01" y2="7" />
     </svg>
   ),
   prompt: (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M14.5 9.5h2.6a3.4 3.4 0 0 1 0 6.8h-2.6M9.5 14.5H6.9a3.4 3.4 0 1 1 0-6.8h2.6M8.9 12h6.2" />
     </svg>
   ),
@@ -195,6 +182,11 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     let cancelled = false;
 
     const loadTrendingChips = async () => {
+      if (trendingChipCache && trendingChipCache.expiresAt > Date.now()) {
+        setTrendingChips(prioritizeTrendingChips(trendingChipCache.chips, pathname));
+        return;
+      }
+
       try {
         const [categoriesResponse, tagsResponse] = await Promise.all([
           fetch(`${API_BASE_URL}/api/public/categories?take=4`, { cache: 'no-store' }),
@@ -211,7 +203,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
         const nextChips: TrendingChip[] = [
           ...categoriesPayload.items.map((category) => ({
             label: category.name,
-            href: `/category/${category.slug}`,
+            href: `/${category.slug}`,
           })),
           ...tagsPayload.items.map((tag) => ({
             label: `#${tag.name}`,
@@ -220,6 +212,10 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
         ].slice(0, 8);
 
         if (!cancelled && nextChips.length > 0) {
+          trendingChipCache = {
+            expiresAt: Date.now() + TRENDING_CHIP_CACHE_TTL_MS,
+            chips: nextChips,
+          };
           setTrendingChips(prioritizeTrendingChips(nextChips, pathname));
         }
       } catch {
@@ -246,8 +242,17 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
     const trimmedQuery = query.trim();
 
-    if (!isOpen || !trimmedQuery) {
+    if (!isOpen || !trimmedQuery || trimmedQuery.length < SEARCH_MIN_QUERY_LENGTH) {
       setSuggestions([]);
+      setActiveIndex(-1);
+      setIsFetchingSuggestions(false);
+      return;
+    }
+
+    const cacheKey = trimmedQuery.toLowerCase();
+    const cachedEntry = searchResultCache.get(cacheKey);
+    if (cachedEntry && cachedEntry.expiresAt > Date.now()) {
+      setSuggestions(cachedEntry.suggestions);
       setActiveIndex(-1);
       setIsFetchingSuggestions(false);
       return;
@@ -273,7 +278,12 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
         }
 
         const payload = (await response.json()) as SearchResponse;
-        setSuggestions(buildSuggestions(payload));
+        const nextSuggestions = buildSuggestions(payload);
+        setSuggestions(nextSuggestions);
+        searchResultCache.set(cacheKey, {
+          expiresAt: Date.now() + SEARCH_CACHE_TTL_MS,
+          suggestions: nextSuggestions,
+        });
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {
           setSuggestions([]);
@@ -359,19 +369,8 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative z-50 w-full max-w-[640px] overflow-hidden rounded-[24px] bg-white shadow-2xl ring-1 ring-black/8">
-        <form
-          onSubmit={handleSubmit}
-          className="flex items-center border-b border-[#e8eaef] px-4 py-3.5"
-        >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="mr-3 h-5 w-5 shrink-0 text-[#9ca3af]"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          >
+        <form onSubmit={handleSubmit} className="flex items-center border-b border-[#e8eaef] px-4 py-3.5">
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="mr-3 h-5 w-5 shrink-0 text-[#9ca3af]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <circle cx="10.5" cy="10.5" r="5.2" />
             <path d="m14.5 14.5 4.2 4.2" />
           </svg>
@@ -393,14 +392,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
               className="ml-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#f3f4f6] text-[#6b7280] transition-colors hover:bg-[#e5e7eb]"
               aria-label="Clear search"
             >
-              <svg
-                viewBox="0 0 24 24"
-                className="h-3.5 w-3.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              >
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
             </button>
@@ -430,15 +422,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                 <span className="rounded-full bg-[#f3f4f6] px-2.5 py-1 text-[0.75rem] font-medium text-[#6b7280]">
                   {TYPE_LABELS[suggestion.type]}
                 </span>
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-4 w-4 shrink-0 text-[#c8cdd8]"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-[#c8cdd8]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 18l6-6-6-6" />
                 </svg>
               </Link>
@@ -450,8 +434,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                 onClick={handleSubmit as unknown as React.MouseEventHandler}
                 className="w-full rounded-xl py-2.5 text-center text-[0.9rem] text-[#6b7280] transition-colors hover:bg-[#f3f4f6]"
               >
-                Search all results for{' '}
-                <strong className="text-[#111118]">&ldquo;{query}&rdquo;</strong>
+                Search all results for <strong className="text-[#111118]">&ldquo;{query}&rdquo;</strong>
               </button>
             </div>
           </div>

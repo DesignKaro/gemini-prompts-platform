@@ -1,11 +1,17 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { PostCardUI } from '../components/post-card';
+import { SeoSchemaScripts } from '../components/seo-schema-script';
+import { Skeleton } from '../components/ui/skeleton';
 import { estimateReadTime, getPostList } from '../../lib/public-content';
-
-export const metadata = {
-  title: 'Blog — Gemini Prompts',
-  description: 'Long-form posts and guides powered by the Gemini Prompts dashboard.',
-};
+import { buildPaginatedMetadata, getNormalizedBaseUrl, getSeoSettings } from '../../lib/seo';
+import {
+  buildBreadcrumbSchema,
+  buildCollectionPageSchema,
+  buildItemListSchema,
+  buildPostItemListEntries,
+  buildWebPageSchema,
+} from '../../lib/structured-data';
 
 const PAGE_SIZE = 12;
 
@@ -15,10 +21,50 @@ type PageProps = {
   }>;
 };
 
-export default async function BlogArchivePage({ searchParams }: PageProps) {
+export async function generateMetadata({ searchParams }: PageProps) {
   const resolvedSearchParams = await searchParams;
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   const page = Math.max(1, Number.parseInt(resolvedSearchParams?.page ?? '1', 10) || 1);
+  const settings = await getSeoSettings();
+
+  return buildPaginatedMetadata({
+    title: 'Blog',
+    description: 'Read prompt engineering guides, AI workflow articles, and creator strategy posts.',
+    basePath: '/blog',
+    page,
+    noIndex: settings.noindexBlogArchivePages,
+  });
+}
+
+function BlogArchiveSectionFallback() {
+  return (
+    <>
+      <div className="mt-6">
+        <Skeleton className="h-10 w-40 rounded-full" />
+      </div>
+
+      <div className="site-section-sub mt-8 grid gap-6 sm:mt-9 sm:grid-cols-2 lg:mt-10 lg:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <article key={`blog-archive-skeleton-${index}`} className="space-y-3">
+            <Skeleton className="aspect-[16/9] w-full rounded-[20px]" />
+            <Skeleton className="h-6 w-full rounded-full" />
+            <Skeleton className="h-6 w-[82%] rounded-full" />
+            <Skeleton className="h-4 w-28 rounded-full" />
+          </article>
+        ))}
+      </div>
+    </>
+  );
+}
+
+async function BlogArchiveSection({
+  page,
+  baseUrl,
+  noIndex,
+}: {
+  page: number;
+  baseUrl: string;
+  noIndex: boolean;
+}) {
   const skip = (page - 1) * PAGE_SIZE;
   const response = await getPostList({
     take: PAGE_SIZE,
@@ -29,36 +75,129 @@ export default async function BlogArchivePage({ searchParams }: PageProps) {
 
   const totalPages = Math.max(1, Math.ceil(response.total / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'Home',
-        item: `${baseUrl}/`,
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
+  const pagePath = safePage > 1 ? `/blog?page=${safePage}` : '/blog';
+  const pageUrl = `${baseUrl}${pagePath}`;
+  const schemaItems = [
+    {
+      family: 'webpage' as const,
+      schema: buildWebPageSchema({
+        url: pageUrl,
         name: 'Blog',
-        item: `${baseUrl}/blog`,
-      },
-    ],
-  };
+        description: 'Read prompt engineering guides, AI workflow articles, and creator strategy posts.',
+      }),
+    },
+    {
+      family: 'breadcrumb' as const,
+      schema: buildBreadcrumbSchema(
+        [
+          { name: 'Home', item: `${baseUrl}/` },
+          { name: 'Blog', item: `${baseUrl}/blog` },
+        ],
+        pageUrl,
+      ),
+    },
+    {
+      family: 'collection' as const,
+      schema: buildCollectionPageSchema({
+        url: pageUrl,
+        name: 'Blog posts',
+        description: 'Latest blog posts on Gemini Prompts.',
+      }),
+    },
+    {
+      family: 'collection' as const,
+      schema: buildItemListSchema({
+        url: pageUrl,
+        name: 'Blog post list',
+        idSuffix: 'blog-posts',
+        items: buildPostItemListEntries(response.items, baseUrl, 'blog'),
+      }),
+    },
+  ].filter((entry) => Boolean(entry.schema));
+
+  return (
+    <>
+      <SeoSchemaScripts items={schemaItems} noIndex={noIndex} />
+      <div className="mt-6 rounded-full border border-[#e1e5ee] bg-[#f8fafc] px-4 py-2 text-[0.95rem] text-[#4b525e] w-fit">
+        {response.total} total posts
+      </div>
+
+      <div className="site-section-sub mt-8 grid gap-6 sm:mt-9 sm:grid-cols-2 lg:mt-10 lg:grid-cols-4">
+        {response.items.length > 0 ? (
+          response.items.map((post) => (
+            <PostCardUI
+              key={post.id}
+              href={`/blog/${post.slug}`}
+              imageUrl={post.image}
+              readTime={estimateReadTime(post.excerpt || post.content)}
+              title={post.title}
+              titleTag="h2"
+            />
+          ))
+        ) : (
+          <div className="col-span-full rounded-[22px] border border-dashed border-[#d8dee8] px-6 py-7 text-center text-[0.96rem] text-[#677386]">
+            No posts available yet.
+          </div>
+        )}
+      </div>
+
+      {totalPages > 1 ? (
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href={`/blog?page=${Math.max(1, safePage - 1)}`}
+            aria-disabled={safePage === 1}
+            className={`rounded-full border px-4 py-2 text-[0.95rem] ${
+              safePage === 1
+                ? 'cursor-not-allowed border-[#e1e5ee] text-[#c0c6d1]'
+                : 'border-[#d8dce2] text-[#101010] hover:border-[#101010]'
+            }`}
+          >
+            Previous
+          </Link>
+
+          {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+            <Link
+              key={`page-${pageNumber}`}
+              href={`/blog?page=${pageNumber}`}
+              className={`h-10 w-10 rounded-full border text-center text-[0.95rem] leading-[2.35rem] ${
+                pageNumber === safePage
+                  ? 'border-[#111111] bg-[#111111] text-white'
+                  : 'border-[#d8dce2] text-[#101010] hover:border-[#101010]'
+              }`}
+            >
+              {pageNumber}
+            </Link>
+          ))}
+
+          <Link
+            href={`/blog?page=${Math.min(totalPages, safePage + 1)}`}
+            aria-disabled={safePage === totalPages}
+            className={`rounded-full border px-4 py-2 text-[0.95rem] ${
+              safePage === totalPages
+                ? 'cursor-not-allowed border-[#e1e5ee] text-[#c0c6d1]'
+                : 'border-[#d8dce2] text-[#101010] hover:border-[#101010]'
+            }`}
+          >
+            Next
+          </Link>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+export default async function BlogArchivePage({ searchParams }: PageProps) {
+  const resolvedSearchParams = await searchParams;
+  const page = Math.max(1, Number.parseInt(resolvedSearchParams?.page ?? '1', 10) || 1);
+  const seoSettings = await getSeoSettings();
+  const baseUrl = getNormalizedBaseUrl(seoSettings);
+  const shouldNoIndex =
+    seoSettings.noindexBlogArchivePages || (page > 1 && seoSettings.noindexPaginatedArchives);
 
   return (
     <main className="page-shell bg-white">
-      <script
-        type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
-
       <div className="page-container">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
           <div>
             <nav aria-label="Breadcrumb" className="text-[0.9rem] text-[#8b8f99]">
               <ol className="flex flex-wrap items-center gap-2">
@@ -79,66 +218,11 @@ export default async function BlogArchivePage({ searchParams }: PageProps) {
               A live archive of strategy, workflows, and prompt tooling — synced from the dashboard.
             </p>
           </div>
-
-          <div className="rounded-full border border-[#e1e5ee] bg-[#f8fafc] px-4 py-2 text-[0.95rem] text-[#4b525e]">
-            {response.total} total posts
-          </div>
         </div>
 
-        <div className="site-section-sub grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {response.items.map((post) => (
-            <PostCardUI
-              key={post.id}
-              href={`/blog/${post.slug}`}
-              imageUrl={post.image}
-              readTime={estimateReadTime(post.excerpt || post.content)}
-              title={post.title}
-              titleTag="h2"
-            />
-          ))}
-        </div>
-
-        {totalPages > 1 ? (
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href={`/blog?page=${Math.max(1, safePage - 1)}`}
-              aria-disabled={safePage === 1}
-              className={`rounded-full border px-4 py-2 text-[0.95rem] ${
-                safePage === 1
-                  ? 'cursor-not-allowed border-[#e1e5ee] text-[#c0c6d1]'
-                  : 'border-[#d8dce2] text-[#101010] hover:border-[#101010]'
-              }`}
-            >
-              Previous
-            </Link>
-
-            {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
-              <Link
-                key={`page-${pageNumber}`}
-                href={`/blog?page=${pageNumber}`}
-                className={`h-10 w-10 rounded-full border text-center text-[0.95rem] leading-[2.35rem] ${
-                  pageNumber === safePage
-                    ? 'border-[#111111] bg-[#111111] text-white'
-                    : 'border-[#d8dce2] text-[#101010] hover:border-[#101010]'
-                }`}
-              >
-                {pageNumber}
-              </Link>
-            ))}
-
-            <Link
-              href={`/blog?page=${Math.min(totalPages, safePage + 1)}`}
-              aria-disabled={safePage === totalPages}
-              className={`rounded-full border px-4 py-2 text-[0.95rem] ${
-                safePage === totalPages
-                  ? 'cursor-not-allowed border-[#e1e5ee] text-[#c0c6d1]'
-                  : 'border-[#d8dce2] text-[#101010] hover:border-[#101010]'
-              }`}
-            >
-              Next
-            </Link>
-          </div>
-        ) : null}
+        <Suspense fallback={<BlogArchiveSectionFallback />}>
+          <BlogArchiveSection page={page} baseUrl={baseUrl} noIndex={shouldNoIndex} />
+        </Suspense>
       </div>
     </main>
   );

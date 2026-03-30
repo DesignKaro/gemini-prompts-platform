@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { FaInstagram, FaWhatsapp } from 'react-icons/fa6';
 import brandLogo from '../../Assets/Branding/logo.svg';
 
 type FooterLink = {
@@ -18,7 +19,7 @@ const footerColumns: FooterSection[][] = [
     {
       title: 'Product',
       links: [
-        { href: '/prompt', label: 'All Prompts' },
+        { href: '/prompts', label: 'All Prompts' },
         { href: '/membership', label: 'Membership' },
         { href: '/exclusive', label: 'Exclusive' },
         { href: '/newsletter', label: 'Newsletter' },
@@ -79,6 +80,7 @@ const footerColumns: FooterSection[][] = [
 const legalLinks: FooterLink[] = [
   { href: '/privacy-policy', label: 'Privacy Policy' },
   { href: '/terms', label: 'Terms' },
+  { href: '/refund-and-return-policy', label: 'Refund & Return Policy' },
 ];
 
 const socialLinks: Array<
@@ -87,67 +89,16 @@ const socialLinks: Array<
   }
 > = [
   {
-    href: 'https://x.com',
-    label: 'X',
-    external: true,
-    icon: (
-      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]">
-        <path
-          d="M6 4h3.4l3.3 4.6L16.7 4H20l-5.6 6.3L21 20h-3.4l-3.7-5.1L9.2 20H6l6.1-7-6.1-9Z"
-          fill="currentColor"
-        />
-      </svg>
-    ),
-  },
-  {
-    href: 'https://instagram.com',
+    href: 'https://www.instagram.com/geminiprompts.io?igsh=MW5qOTZwdHJlMHhvYQ==',
     label: 'Instagram',
     external: true,
-    icon: (
-      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]">
-        <rect
-          x="4"
-          y="4"
-          width="16"
-          height="16"
-          rx="4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-        />
-        <circle cx="12" cy="12" r="3.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-        <circle cx="17.1" cy="6.9" r="1" fill="currentColor" />
-      </svg>
-    ),
+    icon: <FaInstagram aria-hidden="true" className="h-[19px] w-[19px]" />,
   },
   {
-    href: 'https://linkedin.com',
-    label: 'LinkedIn',
+    href: 'https://chat.whatsapp.com/El7eMYNAAF5EOhWKvDCl6n?mode=gi_t',
+    label: 'WhatsApp',
     external: true,
-    icon: (
-      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]">
-        <path
-          d="M6.7 8.3a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2Zm-1.3 2.1H8v8.6H5.4v-8.6Zm4.5 0h2.5v1.2h.1c.4-.8 1.4-1.5 3-1.5 3.2 0 3.8 2.1 3.8 4.8v4.1h-2.7v-3.6c0-.9 0-2.1-1.3-2.1s-1.6 1-1.6 2v3.7H9.9v-8.6Z"
-          fill="currentColor"
-        />
-      </svg>
-    ),
-  },
-  {
-    href: 'https://youtube.com',
-    label: 'YouTube',
-    external: true,
-    icon: (
-      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]">
-        <path
-          d="M20 8.6a2.6 2.6 0 0 0-1.8-1.8C16.7 6.4 12 6.4 12 6.4s-4.7 0-6.2.4A2.6 2.6 0 0 0 4 8.6c-.4 1.5-.4 3.4-.4 3.4s0 1.9.4 3.4a2.6 2.6 0 0 0 1.8 1.8c1.5.4 6.2.4 6.2.4s4.7 0 6.2-.4a2.6 2.6 0 0 0 1.8-1.8c.4-1.5.4-3.4.4-3.4s0-1.9-.4-3.4Z"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.7"
-        />
-        <path d="m10.3 14.9 4-2.9-4-2.9v5.8Z" fill="currentColor" />
-      </svg>
-    ),
+    icon: <FaWhatsapp aria-hidden="true" className="h-[19px] w-[19px]" />,
   },
 ];
 
@@ -195,8 +146,8 @@ export function SiteFooter() {
               </Link>
 
               <p className="mt-5 text-[1.02rem] leading-[1.75] text-white/70">
-                High-signal prompts, practical workflows, and premium collections for teams and
-                creators building with AI every day.
+                Simple prompts for better AI images, cleaner edits, and faster creative results
+                for everyday creators and small teams.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">

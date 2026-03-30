@@ -14,6 +14,10 @@
     "build": "npm run build -ws --if-present",
     "lint": "npm run lint -ws --if-present",
     "typecheck": "npm run typecheck -ws --if-present",
+    "dashboard:arch-check": "npm run dashboard:arch-check -w @gemini-prompts/web",
+    "dashboard:lint-checks": "npm run dashboard:arch-check && npm run lint -w @gemini-prompts/web && npm run lint -w @gemini-prompts/api",
+    "dashboard:smoke": "npm run smoke:dashboard -w @gemini-prompts/web",
+    "dashboard:release-gate": "npm run typecheck -w @gemini-prompts/api && npm run typecheck -w @gemini-prompts/web && npm run dashboard:lint-checks && npm run db:check -w @gemini-prompts/api && npm run db:integrity:audit -w @gemini-prompts/api && npm run dashboard:smoke",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "test -d .git && npx --no-install husky || true"
@@ -40,5 +44,8 @@
   },
   "engines": {
     "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "framer-motion": "12.38.0"
   }
 }

@@ -38,7 +38,13 @@ export const PromptBox = Node.create({
     const llms = (node.attrs.selectedLlms || []) as string[];
     const llmTags = llms.map((l) => [
       'span',
-      { class: `prompt-widget-llm prompt-widget-llm-${l.toLowerCase()}`, 'data-llm': l, title: l },
+      {
+        class: `prompt-widget-llm prompt-widget-llm-${l.toLowerCase()}`,
+        'data-llm': l,
+        'data-tooltip': `Try on ${l}`,
+        title: `Try on ${l}`,
+      },
+      l.slice(0, 1).toUpperCase(),
     ]);
 
     return [

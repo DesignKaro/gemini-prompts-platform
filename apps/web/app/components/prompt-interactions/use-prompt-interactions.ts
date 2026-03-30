@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { signIn, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import { redirectToSignInModal } from '../../../lib/utils/auth-redirect';
 import { refreshSession } from '../../../lib/utils/session';
 import {
   PromptApiError,
@@ -218,8 +219,7 @@ export function usePromptInteractions({
   }, [authKey, promptId, session?.apiAccessToken, sessionStatus, syncAnonymousStatus, syncStatus]);
 
   const redirectToSignIn = useCallback(() => {
-    const callbackUrl = typeof window !== 'undefined' ? window.location.href : '/';
-    void signIn(undefined, { callbackUrl });
+    redirectToSignInModal();
   }, []);
 
   const getAccessToken = useCallback(async (required: boolean) => {

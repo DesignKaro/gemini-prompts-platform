@@ -1,12 +1,33 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { PromptVisibility } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { AuthUser } from '../auth/types/auth-user.type';
+import { PublicCacheInterceptor } from './public-cache.interceptor';
 import { PromptCommentCreateDto } from './dto/prompt-comment-create.dto';
+import { CreateMembershipCheckoutOrderDto } from './dto/create-membership-checkout-order.dto';
+import { CreateContactSubmissionDto } from './dto/create-contact-submission.dto';
+import { CreateNewsletterSubmissionDto } from './dto/create-newsletter-submission.dto';
 import { PromptInteractionStatusRequestDto } from './dto/prompt-interaction-status.dto';
+import { ResolveRedirectQueryDto } from './dto/resolve-redirect-query.dto';
+import { SeoSettingsQueryDto } from './dto/seo-settings-query.dto';
+import { VerifyMembershipCheckoutDto } from './dto/verify-membership-checkout.dto';
 import { PublicService } from './public.service';
+import { SeoIntegrationsService } from '../seo/seo-integrations.service';
+import { SeoSettingsService } from '../seo/seo-settings.service';
+import { RedirectRulesService } from '../seo/redirect-rules.service';
 
 type HeaderValue = string | string[] | undefined;
 
@@ -19,10 +40,14 @@ type HttpRequest = {
 };
 
 @Controller('public')
+@UseInterceptors(PublicCacheInterceptor)
 export class PublicController {
   constructor(
     private readonly publicService: PublicService,
     private readonly authService: AuthService,
+    private readonly seoSettingsService: SeoSettingsService,
+    private readonly seoIntegrationsService: SeoIntegrationsService,
+    private readonly redirectRulesService: RedirectRulesService,
   ) {}
 
   @Get('home')
@@ -41,6 +66,23 @@ export class PublicController {
       take ? parseInt(take, 10) : 8,
       request ? this.resolveOptionalViewer(request) : undefined,
     );
+  }
+
+  @Get('seo/settings')
+  async getSeoSettings(@Query() query: SeoSettingsQueryDto) {
+    const [settings, integrations] = await Promise.all([
+      this.seoSettingsService.getPublicSettings(),
+      this.seoIntegrationsService.getPublicSettings(query.scope),
+    ]);
+    return {
+      ...settings,
+      integrations,
+    };
+  }
+
+  @Get('seo/redirects/resolve')
+  resolveRedirect(@Query() query: ResolveRedirectQueryDto) {
+    return this.redirectRulesService.resolve(query.path);
   }
 
   @Get('prompts')
@@ -225,6 +267,35 @@ export class PublicController {
     return this.publicService.getPost(slug, this.resolveOptionalViewer(request));
   }
 
+  @Post('newsletter/submissions')
+  createNewsletterSubmission(@Body() body: CreateNewsletterSubmissionDto) {
+    return this.publicService.createNewsletterSubmission(body);
+  }
+
+  @Post('contact/submissions')
+  createContactSubmission(@Body() body: CreateContactSubmissionDto, @Req() request: HttpRequest) {
+    return this.publicService.createContactSubmission({
+      ...body,
+      ipAddress: this.getRequestClientAddress(request),
+      userAgent: this.readHeaderValue(request, 'user-agent'),
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('membership/checkout/order')
+  createMembershipCheckoutOrder(
+    @CurrentUser() user: AuthUser,
+    @Body() body: CreateMembershipCheckoutOrderDto,
+  ) {
+    return this.publicService.createMembershipCheckoutOrder(user, body.cycle);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('membership/checkout/verify')
+  verifyMembershipCheckout(@CurrentUser() user: AuthUser, @Body() body: VerifyMembershipCheckoutDto) {
+    return this.publicService.verifyMembershipCheckout(user, body);
+  }
+
   @Post('posts/:id/view')
   trackPostView(@Param('id') id: string, @Req() request: HttpRequest) {
     const viewer = this.resolveOptionalViewer(request);
@@ -268,12 +339,14 @@ export class PublicController {
 
   @Get('categories')
   getCategories(
+    @Query('skip') skip?: string,
     @Query('take') take?: string,
     @Query('sort') sort?: 'name' | 'popular',
     @Req() request?: HttpRequest,
   ) {
     return this.publicService.getCategories(
       {
+        skip: skip ? parseInt(skip, 10) : 0,
         take: take ? parseInt(take, 10) : 48,
         sort,
       },

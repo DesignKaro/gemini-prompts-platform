@@ -1,0 +1,7 @@
+ALTER TABLE `Prompt`
+  ADD COLUMN `metaTitle` VARCHAR(191) NULL,
+  ADD COLUMN `metaDescription` VARCHAR(512) NULL;
+
+ALTER TABLE `Post`
+  ADD COLUMN `metaTitle` VARCHAR(191) NULL,
+  ADD COLUMN `metaDescription` VARCHAR(512) NULL;

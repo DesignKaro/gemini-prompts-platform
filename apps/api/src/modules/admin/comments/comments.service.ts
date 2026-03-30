@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CommentStatus, CommentTargetType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
@@ -114,12 +114,37 @@ export class CommentsService {
   }
 
   async create(actorId: string, data: CommentCreateInput) {
+    const content = data.content?.trim();
+    if (!content) {
+      throw new BadRequestException('Comment content is required.');
+    }
+
+    if (data.targetType === 'PROMPT') {
+      const prompt = await this.prisma.prompt.findUnique({
+        where: { id: data.targetId },
+        select: { id: true, deletedAt: true },
+      });
+      if (!prompt || prompt.deletedAt) {
+        throw new NotFoundException('Prompt not found for this comment.');
+      }
+    }
+
+    if (data.targetType === 'POST') {
+      const post = await this.prisma.post.findUnique({
+        where: { id: data.targetId },
+        select: { id: true, deletedAt: true },
+      });
+      if (!post || post.deletedAt) {
+        throw new NotFoundException('Post not found for this comment.');
+      }
+    }
+
     const created = await this.prisma.comment.create({
       data: {
         authorId: actorId,
         targetType: data.targetType,
         targetId: data.targetId,
-        content: data.content,
+        content,
         status: data.status ?? 'PENDING',
       },
     });
@@ -136,6 +161,11 @@ export class CommentsService {
   }
 
   async reply(actorId: string, parentId: string, content: string) {
+    const normalizedContent = content?.trim();
+    if (!normalizedContent) {
+      throw new BadRequestException('Reply content is required.');
+    }
+
     const parent = await this.prisma.comment.findUnique({ where: { id: parentId } });
     if (!parent || parent.deletedAt) {
       throw new NotFoundException('Comment not found');
@@ -147,7 +177,7 @@ export class CommentsService {
         targetType: parent.targetType,
         targetId: parent.targetId,
         parentId,
-        content,
+        content: normalizedContent,
         status: 'APPROVED',
       },
     });
@@ -169,10 +199,14 @@ export class CommentsService {
       throw new NotFoundException('Comment not found');
     }
 
+    if (data.content !== undefined && !data.content.trim()) {
+      throw new BadRequestException('Comment content cannot be empty.');
+    }
+
     const updated = await this.prisma.comment.update({
       where: { id },
       data: {
-        content: data.content ?? undefined,
+        content: data.content?.trim() ?? undefined,
         status: data.status ?? undefined,
         moderatedById: data.status ? actorId : undefined,
       },

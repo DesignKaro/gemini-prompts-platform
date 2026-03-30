@@ -6,6 +6,7 @@ import Google from 'next-auth/providers/google';
 import type { JWT } from 'next-auth/jwt';
 import { NextResponse } from 'next/server';
 import { hasDashboardAccess } from './lib/utils/permissions';
+import { resolveApiBaseUrls } from './lib/utils/api-base-url';
 
 type ApiUser = {
   id: string;
@@ -63,6 +64,10 @@ class InvalidCredentialsSigninError extends CredentialsSignin {
   code = 'invalid_credentials';
 }
 
+class SuspendedAccountSigninError extends CredentialsSignin {
+  code = 'account_suspended';
+}
+
 class EmailAlreadyExistsSigninError extends CredentialsSignin {
   code = 'email_exists';
 }
@@ -96,37 +101,40 @@ const googleClientSecret = optionalEnv('GOOGLE_CLIENT_SECRET');
 const nextAuthSecret =
   optionalEnv('NEXTAUTH_SECRET') ||
   (process.env.NODE_ENV === 'development' ? 'dev-only-insecure-secret-change-in-env' : undefined);
-const authApiUrl = optionalEnv('AUTH_API_URL');
 
 if (process.env.NODE_ENV === 'development' && (!googleClientId || !googleClientSecret)) {
   console.warn('[auth] Google provider disabled: GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET missing.');
 }
 
-function normalizeApiUrl(value: string): string {
-  return value.endsWith('/') ? value.slice(0, -1) : value;
+function isTruthyEnv(value: string | undefined): boolean {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
 }
 
-function buildApiBaseUrls(): string[] {
-  const candidates = [
-    authApiUrl,
-    process.env.NEXT_PUBLIC_API_URL,
-    'http://127.0.0.1:4000',
-    'http://localhost:4000',
-  ];
-
-  const unique = new Set<string>();
-  for (const candidate of candidates) {
-    if (!candidate || !candidate.trim()) continue;
-    unique.add(normalizeApiUrl(candidate.trim()));
-  }
-
-  return [...unique];
-}
-
-const apiBaseUrls = buildApiBaseUrls();
+const apiBaseUrls = resolveApiBaseUrls();
+const authDebugEnabled = isTruthyEnv(optionalEnv('AUTH_DEBUG'));
+const SUSPENDED_ACCOUNT_MESSAGE = 'Your account has been suspended. Please contact support.';
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isSuspendedAccountMessage(message: string): boolean {
+  return message.toLowerCase().includes('suspend');
+}
+
+function shouldForceTokenRefresh(trigger: string | undefined, session: unknown): boolean {
+  if (trigger !== 'update') {
+    return false;
+  }
+
+  if (!session || typeof session !== 'object') {
+    return false;
+  }
+
+  const forceRefreshValue = (session as { forceRefresh?: unknown }).forceRefresh;
+  return forceRefreshValue === true;
 }
 
 function safeAvatarUrl(value: string | null | undefined): string | undefined {
@@ -271,7 +279,10 @@ function accessTokenExpired(token: JWT): boolean {
 const authConfig: NextAuthConfig = {
   secret: nextAuthSecret,
   trustHost: true,
-  debug: process.env.NODE_ENV === 'development',
+  debug: authDebugEnabled,
+  pages: {
+    signIn: '/',
+  },
   session: {
     strategy: 'jwt',
   },
@@ -337,6 +348,10 @@ const authConfig: NextAuthConfig = {
             }
 
             const normalizedMessage = error.message.toLowerCase();
+            if (isSuspendedAccountMessage(normalizedMessage)) {
+              throw new SuspendedAccountSigninError();
+            }
+
             if (isSignup) {
               if (error.status === 409 || normalizedMessage.includes('already exists')) {
                 throw new EmailAlreadyExistsSigninError();
@@ -372,7 +387,11 @@ const authConfig: NextAuthConfig = {
       }
 
       if (!auth) {
-        return NextResponse.redirect(new URL('/', request.nextUrl));
+        const url = new URL('/', request.nextUrl);
+        const callbackPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+        url.searchParams.set('auth', 'signin');
+        url.searchParams.set('callbackUrl', callbackPath);
+        return NextResponse.redirect(url);
       }
 
       if (!hasDashboardAccess(auth)) {
@@ -381,7 +400,7 @@ const authConfig: NextAuthConfig = {
 
       return true;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger, session }) {
       if (account?.provider === 'credentials' && user) {
         return mergeTokenFromApiResponse(token, {
           user: {
@@ -435,6 +454,13 @@ const authConfig: NextAuthConfig = {
           return mergeTokenFromApiResponse(token, auth);
         } catch (error) {
           console.error('[auth] Google backend exchange failed:', error);
+          if (error instanceof AuthApiError && isSuspendedAccountMessage(error.message)) {
+            token.authError = 'AccountSuspended';
+            token.authErrorMessage = SUSPENDED_ACCOUNT_MESSAGE;
+            token.authRetryAt = undefined;
+            return token;
+          }
+
           token.authError = 'GoogleBackendSyncFailed';
           token.authErrorMessage =
             error instanceof AuthApiError ? error.message : 'Google backend exchange failed.';
@@ -461,9 +487,34 @@ const authConfig: NextAuthConfig = {
           return mergeTokenFromApiResponse(token, auth);
         } catch (error) {
           console.error('[auth] Google backend retry failed:', error);
+          if (error instanceof AuthApiError && isSuspendedAccountMessage(error.message)) {
+            token.authError = 'AccountSuspended';
+            token.authErrorMessage = SUSPENDED_ACCOUNT_MESSAGE;
+            token.authRetryAt = undefined;
+            return token;
+          }
+
           token.authErrorMessage =
             error instanceof AuthApiError ? error.message : 'Google backend retry failed.';
           token.authRetryAt = Date.now() + 60_000;
+        }
+      }
+
+      if (isNonEmptyString(token.apiRefreshToken) && shouldForceTokenRefresh(trigger, session)) {
+        try {
+          const refreshed = await refreshApiSession(token.apiRefreshToken);
+          return mergeTokenFromApiResponse(token, refreshed);
+        } catch (error) {
+          if (error instanceof AuthApiError && isSuspendedAccountMessage(error.message)) {
+            token.authError = 'AccountSuspended';
+            token.authErrorMessage = SUSPENDED_ACCOUNT_MESSAGE;
+          } else {
+            token.authError = 'RefreshAccessTokenError';
+            token.authErrorMessage = 'Session refresh failed.';
+          }
+          token.apiAccessToken = undefined;
+          token.apiAccessTokenExpiresAt = undefined;
+          token.apiRefreshToken = undefined;
         }
       }
 
@@ -471,9 +522,14 @@ const authConfig: NextAuthConfig = {
         try {
           const refreshed = await refreshApiSession(token.apiRefreshToken);
           return mergeTokenFromApiResponse(token, refreshed);
-        } catch {
-          token.authError = 'RefreshAccessTokenError';
-          token.authErrorMessage = 'Session refresh failed.';
+        } catch (error) {
+          if (error instanceof AuthApiError && isSuspendedAccountMessage(error.message)) {
+            token.authError = 'AccountSuspended';
+            token.authErrorMessage = SUSPENDED_ACCOUNT_MESSAGE;
+          } else {
+            token.authError = 'RefreshAccessTokenError';
+            token.authErrorMessage = 'Session refresh failed.';
+          }
           token.apiAccessToken = undefined;
           token.apiAccessTokenExpiresAt = undefined;
           token.apiRefreshToken = undefined;
@@ -508,7 +564,7 @@ const authConfig: NextAuthConfig = {
       if (isNonEmptyString(token.apiAccessTokenExpiresAt)) {
         session.apiAccessTokenExpiresAt = token.apiAccessTokenExpiresAt;
       }
-      if (Array.isArray(token.permissions)) {
+      if (session.user && Array.isArray(token.permissions)) {
         session.user.permissions = token.permissions;
       }
       if (isNonEmptyString(token.authError)) {

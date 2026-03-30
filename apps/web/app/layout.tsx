@@ -1,32 +1,252 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
+import { Poppins } from 'next/font/google';
+import { headers } from 'next/headers';
 import { Providers } from './components/providers';
 import { ConditionalShell, ConditionalHeader } from './components/conditional-shell';
 import { SiteFooter } from './components/site-footer';
+import { WebVitalsReporter } from './components/web-vitals-reporter';
+import { NewsletterSubscribeForm } from './components/newsletter-subscribe-form';
+import { SeoSchemaScripts } from './components/seo-schema-script';
+import { buildSeoIntegrationScriptBundle } from '../lib/seo-integrations';
+import {
+  SCHEMA_REQUEST_PATHNAME_HEADER,
+  SCHEMA_REQUEST_SEARCH_HEADER,
+  shouldDisableSchemaForRoute,
+} from '../lib/schema-route-visibility';
+import {
+  DEFAULT_SEO_SETTINGS,
+  getBaseUrl,
+  getDefaultOgImage,
+  getSeoSettings,
+} from '../lib/seo';
 import './globals.css';
 
-export const metadata: Metadata = {
-  title: 'Gemini Prompts',
-  description: 'AI prompt sharing and membership platform',
-};
+const poppins = Poppins({
+  weight: ['200', '300', '400', '500', '600', '700'],
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true,
+});
+
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSeoSettings();
+  const baseUrl = getBaseUrl(settings);
+  const siteTitle = settings.siteTitle || DEFAULT_SEO_SETTINGS.siteTitle;
+  const titleSeparator = settings.titleSeparator || DEFAULT_SEO_SETTINGS.titleSeparator;
+  const description = settings.defaultMetaDescription || DEFAULT_SEO_SETTINGS.defaultMetaDescription;
+  const defaultOgImage = settings.defaultOgImageUrl || getDefaultOgImage(baseUrl);
+  const integrationBundle = buildSeoIntegrationScriptBundle(settings.integrations);
+  const googleVerification =
+    integrationBundle.googleSiteVerification || settings.googleSiteVerification || undefined;
+  const msVerification =
+    integrationBundle.bingSiteVerification || settings.bingSiteVerification || undefined;
+  const metaOther: Record<string, string> = {};
+  if (msVerification) {
+    metaOther['msvalidate.01'] = msVerification;
+  }
+  if (integrationBundle.adsensePublisherId) {
+    metaOther['google-adsense-account'] = integrationBundle.adsensePublisherId;
+  }
+
+  return {
+    metadataBase: new URL(baseUrl),
+    title: {
+      default: siteTitle,
+      template: `%s ${titleSeparator} ${siteTitle}`,
+    },
+    description,
+    applicationName: siteTitle,
+    appleWebApp: {
+      capable: true,
+      title: siteTitle,
+      statusBarStyle: 'default',
+    },
+    formatDetection: {
+      email: false,
+      address: false,
+      telephone: false,
+    },
+    openGraph: {
+      type: 'website',
+      siteName: siteTitle,
+      title: siteTitle,
+      description,
+      url: baseUrl,
+      images: [
+        {
+          url: defaultOgImage,
+          alt: settings.defaultOgImageAlt || siteTitle,
+        },
+      ],
+    },
+    twitter: {
+      card: settings.twitterCardType,
+      title: siteTitle,
+      description,
+      images: [defaultOgImage],
+    },
+    robots: {
+      index: settings.robotsSiteIndex,
+      follow: settings.robotsSiteFollow,
+      googleBot: {
+        index: settings.robotsSiteIndex,
+        follow: settings.robotsSiteFollow,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+        'max-video-preview': -1,
+      },
+    },
+    icons: {
+      icon: '/icon.svg',
+      shortcut: '/icon.svg',
+      apple: '/icon.svg',
+    },
+    verification: {
+      google: googleVerification,
+      other: Object.keys(metaOther).length > 0 ? metaOther : undefined,
+    },
+    alternates: {
+      canonical: '/',
+    },
+  };
+}
+
+async function GlobalIntegrationScripts() {
+  const settings = await getSeoSettings();
+  const bundle = buildSeoIntegrationScriptBundle(settings.integrations);
+
+  return (
+    <>
+      {bundle.gtagLoaderSrc ? (
+        <Script id="gp-gtag-loader" src={bundle.gtagLoaderSrc} strategy="afterInteractive" />
+      ) : null}
+      {bundle.gtagInitScript ? (
+        <Script
+          id="gp-gtag-init"
+          strategy="afterInteractive"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: bundle.gtagInitScript }}
+        />
+      ) : null}
+      {bundle.adsenseLoaderSrc ? (
+        <Script
+          id="gp-adsense-loader"
+          src={bundle.adsenseLoaderSrc}
+          strategy="afterInteractive"
+          crossOrigin="anonymous"
+        />
+      ) : null}
+      {bundle.clarityInitScript ? (
+        <Script
+          id="gp-clarity-init"
+          strategy="afterInteractive"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: bundle.clarityInitScript }}
+        />
+      ) : null}
+      {bundle.customHeadScriptUrls.map((src, index) => (
+        <Script
+          key={`gp-custom-head-src-${src}-${index}`}
+          id={`gp-custom-head-src-${index}`}
+          src={src}
+          strategy="afterInteractive"
+        />
+      ))}
+      {bundle.customHeadInlineScript ? (
+        <Script
+          id="gp-custom-head-inline"
+          strategy="afterInteractive"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: bundle.customHeadInlineScript }}
+        />
+      ) : null}
+      {bundle.customBodyStartInlineScript ? (
+        <Script
+          id="gp-custom-body-start-inline"
+          strategy="afterInteractive"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: bundle.customBodyStartInlineScript }}
+        />
+      ) : null}
+    </>
+  );
+}
+
+async function GlobalIntegrationBodyEndScript() {
+  const settings = await getSeoSettings();
+  const bundle = buildSeoIntegrationScriptBundle(settings.integrations);
+  if (!bundle.customBodyEndInlineScript) return null;
+
+  return (
+    <Script
+      id="gp-custom-body-end-inline"
+      strategy="afterInteractive"
+      // eslint-disable-next-line react/no-danger
+      dangerouslySetInnerHTML={{ __html: bundle.customBodyEndInlineScript }}
+    />
+  );
+}
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
 };
 
+async function GlobalSchemaScripts() {
+  const settings = await getSeoSettings();
+  const requestHeaders = await headers();
+  const pathname = requestHeaders.get(SCHEMA_REQUEST_PATHNAME_HEADER) || '/';
+  const search = requestHeaders.get(SCHEMA_REQUEST_SEARCH_HEADER) || '';
+
+  if (
+    shouldDisableSchemaForRoute({
+      pathname,
+      search,
+      settings,
+    })
+  ) {
+    return null;
+  }
+
+  const baseUrl = getBaseUrl(settings);
+  const organizationName = settings.organizationName || settings.siteTitle;
+  const schemaItems = [
+    {
+      family: 'website' as const,
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        '@id': `${baseUrl}#website`,
+        name: settings.siteTitle,
+        url: baseUrl,
+      },
+    },
+    {
+      family: 'organization' as const,
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        '@id': `${baseUrl}#organization`,
+        name: organizationName,
+        url: baseUrl,
+        logo: settings.organizationLogoUrl || undefined,
+        sameAs: settings.organizationSameAs.length > 0 ? settings.organizationSameAs : undefined,
+      },
+    },
+  ];
+
+  return <SeoSchemaScripts items={schemaItems} />;
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap"
-        />
-      </head>
-      <body suppressHydrationWarning>
+      <body suppressHydrationWarning className={poppins.className}>
+        <GlobalSchemaScripts />
+        <GlobalIntegrationScripts />
         <Providers>
+          <WebVitalsReporter />
           <div id="top" />
           <ConditionalHeader />
           {children}
@@ -55,26 +275,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     </div>
 
                     <div className="rounded-[26px] border border-black/10 bg-white p-5 shadow-none sm:p-6">
-                      <form className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                        <label className="sr-only" htmlFor="newsletter-email">
-                          Email address
-                        </label>
-                        <input
-                          id="newsletter-email"
-                          name="email"
-                          type="email"
-                          inputMode="email"
-                          autoComplete="email"
-                          placeholder="you@company.com"
-                          className="h-[52px] w-full rounded-full border border-[#d8dce2] bg-white px-5 text-[1rem] text-[#101418] outline-none transition focus:border-[#101010]"
-                        />
-                        <button
-                          type="submit"
-                          className="h-[52px] w-full rounded-full bg-[#d5ea52] px-7 text-[1rem] font-[500] text-[#0f1116] transition-colors hover:bg-[#c8e030] sm:w-auto"
-                        >
-                          Subscribe
-                        </button>
-                      </form>
+                      <NewsletterSubscribeForm
+                        source="global_cta"
+                        inputId="newsletter-email"
+                        fieldGroupClassName="flex flex-col gap-3 sm:flex-row sm:items-center"
+                        inputClassName="h-[52px] w-full rounded-full border border-[#d8dce2] bg-white px-5 text-[1rem] text-[#101418] outline-none transition focus:border-[#101010]"
+                        buttonClassName="h-[52px] w-full rounded-full bg-[#d5ea52] px-7 text-[1rem] font-[500] text-[#0f1116] transition-colors hover:bg-[#c8e030] sm:w-auto"
+                        successClassName="mt-3 text-[0.88rem] text-[#1f4f1f]"
+                        errorClassName="mt-3 text-[0.88rem] text-[#9d1c1c]"
+                      />
 
                       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[0.9rem] text-[#6a7280]">
                         <span className="inline-flex items-center gap-2">
@@ -133,6 +342,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             footer={<SiteFooter key="footer" />}
           />
         </Providers>
+        <GlobalIntegrationBodyEndScript />
       </body>
     </html>
   );

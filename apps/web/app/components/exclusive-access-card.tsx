@@ -13,28 +13,28 @@ export function ExclusiveAccessCard({
 }: ExclusiveAccessCardProps) {
   return (
     <section
-      className={`rounded-[26px] border border-[#dbe3bf] bg-[linear-gradient(135deg,#f7fbdf_0%,#ffffff_55%,#eef5c7_100%)] p-6 sm:p-7 ${className ?? ''}`.trim()}
+      className={`rounded-[22px] border border-[#e7e9ee] bg-[#ffffff] p-5 sm:p-6 ${className ?? ''}`.trim()}
     >
-      <span className="inline-flex rounded-full bg-[#111111] px-3.5 py-1.5 text-[0.78rem] font-medium uppercase tracking-[0.16em] text-white">
+      <span className="inline-flex rounded-full border border-[#e2e5eb] bg-[#f8f9fc] px-3 py-1 text-[0.74rem] font-medium uppercase tracking-[0.14em] text-[#3f495a]">
         Members only
       </span>
-      <h2 className="mt-4 text-[1.7rem] font-medium tracking-[-0.03em] text-[#0f1116] sm:text-[2rem]">
+      <h2 className="mt-3 text-[1.45rem] font-medium tracking-[-0.02em] text-[#121826] sm:text-[1.7rem]">
         Unlock the full {contentLabel}
       </h2>
-      <p className="mt-3 max-w-[40rem] text-[1rem] leading-[1.8] text-[#4b5563]">
+      <p className="mt-2.5 max-w-[34rem] text-[0.95rem] leading-[1.7] text-[#5d6676]">
         This page is part of the premium library. Upgrade to open the full content, copy the full
         material, and join the discussion.
       </p>
-      <div className="mt-6 flex flex-wrap gap-3">
+      <div className="mt-5 flex flex-wrap gap-2.5">
         <Link
           href="/membership"
-          className="inline-flex h-11 items-center justify-center rounded-full bg-[#111111] px-5 text-[0.95rem] font-medium text-white transition-colors hover:bg-black"
+          className="inline-flex h-10 items-center justify-center rounded-full bg-[#111111] px-4 text-[0.9rem] font-medium text-white transition-colors hover:bg-black"
         >
-          View membership
+          Unlock Exclusive
         </Link>
         <Link
           href={isSignedIn ? '/profile' : '/'}
-          className="inline-flex h-11 items-center justify-center rounded-full border border-[#cfd7b1] bg-white px-5 text-[0.95rem] font-medium text-[#111111] transition-colors hover:border-[#111111]"
+          className="inline-flex h-10 items-center justify-center rounded-full border border-[#d8dde6] bg-white px-4 text-[0.9rem] font-medium text-[#151a24] transition-colors hover:border-[#111111]"
         >
           {isSignedIn ? 'Go to profile' : 'Back home'}
         </Link>

@@ -1,6 +1,7 @@
 {
   "extends": "../../packages/config-ts/next.json",
   "compilerOptions": {
+    "baseUrl": ".",
     "plugins": [
       {
         "name": "next"
@@ -8,9 +9,11 @@
     ],
     "paths": {
       "@/*": ["./*"],
+      "@dashboard/*": ["./features/dashboard/*"],
       "@gp/types": ["../../packages/types/src"],
       "@gp/ui": ["../../packages/ui/src"]
     },
+    "types": ["vitest/globals", "node"],
     "allowJs": true
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

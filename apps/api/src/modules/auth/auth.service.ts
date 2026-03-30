@@ -6,12 +6,19 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AuthProvider, PromptStatus, PromptVisibility, UserRole } from '@prisma/client';
+import {
+  AuthProvider,
+  PromptStatus,
+  PromptVisibility,
+  SubscriptionStatus,
+  UserRole,
+} from '@prisma/client';
 import type { MembershipPlan } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
 import { createHash, randomBytes } from 'node:crypto';
 import type { Env } from '@/config/env.validation';
 import { PrismaService } from '@/modules/prisma/prisma.service';
+import { normalizePagination } from '../../common/utils/pagination';
 import { LoginDto } from './dto/login.dto';
 import { GoogleExchangeDto } from './dto/google-exchange.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -22,6 +29,7 @@ import { hashPassword, verifyPassword } from './utils/password.util';
 import { isProtectedSuperadminEmail } from './utils/superadmin.util';
 
 export const REFRESH_COOKIE_NAME = 'gp_refresh_token';
+const PROFILE_SUMMARY_ITEMS_LIMIT = 7;
 
 type PublicUser = {
   id: string;
@@ -40,6 +48,26 @@ type PublicUser = {
   roleNames: string[];
 };
 
+type ProfileActivityType = 'SAVE' | 'LIKE' | 'CREATE';
+
+type ProfileActivityItem = {
+  id: string;
+  type: ProfileActivityType;
+  promptTitle: string | null;
+  promptSlug: string | null;
+  promptImage: string | null;
+  createdAt: string;
+};
+
+type ProfileSavedPromptItem = {
+  id: string;
+  title: string;
+  slug: string;
+  promptType: string;
+  image: string | null;
+  savedAt: string;
+};
+
 type ProfileSummary = {
   user: PublicUser;
   stats: {
@@ -49,17 +77,44 @@ type ProfileSummary = {
     audienceCount: number;
     plan: MembershipPlan;
   };
-  recentActivity: Array<{
-    type: 'SAVE' | 'LIKE' | 'CREATE';
-    promptTitle: string | null;
-    createdAt: string;
-  }>;
-  savedPrompts: Array<{
+  recentActivity: ProfileActivityItem[];
+  savedPrompts: ProfileSavedPromptItem[];
+};
+
+type ProfileActivityList = {
+  items: ProfileActivityItem[];
+  total: number;
+};
+
+type ProfileSavedPromptsList = {
+  items: ProfileSavedPromptItem[];
+  total: number;
+};
+
+type MembershipCycle = 'monthly' | 'yearly';
+
+type MembershipSummary = {
+  user: {
     id: string;
-    title: string;
-    promptType: string;
-    image: string | null;
-    savedAt: string;
+    email: string;
+    plan: MembershipPlan;
+  };
+  membership: {
+    status: SubscriptionStatus | 'FREE';
+    provider: string | null;
+    cycle: MembershipCycle | null;
+    startAt: string | null;
+    endAt: string | null;
+    canceledAt: string | null;
+    willAutoRenew: boolean;
+  };
+  billingHistory: Array<{
+    id: string;
+    provider: string;
+    status: string;
+    amount: number;
+    currency: string;
+    createdAt: string;
   }>;
 };
 
@@ -574,12 +629,13 @@ export class AuthService {
       this.prisma.savedPrompt.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
-        take: 3,
+        take: PROFILE_SUMMARY_ITEMS_LIMIT,
         include: {
           prompt: {
             select: {
               id: true,
               title: true,
+              slug: true,
               featuredImageUrl: true,
               promptType: true,
             },
@@ -589,11 +645,13 @@ export class AuthService {
       this.prisma.promptLike.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
-        take: 3,
+        take: PROFILE_SUMMARY_ITEMS_LIMIT,
         include: {
           prompt: {
             select: {
               title: true,
+              slug: true,
+              featuredImageUrl: true,
             },
           },
         },
@@ -601,9 +659,12 @@ export class AuthService {
       this.prisma.prompt.findMany({
         where: { authorId: userId },
         orderBy: { createdAt: 'desc' },
-        take: 3,
+        take: PROFILE_SUMMARY_ITEMS_LIMIT,
         select: {
+          id: true,
+          slug: true,
           title: true,
+          featuredImageUrl: true,
           createdAt: true,
         },
       }),
@@ -622,27 +683,37 @@ export class AuthService {
 
     const recentActivity = [
       ...savedPromptRecords.map((record) => ({
+        id: `save:${record.promptId}:${record.createdAt.toISOString()}`,
         type: 'SAVE' as const,
         promptTitle: record.prompt.title,
+        promptSlug: record.prompt.slug,
+        promptImage: record.prompt.featuredImageUrl ?? null,
         createdAt: record.createdAt.toISOString(),
       })),
       ...likeRecords.map((record) => ({
+        id: `like:${record.promptId}:${record.createdAt.toISOString()}`,
         type: 'LIKE' as const,
         promptTitle: record.prompt.title,
+        promptSlug: record.prompt.slug,
+        promptImage: record.prompt.featuredImageUrl ?? null,
         createdAt: record.createdAt.toISOString(),
       })),
       ...createdPromptRecords.map((record) => ({
+        id: `create:${record.id}`,
         type: 'CREATE' as const,
         promptTitle: record.title,
+        promptSlug: record.slug,
+        promptImage: record.featuredImageUrl ?? null,
         createdAt: record.createdAt.toISOString(),
       })),
     ]
       .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
-      .slice(0, 3);
+      .slice(0, PROFILE_SUMMARY_ITEMS_LIMIT);
 
     const savedPrompts = savedPromptRecords.map((record) => ({
       id: record.prompt.id,
       title: record.prompt.title,
+      slug: record.prompt.slug,
       promptType: record.prompt.promptType,
       image: record.prompt.featuredImageUrl ?? null,
       savedAt: record.createdAt.toISOString(),
@@ -659,6 +730,273 @@ export class AuthService {
       },
       recentActivity,
       savedPrompts,
+    };
+  }
+
+  async getProfileActivity(userId: string, skip = 0, take = 20): Promise<ProfileActivityList> {
+    const { skip: safeSkip, take: safeTake } = normalizePagination(skip, take);
+    const windowSize = safeSkip + safeTake;
+
+    const [user, savedCount, likedCount, createdCount, savedRecords, likeRecords, createdRecords] =
+      await this.prisma.$transaction([
+        this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true },
+        }),
+        this.prisma.savedPrompt.count({
+          where: { userId },
+        }),
+        this.prisma.promptLike.count({
+          where: { userId },
+        }),
+        this.prisma.prompt.count({
+          where: { authorId: userId },
+        }),
+        this.prisma.savedPrompt.findMany({
+          where: { userId },
+          orderBy: { createdAt: 'desc' },
+          take: windowSize,
+          select: {
+            promptId: true,
+            createdAt: true,
+            prompt: {
+              select: {
+                title: true,
+                slug: true,
+                featuredImageUrl: true,
+              },
+            },
+          },
+        }),
+        this.prisma.promptLike.findMany({
+          where: { userId },
+          orderBy: { createdAt: 'desc' },
+          take: windowSize,
+          select: {
+            promptId: true,
+            createdAt: true,
+            prompt: {
+              select: {
+                title: true,
+                slug: true,
+                featuredImageUrl: true,
+              },
+            },
+          },
+        }),
+        this.prisma.prompt.findMany({
+          where: { authorId: userId },
+          orderBy: { createdAt: 'desc' },
+          take: windowSize,
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            featuredImageUrl: true,
+            createdAt: true,
+          },
+        }),
+      ]);
+
+    if (!user) {
+      throw new UnauthorizedException('User not found.');
+    }
+
+    const items = [
+      ...savedRecords.map(
+        (record): ProfileActivityItem => ({
+          id: `save:${record.promptId}:${record.createdAt.toISOString()}`,
+          type: 'SAVE',
+          promptTitle: record.prompt.title,
+          promptSlug: record.prompt.slug,
+          promptImage: record.prompt.featuredImageUrl ?? null,
+          createdAt: record.createdAt.toISOString(),
+        }),
+      ),
+      ...likeRecords.map(
+        (record): ProfileActivityItem => ({
+          id: `like:${record.promptId}:${record.createdAt.toISOString()}`,
+          type: 'LIKE',
+          promptTitle: record.prompt.title,
+          promptSlug: record.prompt.slug,
+          promptImage: record.prompt.featuredImageUrl ?? null,
+          createdAt: record.createdAt.toISOString(),
+        }),
+      ),
+      ...createdRecords.map(
+        (record): ProfileActivityItem => ({
+          id: `create:${record.id}`,
+          type: 'CREATE',
+          promptTitle: record.title,
+          promptSlug: record.slug,
+          promptImage: record.featuredImageUrl ?? null,
+          createdAt: record.createdAt.toISOString(),
+        }),
+      ),
+    ]
+      .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
+      .slice(safeSkip, safeSkip + safeTake);
+
+    return {
+      items,
+      total: savedCount + likedCount + createdCount,
+    };
+  }
+
+  async getProfileSavedPrompts(
+    userId: string,
+    skip = 0,
+    take = 20,
+  ): Promise<ProfileSavedPromptsList> {
+    const { skip: safeSkip, take: safeTake } = normalizePagination(skip, take);
+
+    const [user, total, records] = await this.prisma.$transaction([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      }),
+      this.prisma.savedPrompt.count({
+        where: { userId },
+      }),
+      this.prisma.savedPrompt.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        skip: safeSkip,
+        take: safeTake,
+        select: {
+          prompt: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              promptType: true,
+              featuredImageUrl: true,
+            },
+          },
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    if (!user) {
+      throw new UnauthorizedException('User not found.');
+    }
+
+    return {
+      items: records.map((record) => ({
+        id: record.prompt.id,
+        title: record.prompt.title,
+        slug: record.prompt.slug,
+        promptType: record.prompt.promptType,
+        image: record.prompt.featuredImageUrl ?? null,
+        savedAt: record.createdAt.toISOString(),
+      })),
+      total,
+    };
+  }
+
+  async getMembershipSummary(userId: string): Promise<MembershipSummary> {
+    const [user, activeSubscription, latestSubscription, billingTransactions] =
+      await this.prisma.$transaction([
+        this.prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            email: true,
+            plan: true,
+          },
+        }),
+        this.prisma.subscription.findFirst({
+          where: {
+            userId,
+            status: SubscriptionStatus.ACTIVE,
+          },
+          orderBy: [{ endAt: 'desc' }, { createdAt: 'desc' }],
+          select: {
+            status: true,
+            provider: true,
+            startAt: true,
+            endAt: true,
+            canceledAt: true,
+          },
+        }),
+        this.prisma.subscription.findFirst({
+          where: { userId },
+          orderBy: [{ createdAt: 'desc' }],
+          select: {
+            status: true,
+            provider: true,
+            startAt: true,
+            endAt: true,
+            canceledAt: true,
+          },
+        }),
+        this.prisma.transaction.findMany({
+          where: {
+            userId,
+            provider: 'RAZORPAY',
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 12,
+          select: {
+            id: true,
+            provider: true,
+            status: true,
+            amount: true,
+            currency: true,
+            createdAt: true,
+          },
+        }),
+      ]);
+
+    if (!user) {
+      throw new UnauthorizedException('User not found.');
+    }
+
+    const currentSubscription = activeSubscription ?? latestSubscription;
+    const now = Date.now();
+    const isExpiredByDate = Boolean(
+      currentSubscription?.endAt && currentSubscription.endAt.getTime() <= now,
+    );
+    const membershipStatus: SubscriptionStatus | 'FREE' = currentSubscription
+      ? currentSubscription.status === SubscriptionStatus.ACTIVE && isExpiredByDate
+        ? SubscriptionStatus.EXPIRED
+        : currentSubscription.status
+      : 'FREE';
+
+    const preferredTransaction =
+      billingTransactions.find((item) => item.status.toUpperCase().startsWith('PAID_')) ??
+      billingTransactions[0] ??
+      null;
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        plan: user.plan,
+      },
+      membership: {
+        status: membershipStatus,
+        provider: currentSubscription?.provider ?? null,
+        cycle: this.resolveMembershipCycleFromTransaction(preferredTransaction),
+        startAt: currentSubscription?.startAt.toISOString() ?? null,
+        endAt: currentSubscription?.endAt?.toISOString() ?? null,
+        canceledAt: currentSubscription?.canceledAt?.toISOString() ?? null,
+        willAutoRenew: false,
+      },
+      billingHistory: billingTransactions.map((item) => ({
+        id: item.id,
+        provider: item.provider,
+        status: item.status,
+        amount:
+          typeof item.amount === 'number'
+            ? item.amount
+            : Number(
+                typeof item.amount === 'string' ? item.amount : item.amount.toString(),
+              ),
+        currency: item.currency.toUpperCase(),
+        createdAt: item.createdAt.toISOString(),
+      })),
     };
   }
 
@@ -748,6 +1086,41 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException('Invalid access token.');
     }
+  }
+
+  private resolveMembershipCycleFromTransaction(transaction: {
+    status: string;
+    amount: Prisma.Decimal | number | string;
+    currency: string;
+  } | null): MembershipCycle | null {
+    if (!transaction) {
+      return null;
+    }
+
+    const normalizedStatus = transaction.status.toUpperCase();
+    if (normalizedStatus.includes('YEARLY')) {
+      return 'yearly';
+    }
+    if (normalizedStatus.includes('MONTHLY')) {
+      return 'monthly';
+    }
+
+    const amount =
+      typeof transaction.amount === 'number'
+        ? transaction.amount
+        : Number(
+            typeof transaction.amount === 'string'
+              ? transaction.amount
+              : transaction.amount.toString(),
+          );
+    const currency = transaction.currency.toUpperCase();
+    if (currency === 'USD' && amount === 99) {
+      return 'yearly';
+    }
+    if (currency === 'USD' && amount === 12) {
+      return 'monthly';
+    }
+    return null;
   }
 
   private async issueSession(

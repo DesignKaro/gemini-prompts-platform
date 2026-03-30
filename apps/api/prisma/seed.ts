@@ -103,8 +103,15 @@ async function main() {
     },
   });
 
-  const categoryNames = ['Marketing', 'Wedding', 'Photography', 'Social Media', 'Web Design'];
-  const tagNames = ['cinematic', '4k', 'hyper-realistic', 'viral', 'gemini-image'];
+  const categoryNames = [
+    'Uncategorized',
+    'Marketing',
+    'Wedding',
+    'Photography',
+    'Social Media',
+    'Web Design',
+  ];
+  const tagNames = ['Default', 'cinematic', '4k', 'hyper-realistic', 'viral', 'gemini-image'];
 
   const categories = await Promise.all(
     categoryNames.map((name) =>

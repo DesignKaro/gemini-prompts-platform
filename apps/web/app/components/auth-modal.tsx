@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { signIn } from 'next-auth/react';
+import { getAuthRedirectTarget, redirectToAuthPath } from '../../lib/utils/auth-callback';
 
 type AuthModalProps = {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
   callbackUrl: string;
+  variant?: 'modal' | 'page';
 };
 
 type AuthTab = 'signin' | 'signup';
@@ -82,6 +84,13 @@ async function checkAuthHealth(): Promise<HealthCheckResult> {
 }
 
 function mapSignInError(error?: string, code?: string, mode: AuthTab = 'signin'): AuthErrorState {
+  if (code === 'account_suspended' || error === 'AccountSuspended') {
+    return {
+      target: 'form',
+      message: 'Your account has been suspended. Please contact support for help.',
+    };
+  }
+
   if (code === 'email_exists') {
     return {
       target: 'email',
@@ -146,7 +155,14 @@ function mapSignInError(error?: string, code?: string, mode: AuthTab = 'signin')
   return { target: 'form', message: 'Something went wrong. Please try again.' };
 }
 
-export function AuthModal({ isOpen, onClose, callbackUrl }: AuthModalProps) {
+export function AuthModal({
+  isOpen = true,
+  onClose,
+  callbackUrl,
+  variant = 'modal',
+}: AuthModalProps) {
+  const isModal = variant === 'modal';
+  const shouldRender = isModal ? isOpen : true;
   const [activeTab, setActiveTab] = useState<AuthTab>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -165,7 +181,7 @@ export function AuthModal({ isOpen, onClose, callbackUrl }: AuthModalProps) {
   const isValidEmail = useMemo(() => /\S+@\S+\.\S+/.test(email.trim()), [email]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!shouldRender) return;
     setEmail('');
     setPassword('');
     setShowPassword(false);
@@ -177,15 +193,22 @@ export function AuthModal({ isOpen, onClose, callbackUrl }: AuthModalProps) {
     setEmailEditable(false);
     setPasswordEditable(false);
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     const focusTimer = window.setTimeout(() => {
       firstFocusableRef.current?.focus();
     }, 40);
 
+    if (!isModal) {
+      return () => {
+        window.clearTimeout(focusTimer);
+      };
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose();
+        onClose?.();
         return;
       }
 
@@ -216,9 +239,9 @@ export function AuthModal({ isOpen, onClose, callbackUrl }: AuthModalProps) {
       window.removeEventListener('keydown', onKeyDown);
       document.body.style.overflow = previousOverflow;
     };
-  }, [isOpen, onClose]);
+  }, [isModal, onClose, shouldRender]);
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   const headingText = activeTab === 'signin' ? 'Welcome Back' : 'Create Account';
   const subtitleText =
@@ -304,8 +327,16 @@ export function AuthModal({ isOpen, onClose, callbackUrl }: AuthModalProps) {
         return;
       }
 
-      onClose();
-      window.location.href = result?.url || callbackUrl;
+      const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
+      const targetPath = getAuthRedirectTarget({
+        resultUrl: result?.url,
+        callbackUrl,
+        origin,
+        fallback: '/',
+      });
+
+      onClose?.();
+      redirectToAuthPath(targetPath);
     } catch {
       setFormError(
         'Auth service is unavailable. Please make sure web and API servers are running.',
@@ -317,36 +348,44 @@ export function AuthModal({ isOpen, onClose, callbackUrl }: AuthModalProps) {
 
   return (
     <div
-      role="presentation"
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-[#0f141fcc] px-4 py-6"
-      onClick={onClose}
+      role={isModal ? 'presentation' : undefined}
+      className={
+        isModal
+          ? 'fixed inset-0 z-[80] flex items-center justify-center bg-[#0f141fcc] px-4 py-6'
+          : 'flex w-full items-center justify-center'
+      }
+      onClick={isModal && onClose ? onClose : undefined}
     >
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label="Authentication"
-        className="w-full max-w-[420px] rounded-[26px] bg-white px-4 pb-6 pt-5 shadow-[0_26px_80px_rgba(8,12,24,0.22)] sm:px-6 sm:pb-7 sm:pt-6"
-        onClick={(event) => event.stopPropagation()}
+        className={`w-full max-w-[420px] rounded-[26px] bg-white px-4 pb-6 pt-5 sm:px-6 sm:pb-7 sm:pt-6 ${
+          isModal ? 'shadow-[0_26px_80px_rgba(8,12,24,0.22)]' : 'shadow-none'
+        }`}
+        onClick={isModal ? (event) => event.stopPropagation() : undefined}
       >
-        <div className="flex justify-end">
-          <button
-            type="button"
-            aria-label="Close authentication modal"
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e3e5eb] text-[#4f5668]"
-            onClick={onClose}
-          >
-            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
-              <path
-                d="M6.2 6.2 17.8 17.8M17.8 6.2 6.2 17.8"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.9"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
-        </div>
+        {isModal && onClose ? (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              aria-label="Close authentication modal"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e3e5eb] text-[#4f5668]"
+              onClick={onClose}
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
+                <path
+                  d="M6.2 6.2 17.8 17.8M17.8 6.2 6.2 17.8"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </div>
+        ) : null}
 
         <div className="mt-2 text-center">
           <h2 className="text-[1.75rem] leading-[1.08] text-[#111319] sm:text-[1.9rem]">

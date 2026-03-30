@@ -34,6 +34,20 @@ const nextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/category/:slug',
+        destination: '/:slug',
+        permanent: true,
+      },
+      {
+        source: '/author/:slug',
+        destination: '/u/:slug',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

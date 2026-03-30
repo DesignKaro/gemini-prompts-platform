@@ -3,14 +3,32 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
-import brandLogo from '../../Assets/Branding/logo.svg';
+import faviconLogo from '../../Assets/favicon.svg';
 import { AuthModal } from './auth-modal';
+import { MobileMenu } from './mobile-menu';
+import { SearchModal } from './search-modal';
 import { getInitial, normalizeAvatarUrl } from '../../lib/utils/avatar';
 import { hasDashboardAccess as userHasDashboardAccess } from '../../lib/utils/permissions';
-import { SearchModal } from './search-modal';
-import { MobileMenu } from './mobile-menu';
+import {
+  buildAuthCallbackFallbackFromHref,
+  buildAuthCallbackFallbackFromPath,
+  normalizeAuthCallbackPath,
+} from '../../lib/utils/auth-callback';
+
+const SESSION_FALLBACK = {
+  data: null,
+  status: 'unauthenticated' as const,
+};
+
+function useSafeSession() {
+  try {
+    return useSession();
+  } catch {
+    return SESSION_FALLBACK;
+  }
+}
 
 const navItems = [
   {
@@ -31,9 +49,9 @@ const navItems = [
     ),
   },
   {
-    href: '/prompt',
+    href: '/prompts',
     label: 'Prompts',
-    prefetch: true,
+    prefetch: false,
     icon: (
       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]">
         <rect
@@ -67,7 +85,7 @@ const navItems = [
   {
     href: '/blog',
     label: 'Blog',
-    prefetch: true,
+    prefetch: false,
     icon: (
       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]">
         <path
@@ -88,26 +106,18 @@ const navItems = [
     ),
   },
   {
-    href: '/trending',
-    label: 'Trending',
-    prefetch: true,
+    href: '/about',
+    label: 'About US',
+    prefetch: false,
     icon: (
       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]">
-        <polyline
-          points="22 7 13.5 15.5 8.5 10.5 2 17"
+        <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+        <path
+          d="M12 10v5.2M12 7.3h.01"
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.6"
+          strokeWidth="1.8"
           strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <polyline
-          points="16 7 22 7 22 13"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
         />
       </svg>
     ),
@@ -115,7 +125,7 @@ const navItems = [
   {
     href: '/newsletter',
     label: 'Newsletter',
-    prefetch: true,
+    prefetch: false,
     icon: (
       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]">
         <rect
@@ -153,7 +163,9 @@ const navItems = [
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const { data: session, status } = useSession();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { data: session, status } = useSafeSession();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -165,7 +177,22 @@ export function SiteHeader() {
     avatarUpdatedAt: string | null;
   } | null>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const callbackUrl = pathname || '/';
+  const callbackUrl = useMemo(() => {
+    const requested = searchParams?.get('callbackUrl')?.trim();
+    const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
+    const fallback =
+      typeof window !== 'undefined'
+        ? buildAuthCallbackFallbackFromHref(window.location.href)
+        : buildAuthCallbackFallbackFromPath(
+            pathname || '/',
+            searchParams?.toString() ? `?${searchParams.toString()}` : '',
+          );
+
+    return normalizeAuthCallbackPath(requested, {
+      origin,
+      fallback,
+    });
+  }, [pathname, searchParams]);
   const displayName =
     session?.user?.name?.trim() || session?.user?.email?.split('@')[0] || 'Signed in';
   const hasDashboardAccess = userHasDashboardAccess(session);
@@ -184,9 +211,30 @@ export function SiteHeader() {
   const menuAvatarSrc = normalizeAvatarUrl(headerAvatarSrc);
   const normalizedAvatarSrc = normalizeAvatarUrl(headerAvatarSrc);
 
+  const handleSignOut = async () => {
+    const nextPath = pathname || '/';
+    const signOutCallbackUrl =
+      typeof window !== 'undefined' ? `${window.location.origin}${nextPath}` : nextPath;
+    await signOut({ redirect: false, callbackUrl: signOutCallbackUrl });
+    router.push(nextPath);
+    router.refresh();
+  };
+
   useEffect(() => {
     setAvatarError(false);
   }, [normalizedAvatarSrc]);
+
+  useEffect(() => {
+    if (status === 'loading' || status === 'authenticated') {
+      return;
+    }
+
+    const authIntent = searchParams?.get('auth');
+    const hasCallbackIntent = Boolean(searchParams?.get('callbackUrl'));
+    if (authIntent === 'signin' || hasCallbackIntent) {
+      setIsAuthOpen(true);
+    }
+  }, [searchParams, status]);
 
   useEffect(() => {
     if (!isProfileMenuOpen) return;
@@ -263,43 +311,60 @@ export function SiteHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 px-2.5 pb-1 pt-1.5 sm:px-4 md:px-6">
-        <div className="page-container-wide rounded-full border border-[#e8e8e8] bg-white/72 px-3 py-1.5 shadow-[0_10px_30px_rgba(17,17,17,0.04)] backdrop-blur-md sm:rounded-[25px] sm:px-4 md:rounded-[30px] md:px-5">
-          <div className="flex min-w-0 items-center justify-between gap-2.5 sm:gap-3 lg:gap-4">
-            <Link href="/" className="flex shrink-0 items-center">
-              <Image
-                src={brandLogo}
-                alt="Gemini Prompts"
-                width={250}
-                height={44}
-                className="h-auto w-[140px] object-contain sm:w-[178px] md:w-[205px]"
-                priority
-              />
+      <header className="sticky top-0 z-40 px-2 pb-1 pt-1.5 sm:px-4 md:px-6">
+        <div className="page-container-wide rounded-full border border-[#e8e8e8] bg-white/72 px-2.5 py-1.5 shadow-[0_10px_30px_rgba(17,17,17,0.04)] backdrop-blur-md sm:rounded-[25px] sm:px-4 md:rounded-[30px] md:px-5">
+          <div className="flex min-w-0 items-center justify-between gap-2.5 sm:gap-3 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:items-center lg:gap-4">
+            <Link href="/" className="flex shrink-0 items-center lg:justify-self-start">
+              <span className="inline-flex items-center gap-1 sm:gap-1.5">
+                <span className="text-[0.82rem] font-normal uppercase leading-none tracking-[0.025em] text-[#0e1015] sm:text-[1.15rem]">
+                  Gemini
+                </span>
+                <Image
+                  src={faviconLogo}
+                  alt=""
+                  width={28}
+                  height={28}
+                  className="h-[1.55rem] w-[1.55rem] object-contain sm:h-[2.25rem] sm:w-[2.25rem]"
+                  priority
+                  aria-hidden="true"
+                />
+                <span className="text-[0.82rem] font-normal uppercase leading-none tracking-[0.025em] text-[#0e1015] sm:text-[1.15rem]">
+                  Prompts
+                </span>
+              </span>
             </Link>
 
-            <nav className="hidden items-center gap-2.5 lg:flex">
-              {navItems.map((item) => (
-                <Link
-                  key={`header-nav-${item.href}`}
-                  href={item.href}
-                  prefetch={item.prefetch}
-                  className="flex h-[50px] items-center gap-2.5 rounded-full bg-[#e9edf1] p-2 pr-5 text-[14px] leading-none text-[#15181d]"
-                >
-                  <span className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-[#d1d8de] bg-white text-[#171b21]">
-                    {item.icon}
-                  </span>
-                  <span>{item.label}</span>
-                </Link>
-              ))}
+            <nav className="hidden items-center gap-2.5 lg:flex lg:justify-self-center">
+              {navItems.map((item) => {
+                const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+
+                return (
+                  <Link
+                    key={`header-nav-${item.href}`}
+                    href={item.href}
+                    prefetch={item.prefetch}
+                    className="flex h-[50px] items-center gap-2.5 rounded-full bg-[#e9edf1] p-2 pr-5 text-[14px] leading-none text-[#15181d]"
+                  >
+                    <span
+                      className={`flex h-[34px] w-[34px] items-center justify-center rounded-full border text-[#171b21] ${
+                        isActive ? 'border-[#ceda78] bg-[#d5ea52]' : 'border-[#d1d8de] bg-white'
+                      }`}
+                    >
+                      {item.icon}
+                    </span>
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
             </nav>
 
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+            <div className="flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1.5 sm:gap-2.5 lg:justify-self-end">
               {status === 'authenticated' && session.user ? (
                 <div className="relative" ref={profileMenuRef}>
                   <button
                     type="button"
                     onClick={() => setIsProfileMenuOpen((prev) => !prev)}
-                    className="flex h-[44px] items-center gap-2 rounded-full bg-[#f2f5f8] p-1.5 pr-3 text-[#171c24] sm:h-[48px] sm:p-2 sm:pr-4"
+                    className="flex h-[40px] min-w-0 items-center gap-1.5 rounded-full bg-[#f2f5f8] px-2 py-1.5 text-[#171c24] sm:h-[48px] sm:gap-2 sm:p-2 sm:pr-4"
                     aria-expanded={isProfileMenuOpen}
                     aria-haspopup="menu"
                     aria-label="Open profile menu"
@@ -393,6 +458,35 @@ export function SiteHeader() {
                           </span>
                           <span>Profile</span>
                         </Link>
+                        <Link
+                          href="/membership/manage"
+                          role="menuitem"
+                          className="flex h-9 items-center gap-2.5 rounded-[10px] px-2.5 text-[0.95rem] text-[#1a1f29] transition hover:bg-[#f3f5fa]"
+                          onClick={() => setIsProfileMenuOpen(false)}
+                        >
+                          <span className="text-[#556072]">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
+                              <path
+                                d="M7.5 10.8V9.4a4.5 4.5 0 0 1 9 0v1.4"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                              />
+                              <rect
+                                x="6.2"
+                                y="10.8"
+                                width="11.6"
+                                height="9.6"
+                                rx="2.2"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                              />
+                            </svg>
+                          </span>
+                          <span>Membership</span>
+                        </Link>
                         {hasDashboardAccess ? (
                           <Link
                             href="/dashboard"
@@ -483,7 +577,7 @@ export function SiteHeader() {
                           role="menuitem"
                           onClick={() => {
                             setIsProfileMenuOpen(false);
-                            void signOut({ callbackUrl });
+                            void handleSignOut();
                           }}
                           className="flex h-9 w-full items-center gap-2.5 rounded-[10px] px-2.5 text-[0.95rem] text-[#be2d2d] transition hover:bg-[#fff2f2]"
                         >
@@ -516,7 +610,7 @@ export function SiteHeader() {
                 <button
                   type="button"
                   onClick={() => setIsAuthOpen(true)}
-                  className="flex h-[44px] items-center rounded-full bg-[#d5ea52] px-3.5 text-[13px] leading-none text-[#101418] sm:h-[48px] sm:px-5 sm:text-[14px]"
+                  className="flex h-[40px] min-w-0 items-center justify-center rounded-full bg-[#d5ea52] px-3 text-[12px] leading-none text-[#101418] sm:h-[48px] sm:min-w-[142px] sm:px-5 sm:text-[14px]"
                 >
                   Login
                 </button>

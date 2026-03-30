@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { refreshSession as refreshSessionOnce } from '../../lib/utils/session';
 import { useSearchParams } from 'next/navigation';
@@ -16,7 +17,8 @@ import {
   FaXTwitter,
 } from 'react-icons/fa6';
 
-export default function ProfilePage() {
+function ProfilePageContent() {
+  const SAVED_PROMPTS_PREVIEW_LIMIT = 3;
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -27,6 +29,8 @@ export default function ProfilePage() {
   const { data: session, status, update: refreshSession } = useSession();
   const hasAutoOpenedEdit = useRef(false);
   const searchParams = useSearchParams();
+  const isGoogleSyncPending =
+    session?.authError === 'GoogleBackendSyncFailed' && !session?.apiAccessToken;
 
   useEffect(() => {
     const shouldOpen =
@@ -42,21 +46,28 @@ export default function ProfilePage() {
   useEffect(() => {
     if (session?.authError && !session?.apiAccessToken) {
       const fallbackMessage =
-        session.authError === 'GoogleBackendSyncFailed'
-          ? 'Login sync failed. Please ensure the API is running and AUTH_API_URL is correct, then retry.'
+        session.authError === 'AccountSuspended'
+          ? 'Your account has been suspended. Please contact support for help.'
+          : session.authError === 'GoogleBackendSyncFailed'
+          ? 'Finishing Google sign-in. This can take a few seconds.'
           : session.authError === 'GoogleTokenMissing'
             ? 'Google login token was missing. Please sign out and sign in again.'
             : session.authError === 'RefreshAccessTokenError'
               ? 'Session refresh failed. Please sign out and sign in again.'
               : 'Login sync failed. Please sign out and sign in again.';
-      const nextMessage = session.authErrorMessage?.trim()
-        ? `Login sync failed: ${session.authErrorMessage}`
-        : fallbackMessage;
+      const nextMessage =
+        session.authError === 'AccountSuspended'
+          ? session.authErrorMessage?.trim() || fallbackMessage
+          : session.authError === 'GoogleBackendSyncFailed'
+            ? fallbackMessage
+          : session.authErrorMessage?.trim()
+            ? `Login sync failed: ${session.authErrorMessage}`
+            : fallbackMessage;
       setAuthSyncError(nextMessage);
     } else {
       setAuthSyncError(null);
     }
-  }, [session?.apiAccessToken, session?.authError]);
+  }, [session?.apiAccessToken, session?.authError, session?.authErrorMessage]);
 
   const apiBaseUrl = useMemo(() => {
     return process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:4000';
@@ -72,7 +83,8 @@ export default function ProfilePage() {
   const getAccessToken = async () => {
     let accessToken = session?.apiAccessToken;
     if (!accessToken || isAccessTokenExpired(session?.apiAccessTokenExpiresAt)) {
-      if (refreshSession) {
+      // Avoid noisy session re-fetch loops while Google auth sync is still pending.
+      if (!isGoogleSyncPending && refreshSession) {
         const refreshed = await refreshSessionOnce(refreshSession);
         accessToken = refreshed?.apiAccessToken;
       }
@@ -101,14 +113,23 @@ export default function ProfilePage() {
 
   const [recentActivity, setRecentActivity] = useState<
     Array<{
+      id: string;
       type: 'SAVE' | 'LIKE' | 'CREATE';
       promptTitle: string | null;
+      promptSlug: string | null;
       createdAt: string;
     }>
   >([]);
 
   const [savedPromptCards, setSavedPromptCards] = useState<
-    Array<{ title: string; promptType: string; savedAt: string; image: string | null; id?: string }>
+    Array<{
+      id: string;
+      title: string;
+      slug: string;
+      promptType: string;
+      savedAt: string;
+      image: string | null;
+    }>
   >([]);
   const [savedRange, setSavedRange] = useState('Lifetime');
   const [likedRange, setLikedRange] = useState('Lifetime');
@@ -116,7 +137,7 @@ export default function ProfilePage() {
   const rangeOptions = ['Yesterday', 'Last week', 'Last month', 'Last year', 'Lifetime'];
 
   useEffect(() => {
-    if (status !== 'authenticated' || !session?.apiAccessToken) {
+    if (status !== 'authenticated') {
       return;
     }
 
@@ -129,7 +150,11 @@ export default function ProfilePage() {
         const accessToken = await getAccessToken();
         if (!accessToken) {
           if (options.showError) {
-            setProfileLoadError('Session expired. Please sign out and sign in again.');
+            setProfileLoadError(
+              isGoogleSyncPending
+                ? 'Finishing Google sign-in. Please wait and try again in a moment.'
+                : 'Unable to access profile right now. Please refresh once and try again.',
+            );
           }
           return;
         }
@@ -153,7 +178,11 @@ export default function ProfilePage() {
         }
         if (!response.ok) {
           if (response.status === 401 && options.showError) {
-            setProfileLoadError('Session expired. Please sign out and sign in again.');
+            setProfileLoadError(
+              isGoogleSyncPending
+                ? 'Finishing Google sign-in. Please wait and try again in a moment.'
+                : 'Unable to access profile right now. Please refresh once and try again.',
+            );
             return;
           }
           const payload = await response.json().catch(() => null);
@@ -177,13 +206,16 @@ export default function ProfilePage() {
             plan: string;
           };
           recentActivity: Array<{
+            id: string;
             type: 'SAVE' | 'LIKE' | 'CREATE';
             promptTitle: string | null;
+            promptSlug: string | null;
             createdAt: string;
           }>;
           savedPrompts: Array<{
             id: string;
             title: string;
+            slug: string;
             promptType: string;
             image: string | null;
             savedAt: string;
@@ -214,7 +246,8 @@ export default function ProfilePage() {
           plan: payload.stats.plan,
         });
         setRecentActivity(payload.recentActivity);
-        setSavedPromptCards(payload.savedPrompts);
+        setSavedPromptCards(payload.savedPrompts.slice(0, SAVED_PROMPTS_PREVIEW_LIMIT));
+        setProfileLoadError(null);
       } catch (error) {
         if (!isActive) return;
         if (options.showError) {
@@ -225,9 +258,10 @@ export default function ProfilePage() {
 
     fetchSummary({ updateProfile: !isEditOpen, showError: true });
 
+    const refreshIntervalMs = isGoogleSyncPending ? 4000 : 15000;
     refreshId = window.setInterval(() => {
       fetchSummary({ updateProfile: !isEditOpen, showError: false });
-    }, 15000);
+    }, refreshIntervalMs);
 
     return () => {
       isActive = false;
@@ -235,7 +269,7 @@ export default function ProfilePage() {
         window.clearInterval(refreshId);
       }
     };
-  }, [apiBaseUrl, isEditOpen, refreshSession, session?.apiAccessToken, status]);
+  }, [apiBaseUrl, isEditOpen, isGoogleSyncPending, refreshSession, session?.authError, session?.apiAccessToken, status]);
 
   useEffect(() => {
     if (!isEditOpen) {
@@ -349,10 +383,12 @@ export default function ProfilePage() {
     } as const;
 
     return {
+      id: activity.id || `${activity.type}-${activity.promptTitle ?? 'activity'}-${activity.createdAt}`,
       title: titleMap[activity.type],
       detail: activity.promptTitle ? `“${activity.promptTitle}”` : 'Your recent prompt activity.',
       time: formatRelativeTime(activity.createdAt),
       tone: toneMap[activity.type],
+      promptSlug: activity.promptSlug,
     };
   });
 
@@ -772,6 +808,14 @@ export default function ProfilePage() {
                   {formatPromptType(profileStats.plan)}
                 </span>
               </div>
+              <div className="mt-3">
+                <a
+                  href="/membership/manage"
+                  className="inline-flex h-10 items-center justify-center rounded-full border border-[#d8dee9] bg-white px-4 text-[0.82rem] font-medium text-[#111827] transition-colors hover:border-[#111827]"
+                >
+                  Manage membership
+                </a>
+              </div>
 
               <div className="mt-8 grid gap-4">
                 {statCards.map((card) => (
@@ -790,78 +834,102 @@ export default function ProfilePage() {
 
       <section className="reveal-section px-4 pb-10 sm:px-6 sm:pb-12 lg:pb-16">
         <div className="page-container-wide grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="rounded-[30px] border border-[#e2e6ee] bg-white p-6 sm:p-8 lg:p-10">
+          <div className="rounded-[24px] border border-[#e2e6ee] bg-white p-5 sm:p-6 lg:p-7">
             <div className="flex items-center justify-between gap-4">
-              <h2 className="section-heading-medium text-[2rem] leading-[1.05] tracking-[-0.05em] text-[#0f1116] sm:text-[2.35rem]">
+              <h2 className="section-heading-medium text-[1.65rem] leading-[1.08] tracking-[-0.04em] text-[#0f1116] sm:text-[1.95rem]">
                 Recent activity
               </h2>
-              <a
-                href="/dashboard/activity"
-                className="rounded-full border border-[#d8dde6] bg-white px-4 py-2 text-[0.8rem] text-[#0f1116] transition-colors duration-300 hover:border-[#0f1116] hover:bg-[#0f1116] hover:text-white"
+              <Link
+                href="/profile/activity"
+                className="rounded-full border border-[#d8dde6] bg-white px-3.5 py-1.5 text-[0.76rem] text-[#0f1116] transition-colors duration-300 hover:border-[#0f1116] hover:bg-[#0f1116] hover:text-white"
               >
                 View all
-              </a>
+              </Link>
             </div>
 
-            <div className="mt-6 space-y-4">
+            <div className="mt-4">
               {activityTimeline.length === 0 ? (
                 <div className="rounded-[22px] border border-dashed border-[#d8dde6] bg-white p-4 text-[0.9rem] text-[#7a8292] sm:p-5">
                   No activity yet. Save or publish a prompt to see updates here.
                 </div>
               ) : (
-                activityTimeline.map((item) => (
-                  <div
-                    key={`${item.title}-${item.time}`}
-                    className="rounded-[22px] border border-[#eef1f6] bg-[#fbfcff] p-4 sm:p-5"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className={`rounded-full px-3 py-1 text-[0.85rem] ${item.tone}`}>
-                        {item.time}
-                      </span>
-                      <span className="text-[0.9rem] text-[#9aa1ae]">Gemini Prompts</span>
-                    </div>
-                    <p className="mt-4 text-[1rem] text-[#10141c] sm:text-[1.08rem]">
-                      {item.title}
-                    </p>
-                    <p className="mt-2 text-[0.9rem] leading-6 text-[#667080]">{item.detail}</p>
-                  </div>
-                ))
+                <div className="overflow-x-auto rounded-[16px] border border-[#e8ecf4]">
+                  <table className="w-full min-w-[560px] text-left">
+                    <thead className="bg-[#f8fafd] text-[0.7rem] uppercase tracking-[0.08em] text-[#7a8292]">
+                      <tr>
+                        <th className="px-3 py-2.5 font-semibold">Time</th>
+                        <th className="px-3 py-2.5 font-semibold">Activity</th>
+                        <th className="px-3 py-2.5 font-semibold">Prompt</th>
+                        <th className="px-3 py-2.5 font-semibold">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white">
+                      {activityTimeline.map((item) => (
+                        <tr key={item.id} className="border-t border-[#eef1f6] align-middle">
+                          <td className="px-3 py-2.5">
+                            <span
+                              className={`inline-flex rounded-full px-2 py-0.5 text-[0.72rem] ${item.tone}`}
+                            >
+                              {item.time}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2.5 text-[0.88rem] font-medium text-[#10141c]">
+                            {item.title}
+                          </td>
+                          <td className="px-3 py-2.5 text-[0.82rem] text-[#667080]">{item.detail}</td>
+                          <td className="px-3 py-2.5">
+                            {item.promptSlug ? (
+                              <Link
+                                href={`/prompt/${item.promptSlug}`}
+                                className="inline-flex rounded-full border border-[#d4d9e2] px-2.5 py-1 text-[0.72rem] text-[#10141c] transition-colors duration-300 hover:border-[#10141c] hover:bg-[#10141c] hover:text-white"
+                              >
+                                Open
+                              </Link>
+                            ) : (
+                              <span className="text-[0.76rem] text-[#a0a8b6]">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>
 
           <div
             id="saved-prompts"
-            className="rounded-[30px] bg-[#f5f6f8] p-6 sm:p-8 lg:p-10 scroll-mt-24"
+            className="scroll-mt-24 rounded-[22px] bg-[#f5f6f8] p-4 sm:p-5 lg:p-6"
           >
             <div className="flex items-center justify-between gap-4">
-              <h2 className="section-heading-medium text-[2rem] leading-[1.05] tracking-[-0.05em] text-[#0f1116] sm:text-[2.35rem]">
+              <h2 className="section-heading-medium text-[1.45rem] leading-[1.08] tracking-[-0.04em] text-[#0f1116] sm:text-[1.7rem]">
                 Saved prompts
               </h2>
-              <a
-                href="#saved-prompts"
-                className="rounded-full border border-[#d8dde6] bg-white px-4 py-2 text-[0.8rem] text-[#0f1116] transition-colors duration-300 hover:border-[#0f1116] hover:bg-[#0f1116] hover:text-white"
+              <Link
+                href="/profile/saved"
+                className="rounded-full border border-[#d8dde6] bg-white px-3 py-1.5 text-[0.72rem] text-[#0f1116] transition-colors duration-300 hover:border-[#0f1116] hover:bg-[#0f1116] hover:text-white"
               >
                 View all
-              </a>
+              </Link>
             </div>
-            <p className="mt-3 max-w-[28rem] text-[0.92rem] leading-7 text-[#667080]">
+            <p className="mt-2 max-w-[26rem] text-[0.84rem] leading-6 text-[#667080]">
               Your hand-picked prompt kits, always organized and ready to deploy.
             </p>
 
-            <div className="mt-6 space-y-4">
+            <div className="mt-3.5 space-y-2.5">
               {savedPromptCards.length === 0 ? (
-                <div className="rounded-[22px] border border-dashed border-[#d8dde6] bg-white p-4 text-[0.9rem] text-[#7a8292] sm:p-5">
+                <div className="rounded-[18px] border border-dashed border-[#d8dde6] bg-white p-3.5 text-[0.84rem] text-[#7a8292] sm:p-4">
                   No saved prompts yet.
                 </div>
               ) : (
                 savedPromptCards.map((prompt) => (
                   <article
-                    key={prompt.title}
-                    className="flex flex-col gap-4 rounded-[24px] border border-[#dde3eb] bg-white p-4 sm:flex-row sm:items-center"
+                    key={prompt.id}
+                    className="flex flex-col gap-2.5 rounded-[16px] border border-[#dde3eb] bg-white p-2.5 sm:flex-row sm:items-center sm:p-3"
                   >
                     <div
-                      className="h-[140px] w-full rounded-[20px] bg-cover bg-center sm:h-[120px] sm:w-[180px]"
+                      className="h-[90px] w-full rounded-[12px] bg-cover bg-center sm:h-[74px] sm:w-[122px]"
                       style={{
                         backgroundImage: `url(${
                           prompt.image ??
@@ -870,22 +938,22 @@ export default function ProfilePage() {
                       }}
                     />
                     <div className="flex-1">
-                      <span className="rounded-full bg-[#f0f2f6] px-3 py-1 text-[0.8rem] text-[#4a5261]">
+                      <span className="rounded-full bg-[#f0f2f6] px-2 py-0.5 text-[0.7rem] text-[#4a5261]">
                         {formatPromptType(prompt.promptType)}
                       </span>
-                      <h3 className="mt-3 text-[1.05rem] leading-[1.3] text-[#10141c] sm:text-[1.15rem]">
+                      <h3 className="mt-1.5 text-[0.92rem] leading-[1.28] text-[#10141c] sm:text-[0.98rem]">
                         {prompt.title}
                       </h3>
-                      <p className="mt-2 text-[0.85rem] text-[#7a8292]">
+                      <p className="mt-0.5 text-[0.76rem] text-[#7a8292]">
                         Saved {formatRelativeTime(prompt.savedAt)}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      className="rounded-full border border-[#d4d9e2] px-4 py-2 text-[0.8rem] text-[#10141c] transition-colors duration-300 hover:border-[#10141c] hover:bg-[#10141c] hover:text-white"
+                    <Link
+                      href={`/prompt/${prompt.slug}`}
+                      className="rounded-full border border-[#d4d9e2] px-3 py-1.5 text-[0.72rem] text-[#10141c] transition-colors duration-300 hover:border-[#10141c] hover:bg-[#10141c] hover:text-white"
                     >
                       Open
-                    </button>
+                    </Link>
                   </article>
                 ))
               )}
@@ -1013,7 +1081,9 @@ export default function ProfilePage() {
                 const accessToken = await getAccessToken();
                 if (!accessToken) {
                   setProfileSaveError(
-                    'Session expired. Please sign out and sign in again to update your profile.',
+                    isGoogleSyncPending
+                      ? 'Finishing Google sign-in. Please wait a moment, then update your profile.'
+                      : 'Session expired. Please sign out and sign in again to update your profile.',
                   );
                   return;
                 }
@@ -1236,5 +1306,17 @@ export default function ProfilePage() {
         </div>
       ) : null}
     </main>
+  );
+}
+
+function ProfilePageFallback() {
+  return <main className="bg-white px-4 py-8 sm:px-6 sm:py-12" />;
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<ProfilePageFallback />}>
+      <ProfilePageContent />
+    </Suspense>
   );
 }

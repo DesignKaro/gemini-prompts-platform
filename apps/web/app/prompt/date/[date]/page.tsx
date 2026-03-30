@@ -1,6 +1,16 @@
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import { PromptPageShell } from '../../../components/prompt-listing';
+import { SeoSchemaScripts } from '../../../components/seo-schema-script';
 import { getPromptList } from '../../../../lib/public-content';
+import { buildMetadata, getNormalizedBaseUrl, getSeoSettings } from '../../../../lib/seo';
+import {
+  buildBreadcrumbSchema,
+  buildCollectionPageSchema,
+  buildItemListSchema,
+  buildPromptItemListEntries,
+  buildWebPageSchema,
+} from '../../../../lib/structured-data';
 
 type PageProps = {
   params: Promise<{
@@ -24,7 +34,41 @@ function formatArchiveDate(value: string) {
   });
 }
 
-export default async function PromptDateArchivePage({ params }: PageProps) {
+export async function generateMetadata({ params }: PageProps) {
+  const { date } = await params;
+  if (!isValidDateParam(date)) {
+    return buildMetadata({
+      title: 'Prompt Archive Not Found',
+      description: 'The requested prompt date archive could not be found.',
+      path: '/prompt',
+      noIndex: true,
+    });
+  }
+
+  const dateLabel = formatArchiveDate(date);
+  return buildMetadata({
+    title: `Prompts on ${dateLabel}`,
+    description: `Browse all published prompts archived on ${dateLabel}.`,
+    path: `/prompt/date/${date}`,
+  });
+}
+
+function PromptDateArchiveFallback() {
+  return (
+    <PromptPageShell
+      title="Prompts by date"
+      description="Browse all prompts published on this date."
+      badge="Loading prompts..."
+      breadcrumb="Archive date"
+      breadcrumbHref="/prompts"
+      defaultSort="newest"
+      prompts={[]}
+      isLoading
+    />
+  );
+}
+
+async function PromptDateArchiveContent({ params }: PageProps) {
   const { date } = await params;
   if (!isValidDateParam(date)) {
     notFound();
@@ -55,16 +99,69 @@ export default async function PromptDateArchivePage({ params }: PageProps) {
   }
 
   const dateLabel = formatArchiveDate(date);
+  const seoSettings = await getSeoSettings();
+  const baseUrl = getNormalizedBaseUrl(seoSettings);
+  const pageUrl = `${baseUrl}/prompt/date/${date}`;
+  const shouldNoIndex = seoSettings.noindexPaginatedArchives;
+  const schemaItems = [
+    {
+      family: 'webpage' as const,
+      schema: buildWebPageSchema({
+        url: pageUrl,
+        name: `Prompts on ${dateLabel}`,
+        description: `Browse all published prompts archived on ${dateLabel}.`,
+      }),
+    },
+    {
+      family: 'breadcrumb' as const,
+      schema: buildBreadcrumbSchema(
+        [
+          { name: 'Home', item: `${baseUrl}/` },
+          { name: 'Prompts', item: `${baseUrl}/prompt` },
+          { name: dateLabel, item: pageUrl },
+        ],
+        pageUrl,
+      ),
+    },
+    {
+      family: 'collection' as const,
+      schema: buildCollectionPageSchema({
+        url: pageUrl,
+        name: `Prompt archive for ${dateLabel}`,
+        description: `Prompts published on ${dateLabel}.`,
+      }),
+    },
+    {
+      family: 'collection' as const,
+      schema: buildItemListSchema({
+        url: pageUrl,
+        name: `Prompts on ${dateLabel}`,
+        idSuffix: 'date-archive-prompts',
+        items: buildPromptItemListEntries(allPrompts, baseUrl),
+      }),
+    },
+  ].filter((entry) => Boolean(entry.schema));
 
   return (
-    <PromptPageShell
-      title={`Prompts on ${dateLabel}`}
-      description={`Browse all published prompts archived on ${dateLabel}.`}
-      badge={`${allPrompts.length} prompts`}
-      breadcrumb={dateLabel}
-      breadcrumbHref={`/prompt/date/${date}`}
-      defaultSort="newest"
-      prompts={allPrompts}
-    />
+    <>
+      <SeoSchemaScripts items={schemaItems} noIndex={shouldNoIndex} />
+      <PromptPageShell
+        title={`Prompts on ${dateLabel}`}
+        description={`Browse all published prompts archived on ${dateLabel}.`}
+        badge={`${allPrompts.length} prompts`}
+        breadcrumb={dateLabel}
+        breadcrumbHref={`/prompt/date/${date}`}
+        defaultSort="newest"
+        prompts={allPrompts}
+      />
+    </>
+  );
+}
+
+export default function PromptDateArchivePage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<PromptDateArchiveFallback />}>
+      <PromptDateArchiveContent params={params} />
+    </Suspense>
   );
 }

@@ -39,7 +39,8 @@ export default function PromptBoxNodeView({ node, updateAttributes, editor }: No
                 className={`prompt-widget-llm prompt-widget-llm-${llm.toLowerCase()} ${
                   selectedLlms.includes(llm) ? 'is-active' : 'is-inactive'
                 }`}
-                title={editor.isEditable ? `Toggle ${llm} tag` : llm}
+                data-tooltip={editor.isEditable ? `Toggle ${llm} tag` : `Try on ${llm}`}
+                title={editor.isEditable ? `Toggle ${llm} tag` : `Try on ${llm}`}
               >
                 <Icon size={16} />
               </button>

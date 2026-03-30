@@ -4,6 +4,8 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import { AnalyticsService } from './analytics.service';
+import { AnalyticsOverviewQueryDto } from './dto/analytics-overview-query.dto';
+import { AnalyticsPromptsQueryDto } from './dto/analytics-prompts-query.dto';
 
 @ApiTags('Admin Analytics')
 @ApiBearerAuth()
@@ -14,9 +16,13 @@ export class AnalyticsController {
 
   @Get()
   @Permissions('analytics:read')
-  getOverview(@Query('range') range?: string) {
-    const parsed = range ? parseInt(range, 10) : 30;
-    const days = Number.isFinite(parsed) ? parsed : 30;
-    return this.analyticsService.getOverview(days);
+  getOverview(@Query() query: AnalyticsOverviewQueryDto) {
+    return this.analyticsService.getOverview(query.range ?? 30);
+  }
+
+  @Get('prompts')
+  @Permissions('analytics:read')
+  getPrompts(@Query() query: AnalyticsPromptsQueryDto) {
+    return this.analyticsService.getPrompts(query);
   }
 }

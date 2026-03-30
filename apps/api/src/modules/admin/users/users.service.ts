@@ -2,18 +2,53 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  HttpException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { AuthProvider, MembershipPlan, Prisma, UserRole } from '@prisma/client';
+import { AuthProvider, MembershipPlan, Prisma, SubscriptionStatus, UserRole } from '@prisma/client';
 import { hashPassword } from '../../auth/utils/password.util';
 import type { AuthUser } from '../../auth/types/auth-user.type';
 import { normalizePagination } from '../../../common/utils/pagination';
+import { randomBytes } from 'node:crypto';
 import {
   PROTECTED_SUPERADMIN_EMAIL,
   isProtectedSuperadminEmail,
 } from '../../auth/utils/superadmin.util';
+
+type OwnedUserRecords = {
+  prompts: number;
+  posts: number;
+  collabs: number;
+  submissions: number;
+  transactions: number;
+  subscriptions: number;
+  total: number;
+};
+
+type MembershipStatus = SubscriptionStatus | 'FREE';
+
+type MembershipSubscriptionRecord = {
+  status: SubscriptionStatus;
+  provider: string;
+  startAt: Date;
+  endAt: Date | null;
+  canceledAt: Date | null;
+};
+
+type MembershipUserRecord = {
+  id: string;
+  name: string | null;
+  email: string;
+  handle: string | null;
+  avatarUrl: string | null;
+  role: UserRole;
+  plan: MembershipPlan;
+  suspendedAt: Date | null;
+  createdAt: Date;
+  subscriptions: MembershipSubscriptionRecord[];
+};
 
 @Injectable()
 export class UsersService {
@@ -56,17 +91,167 @@ export class UsersService {
     throw new ForbiddenException(`The protected superadmin account cannot be ${action}.`);
   }
 
+  private async assertRolesExist(roleIds: string[]) {
+    if (roleIds.length === 0) {
+      return;
+    }
+
+    const existingRoles = await this.prisma.role.findMany({
+      where: { id: { in: roleIds } },
+      select: { id: true },
+    });
+    const existingRoleIds = new Set(existingRoles.map((role) => role.id));
+    const missingRoleIds = roleIds.filter((roleId) => !existingRoleIds.has(roleId));
+    if (missingRoleIds.length > 0) {
+      throw new BadRequestException(
+        `One or more roles do not exist: ${missingRoleIds.join(', ')}`,
+      );
+    }
+  }
+
+  private async getOwnedUserRecords(
+    userId: string,
+    client: PrismaService | Prisma.TransactionClient = this.prisma,
+  ): Promise<OwnedUserRecords> {
+    const [prompts, posts, collabs, submissions, transactions, subscriptions] = await Promise.all([
+      client.prompt.count({ where: { authorId: userId } }),
+      client.post.count({ where: { authorId: userId } }),
+      client.collab.count({ where: { authorId: userId } }),
+      client.submission.count({ where: { submittedById: userId } }),
+      client.transaction.count({ where: { userId } }),
+      client.subscription.count({ where: { userId } }),
+    ]);
+
+    return {
+      prompts,
+      posts,
+      collabs,
+      submissions,
+      transactions,
+      subscriptions,
+      total: prompts + posts + collabs + submissions + transactions + subscriptions,
+    };
+  }
+
+  private buildOwnedUserRecordsMessage(owned: OwnedUserRecords) {
+    return `Prompts: ${owned.prompts}, Posts: ${owned.posts}, Collabs: ${owned.collabs}, Submissions: ${owned.submissions}, Transactions: ${owned.transactions}, Subscriptions: ${owned.subscriptions}.`;
+  }
+
+  private buildUserSearchWhere(search?: string): Prisma.UserWhereInput {
+    if (!search) {
+      return {};
+    }
+    return {
+      OR: [
+        { name: { contains: search } },
+        { email: { contains: search } },
+        { handle: { contains: search } },
+      ],
+    };
+  }
+
+  private assertSuperadminMembershipAccess(actor: AuthUser) {
+    if (actor.role === UserRole.SUPERADMIN || isProtectedSuperadminEmail(actor.email)) {
+      return;
+    }
+    throw new ForbiddenException('Only superadmins can manage user membership dates.');
+  }
+
+  private resolveCurrentMembership(
+    subscriptions: MembershipSubscriptionRecord[],
+    now: number,
+  ): { status: MembershipStatus; subscription: MembershipSubscriptionRecord | null } {
+    const activeSubscription =
+      subscriptions.find(
+        (subscription) =>
+          subscription.status === SubscriptionStatus.ACTIVE &&
+          (!subscription.endAt || subscription.endAt.getTime() > now),
+      ) ?? null;
+    const latestSubscription = subscriptions[0] ?? null;
+    const currentSubscription = activeSubscription ?? latestSubscription;
+
+    if (!currentSubscription) {
+      return { status: 'FREE', subscription: null };
+    }
+
+    const isExpiredByDate =
+      currentSubscription.status === SubscriptionStatus.ACTIVE &&
+      Boolean(currentSubscription.endAt && currentSubscription.endAt.getTime() <= now);
+    const membershipStatus: MembershipStatus = isExpiredByDate
+      ? SubscriptionStatus.EXPIRED
+      : currentSubscription.status;
+
+    return { status: membershipStatus, subscription: currentSubscription };
+  }
+
+  private mapMembershipUser(user: MembershipUserRecord, now = Date.now()) {
+    const normalizedUser = this.normalizeUserForResponse(user);
+    const resolvedMembership = this.resolveCurrentMembership(user.subscriptions, now);
+    const current = resolvedMembership.subscription;
+    const status = resolvedMembership.status;
+    const isMembershipActive =
+      normalizedUser.plan === MembershipPlan.PREMIUM && status === SubscriptionStatus.ACTIVE;
+
+    return {
+      id: normalizedUser.id,
+      name: normalizedUser.name,
+      email: normalizedUser.email,
+      handle: normalizedUser.handle,
+      avatarUrl: normalizedUser.avatarUrl,
+      role: normalizedUser.role,
+      plan: normalizedUser.plan,
+      suspendedAt: normalizedUser.suspendedAt?.toISOString() ?? null,
+      createdAt: normalizedUser.createdAt.toISOString(),
+      membership: {
+        status,
+        active: isMembershipActive,
+        provider: current?.provider ?? null,
+        startAt: current?.startAt.toISOString() ?? null,
+        endAt: current?.endAt?.toISOString() ?? null,
+        canceledAt: current?.canceledAt?.toISOString() ?? null,
+      },
+    };
+  }
+
+  private async findMembershipUserRecord(userId: string): Promise<MembershipUserRecord> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        handle: true,
+        avatarUrl: true,
+        role: true,
+        plan: true,
+        suspendedAt: true,
+        createdAt: true,
+        subscriptions: {
+          where: {
+            plan: MembershipPlan.PREMIUM,
+          },
+          orderBy: [{ createdAt: 'desc' }],
+          take: 8,
+          select: {
+            status: true,
+            provider: true,
+            startAt: true,
+            endAt: true,
+            canceledAt: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+    return user;
+  }
+
   async findAll(skip: number = 0, take: number = 20, search?: string) {
     const { skip: safeSkip, take: safeTake } = normalizePagination(skip, take);
-    const where = search
-      ? {
-          OR: [
-            { name: { contains: search } },
-            { email: { contains: search } },
-            { handle: { contains: search } },
-          ],
-        }
-      : {};
+    const where = this.buildUserSearchWhere(search);
 
     const [items, total] = await Promise.all([
       this.prisma.user.findMany({
@@ -88,6 +273,49 @@ export class UsersService {
     return { items: items.map((item) => this.normalizeUserForResponse(item)), total };
   }
 
+  async findMemberships(skip: number = 0, take: number = 20, search?: string) {
+    const { skip: safeSkip, take: safeTake } = normalizePagination(skip, take);
+    const where = this.buildUserSearchWhere(search);
+    const now = Date.now();
+
+    const [items, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip: safeSkip,
+        take: safeTake,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          handle: true,
+          avatarUrl: true,
+          role: true,
+          plan: true,
+          suspendedAt: true,
+          createdAt: true,
+          subscriptions: {
+            where: {
+              plan: MembershipPlan.PREMIUM,
+            },
+            orderBy: [{ createdAt: 'desc' }],
+            take: 8,
+            select: {
+              status: true,
+              provider: true,
+              startAt: true,
+              endAt: true,
+              canceledAt: true,
+            },
+          },
+        },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return { items: items.map((item) => this.mapMembershipUser(item, now)), total };
+  }
+
   async findOne(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -101,6 +329,91 @@ export class UsersService {
     });
     if (!user) throw new NotFoundException('User not found');
     return this.normalizeUserForResponse(user);
+  }
+
+  async setMembershipUntil(actor: AuthUser, userId: string, endAtIso: string | null) {
+    this.assertSuperadminMembershipAccess(actor);
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    const now = new Date();
+
+    if (!endAtIso) {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.subscription.updateMany({
+          where: {
+            userId,
+            plan: MembershipPlan.PREMIUM,
+            status: SubscriptionStatus.ACTIVE,
+          },
+          data: {
+            status: SubscriptionStatus.CANCELED,
+            canceledAt: now,
+            endAt: now,
+          },
+        });
+
+        await tx.user.update({
+          where: { id: userId },
+          data: { plan: MembershipPlan.FREE },
+        });
+      });
+
+      const updatedUser = await this.findMembershipUserRecord(userId);
+      return this.mapMembershipUser(updatedUser);
+    }
+
+    const parsedEndAt = new Date(endAtIso);
+    if (Number.isNaN(parsedEndAt.getTime())) {
+      throw new BadRequestException('A valid end date is required.');
+    }
+    if (parsedEndAt.getTime() <= now.getTime()) {
+      throw new BadRequestException('Membership end date must be in the future.');
+    }
+
+    const providerRef = `admin_${userId.replace(/[^a-zA-Z0-9]/g, '').slice(-12)}_${Date.now().toString(36)}_${randomBytes(2).toString('hex')}`;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.subscription.updateMany({
+        where: {
+          userId,
+          plan: MembershipPlan.PREMIUM,
+          status: SubscriptionStatus.ACTIVE,
+        },
+        data: {
+          status: SubscriptionStatus.EXPIRED,
+          endAt: now,
+          canceledAt: now,
+        },
+      });
+
+      await tx.subscription.create({
+        data: {
+          userId,
+          plan: MembershipPlan.PREMIUM,
+          status: SubscriptionStatus.ACTIVE,
+          provider: 'ADMIN',
+          providerRef,
+          startAt: now,
+          endAt: parsedEndAt,
+          canceledAt: null,
+        },
+      });
+
+      await tx.user.update({
+        where: { id: userId },
+        data: { plan: MembershipPlan.PREMIUM },
+      });
+    });
+
+    const updatedUser = await this.findMembershipUserRecord(userId);
+    return this.mapMembershipUser(updatedUser);
   }
 
   async update(id: string, data: Prisma.UserUpdateInput) {
@@ -155,6 +468,7 @@ export class UsersService {
     }
 
     const uniqueRoleIds = Array.from(new Set(input.roleIds ?? [])).filter(Boolean);
+    await this.assertRolesExist(uniqueRoleIds);
 
     return this.prisma.$transaction(async (tx) => {
       const passwordHash = password ? await hashPassword(password) : null;
@@ -219,6 +533,7 @@ export class UsersService {
     this.assertProtectedSuperadminNotTarget(user.email, 'assigned custom roles');
 
     const uniqueRoleIds = Array.from(new Set(roleIds)).filter(Boolean);
+    await this.assertRolesExist(uniqueRoleIds);
     await this.prisma.userRoleAssignment.deleteMany({ where: { userId } });
 
     if (uniqueRoleIds.length > 0) {
@@ -281,7 +596,23 @@ export class UsersService {
     return this.normalizeUserForResponse(updated);
   }
 
-  async remove(actor: AuthUser, id: string) {
+  async getDeleteImpact(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    const owned = await this.getOwnedUserRecords(id);
+    return {
+      owned,
+      requiresTransfer: owned.total > 0,
+    };
+  }
+
+  async remove(actor: AuthUser, id: string, input?: { transferToUserId?: string | null }) {
     if (actor.sub === id) {
       throw new BadRequestException('You cannot delete your own account.');
     }
@@ -296,40 +627,62 @@ export class UsersService {
       throw new ForbiddenException('Only superadmins can delete superadmin accounts.');
     }
 
-    const [
-      promptCount,
-      postCount,
-      collabCount,
-      submissionCount,
-      transactionCount,
-      subscriptionCount,
-    ] = await this.prisma.$transaction([
-      this.prisma.prompt.count({ where: { authorId: id } }),
-      this.prisma.post.count({ where: { authorId: id } }),
-      this.prisma.collab.count({ where: { authorId: id } }),
-      this.prisma.submission.count({ where: { submittedById: id } }),
-      this.prisma.transaction.count({ where: { userId: id } }),
-      this.prisma.subscription.count({ where: { userId: id } }),
-    ]);
+    const transferToUserId = input?.transferToUserId?.trim() || null;
+    if (transferToUserId === id) {
+      throw new BadRequestException('Choose a different user to transfer owned records to.');
+    }
 
-    const owned = {
-      prompts: promptCount,
-      posts: postCount,
-      collabs: collabCount,
-      submissions: submissionCount,
-      transactions: transactionCount,
-      subscriptions: subscriptionCount,
-    };
-    const totalOwned = Object.values(owned).reduce((sum, value) => sum + value, 0);
-
-    if (totalOwned > 0) {
-      throw new BadRequestException(
-        `User cannot be deleted because they own content. Prompts: ${owned.prompts}, Posts: ${owned.posts}, Collabs: ${owned.collabs}, Submissions: ${owned.submissions}, Transactions: ${owned.transactions}, Subscriptions: ${owned.subscriptions}. Transfer or delete this content first.`,
-      );
+    if (transferToUserId) {
+      const transferTarget = await this.prisma.user.findUnique({
+        where: { id: transferToUserId },
+        select: { id: true },
+      });
+      if (!transferTarget) {
+        throw new NotFoundException('Transfer target user not found.');
+      }
     }
 
     try {
       return await this.prisma.$transaction(async (tx) => {
+        const owned = await this.getOwnedUserRecords(id, tx);
+        if (owned.total > 0 && !transferToUserId) {
+          throw new BadRequestException({
+            message: `User cannot be deleted because they own content. ${this.buildOwnedUserRecordsMessage(owned)} Select a user to transfer this data before deleting the account.`,
+            code: 'USER_TRANSFER_REQUIRED',
+          });
+        }
+
+        if (transferToUserId) {
+          await tx.prompt.updateMany({
+            where: { authorId: id },
+            data: { authorId: transferToUserId },
+          });
+          await tx.post.updateMany({
+            where: { authorId: id },
+            data: { authorId: transferToUserId },
+          });
+          await tx.collab.updateMany({
+            where: { authorId: id },
+            data: { authorId: transferToUserId },
+          });
+          await tx.submission.updateMany({
+            where: { submittedById: id },
+            data: { submittedById: transferToUserId },
+          });
+          await tx.transaction.updateMany({
+            where: { userId: id },
+            data: { userId: transferToUserId },
+          });
+          await tx.subscription.updateMany({
+            where: { userId: id },
+            data: { userId: transferToUserId },
+          });
+        }
+
+        await tx.submission.updateMany({
+          where: { reviewerId: id },
+          data: { reviewerId: null },
+        });
         await tx.comment.updateMany({
           where: { authorId: id },
           data: { authorId: null },
@@ -352,7 +705,13 @@ export class UsersService {
         });
 
         await tx.promptLike.deleteMany({ where: { userId: id } });
+        await tx.commentLike.deleteMany({ where: { userId: id } });
         await tx.savedPrompt.deleteMany({ where: { userId: id } });
+        await tx.authorFollow.deleteMany({
+          where: {
+            OR: [{ followerId: id }, { authorId: id }],
+          },
+        });
         await tx.userRoleAssignment.deleteMany({ where: { userId: id } });
         await tx.authAccount.deleteMany({ where: { userId: id } });
         await tx.refreshToken.deleteMany({ where: { userId: id } });
@@ -361,6 +720,9 @@ export class UsersService {
         return tx.user.delete({ where: { id } });
       });
     } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       const message =
         error instanceof Error ? error.message : (error as { message?: string }).message;
       throw new BadRequestException(

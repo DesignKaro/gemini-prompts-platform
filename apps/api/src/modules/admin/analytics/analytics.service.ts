@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { EngagementEventType } from '@prisma/client';
+import { EngagementEventType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import {
+  AnalyticsPromptsQueryDto,
+  AnalyticsPromptSortBy,
+  SortOrder,
+} from './dto/analytics-prompts-query.dto';
 
 type TopEntity = { id: string; title: string; viewCount: number };
 
@@ -163,6 +168,93 @@ export class AnalyticsService {
 
     this.cache.set(cacheKey, { value: payload, expiresAt: now + this.cacheTtlMs });
     return payload;
+  }
+
+  async getPrompts(query: AnalyticsPromptsQueryDto) {
+    const {
+      range = 30,
+      page = 1,
+      limit = 10,
+      search,
+      sortBy = AnalyticsPromptSortBy.VIEW_COUNT,
+      sortOrder = SortOrder.DESC,
+    } = query;
+
+    const to = new Date();
+    const from = new Date(to);
+    from.setDate(to.getDate() - Math.max(range - 1, 0));
+    from.setHours(0, 0, 0, 0);
+
+    const where: Prisma.PromptWhereInput = {
+      deletedAt: null,
+      ...(search
+        ? {
+            OR: [
+              { title: { contains: search } },
+              { description: { contains: search } },
+              { slug: { contains: search } },
+            ],
+          }
+        : {}),
+    };
+
+    let orderBy: Prisma.PromptOrderByWithRelationInput[];
+    switch (sortBy) {
+      case AnalyticsPromptSortBy.TITLE:
+        orderBy = [{ title: sortOrder }];
+        break;
+      case AnalyticsPromptSortBy.CREATED_AT:
+        orderBy = [{ createdAt: sortOrder }, { title: SortOrder.ASC }];
+        break;
+      case AnalyticsPromptSortBy.CATEGORY:
+        orderBy = [{ primaryCategory: { name: sortOrder } }, { title: SortOrder.ASC }];
+        break;
+      case AnalyticsPromptSortBy.VIEW_COUNT:
+      default:
+        orderBy = [{ viewCount: sortOrder }, { title: SortOrder.ASC }];
+        break;
+    }
+
+    const [total, items, totals] = await Promise.all([
+      this.prisma.prompt.count({ where }),
+      this.prisma.prompt.findMany({
+        where,
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          viewCount: true,
+          createdAt: true,
+          primaryCategory: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
+      }),
+      this.prisma.prompt.aggregate({
+        _sum: { viewCount: true },
+        where: { deletedAt: null },
+      }),
+    ]);
+
+    const totalViews = totals._sum.viewCount ?? 0;
+
+    return {
+      items: items.map((item) => ({
+        ...item,
+        share: totalViews > 0 ? Math.round((item.viewCount / totalViews) * 100) : 0,
+      })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   private readonly cache = new Map<string, { expiresAt: number; value: AnalyticsOverview }>();

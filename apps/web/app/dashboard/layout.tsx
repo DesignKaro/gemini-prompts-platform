@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import {
   MdDashboard,
   MdDescription,
@@ -22,13 +22,19 @@ import {
   MdNavigateNext,
   MdChevronRight,
   MdDeleteOutline,
-  MdSearch,
+  MdLogout,
+  MdErrorOutline,
+  MdEmail,
+  MdContactMail,
 } from 'react-icons/md';
 import brandLogo from '../../Assets/Branding/logo.svg';
 import {
   hasAnyPermission,
   hasDashboardAccess as userHasDashboardAccess,
+  isProtectedSuperadminEmail,
 } from '../../lib/utils/permissions';
+import { useAdminApi } from '../components/dashboard/use-admin-api';
+import { ProfileSettingsModal } from '../../features/dashboard/profile';
 
 type DashboardNavChild = {
   href: string;
@@ -74,12 +80,14 @@ function DashboardLink({
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { data: session, status: sessionStatus, update: refreshSession } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
+  const { request: adminRequest } = useAdminApi();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDesktopSidebarCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['Content']);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isProfileSaving, setIsProfileSaving] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [profileLoadError, setProfileLoadError] = useState<string | null>(null);
   const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -114,8 +122,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const canModerateComments = hasAnyPermission(session, ['comments:moderate']);
   const canViewAnalytics = hasAnyPermission(session, ['analytics:read']);
   const canViewActivity = hasAnyPermission(session, ['activity:read']);
+  const canViewErrorLogs = canViewActivity;
+  const canViewNewsletterSubmissions = canViewActivity;
+  const canViewContactSubmissions = hasAnyPermission(session, ['contacts:read', 'contacts:manage']);
   const canViewUsers = hasAnyPermission(session, ['users:read', 'users:manage']);
+  const canViewMembers = isProtectedSuperadminEmail(session?.user?.email);
   const canViewRoles = hasAnyPermission(session, ['roles:read', 'roles:manage']);
+  const canViewSeo = hasAnyPermission(session, ['roles:manage']);
+  const canViewSeoIntegrations = isProtectedSuperadminEmail(session?.user?.email);
   const canCreateContent = canManagePrompts || canManagePosts;
 
   const navItems = useMemo<DashboardNavItem[]>(() => {
@@ -153,8 +167,45 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ...(canViewAnalytics
         ? [{ href: '/dashboard/analytics', label: 'Analytics', icon: <MdAnalytics size={20} /> }]
         : []),
+      ...(canViewErrorLogs
+        ? [{ href: '/dashboard/logs', label: 'Logs', icon: <MdErrorOutline size={20} /> }]
+        : []),
+      ...(canViewNewsletterSubmissions
+        ? [{ href: '/dashboard/newsletter', label: 'Newsletter', icon: <MdEmail size={20} /> }]
+        : []),
+      ...(canViewContactSubmissions
+        ? [
+            {
+              href: '/dashboard/contact-submissions',
+              label: 'Contact submissions',
+              icon: <MdContactMail size={20} />,
+            },
+          ]
+        : []),
+      ...(canViewSeo
+        ? [
+            {
+              label: 'SEO',
+              icon: <MdSettings size={20} />,
+              children: [
+                { href: '/dashboard/seo', label: 'Overview' },
+                { href: '/dashboard/seo/robots', label: 'Robots.txt' },
+                { href: '/dashboard/seo/sitemap', label: 'Sitemap.xml' },
+                { href: '/dashboard/seo/settings', label: 'Meta Defaults' },
+                { href: '/dashboard/seo/social', label: 'Social & Schema' },
+                ...(canViewSeoIntegrations
+                  ? [{ href: '/dashboard/seo/integrations', label: 'Integrations' }]
+                  : []),
+                { href: '/dashboard/seo/redirects', label: 'Redirects' },
+              ],
+            },
+          ]
+        : []),
       ...(canViewUsers
         ? [{ href: '/dashboard/users', label: 'Users', icon: <MdGroup size={20} /> }]
+        : []),
+      ...(canViewMembers
+        ? [{ href: '/dashboard/members', label: 'Members', icon: <MdGroup size={20} /> }]
         : []),
       ...(canViewRoles
         ? [{ href: '/dashboard/roles', label: 'Roles', icon: <MdSecurity size={20} /> }]
@@ -163,9 +214,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [
     canCreateContent,
     canViewAnalytics,
+    canViewErrorLogs,
+    canViewNewsletterSubmissions,
+    canViewContactSubmissions,
+    canViewSeo,
+    canViewSeoIntegrations,
     canViewCategories,
     canViewComments,
     canViewMedia,
+    canViewMembers,
     canViewPosts,
     canViewPrompts,
     canViewRoles,
@@ -213,6 +270,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return canViewPrompts;
     }
 
+    if (pathname.startsWith('/dashboard/seo')) {
+      if (pathname.startsWith('/dashboard/seo/integrations')) {
+        return canViewSeoIntegrations;
+      }
+      return canViewSeo;
+    }
+
     if (pathname.startsWith('/dashboard/content/posts')) {
       return canViewPosts;
     }
@@ -237,8 +301,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return canViewActivity;
     }
 
+    if (pathname.startsWith('/dashboard/logs')) {
+      return canViewErrorLogs;
+    }
+
+    if (pathname.startsWith('/dashboard/newsletter')) {
+      return canViewNewsletterSubmissions;
+    }
+
+    if (pathname.startsWith('/dashboard/contact-submissions')) {
+      return canViewContactSubmissions;
+    }
+
     if (pathname.startsWith('/dashboard/users')) {
       return canViewUsers;
+    }
+
+    if (pathname.startsWith('/dashboard/members')) {
+      return canViewMembers;
     }
 
     if (pathname.startsWith('/dashboard/roles')) {
@@ -250,9 +330,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     canCreateContent,
     canViewActivity,
     canViewAnalytics,
+    canViewErrorLogs,
+    canViewNewsletterSubmissions,
+    canViewContactSubmissions,
+    canViewSeo,
+    canViewSeoIntegrations,
     canViewCategories,
     canViewComments,
     canViewMedia,
+    canViewMembers,
     canViewPosts,
     canViewPrompts,
     canViewRoles,
@@ -261,28 +347,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     hasDashboardAccess,
     pathname,
   ]);
-
-  const apiBaseUrl = useMemo(() => {
-    return process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:4000';
-  }, []);
-
-  const isAccessTokenExpired = (expiresAt?: string | null) => {
-    if (!expiresAt) return false;
-    const expiresMs = Date.parse(expiresAt);
-    if (Number.isNaN(expiresMs)) return false;
-    return expiresMs <= Date.now() + 60_000;
-  };
-
-  const getAccessToken = async () => {
-    let accessToken = session?.apiAccessToken;
-    if (!accessToken || isAccessTokenExpired(session?.apiAccessTokenExpiresAt)) {
-      if (refreshSession) {
-        const refreshed = await refreshSession();
-        accessToken = refreshed?.apiAccessToken;
-      }
-    }
-    return accessToken;
-  };
 
   useEffect(() => {
     if (sessionStatus === 'loading') {
@@ -324,41 +388,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       : avatarBase;
 
   useEffect(() => {
-    if (!session?.apiAccessToken) return;
+    if (sessionStatus !== 'authenticated') return;
 
     let isActive = true;
 
     const fetchProfile = async () => {
       try {
-        const accessToken = await getAccessToken();
-        if (!accessToken) return;
-        let response = await fetch(`${apiBaseUrl}/api/auth/profile/summary`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          cache: 'no-store',
-        });
-        if (response.status === 401 && refreshSession) {
-          const refreshed = await refreshSession();
-          const retryToken = refreshed?.apiAccessToken;
-          if (retryToken) {
-            response = await fetch(`${apiBaseUrl}/api/auth/profile/summary`, {
-              headers: {
-                Authorization: `Bearer ${retryToken}`,
-              },
-              cache: 'no-store',
-            });
-          }
-        }
-        if (!response.ok) return;
-        const payload = (await response.json()) as {
+        const payload = await adminRequest<{
           user: {
             name: string | null;
             avatarUrl: string | null;
             avatarUpdatedAt: string | null;
             role: string | null;
           };
-        };
+        }>('/api/auth/profile/summary', {
+          actionName: 'profile.summary.load',
+        });
         if (!isActive) return;
         setProfileSnapshot({
           name: payload.user.name ?? null,
@@ -366,8 +411,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           avatarUpdatedAt: payload.user.avatarUpdatedAt ?? null,
           role: payload.user.role ?? null,
         });
-      } catch {
-        // Fall back to session values when profile fetch fails.
+      } catch (error) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('[profile.summary.load] failed', error);
+        }
       }
     };
 
@@ -382,42 +429,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       isActive = false;
       window.removeEventListener('profile-updated', onProfileUpdated);
     };
-  }, [apiBaseUrl, session?.apiAccessToken]);
+  }, [adminRequest, sessionStatus]);
 
   const fetchProfileDetails = async () => {
-    const accessToken = await getAccessToken();
-    if (!accessToken) {
-      setProfileLoadError('Session expired. Please sign out and sign in again.');
-      return;
-    }
     setProfileLoadError(null);
     try {
-      let response = await fetch(`${apiBaseUrl}/api/auth/profile/summary`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        cache: 'no-store',
-      });
-      if (response.status === 401 && refreshSession) {
-        const refreshed = await refreshSession();
-        const retryToken = refreshed?.apiAccessToken;
-        if (retryToken) {
-          response = await fetch(`${apiBaseUrl}/api/auth/profile/summary`, {
-            headers: {
-              Authorization: `Bearer ${retryToken}`,
-            },
-            cache: 'no-store',
-          });
-        }
-      }
-      if (!response.ok) {
-        if (response.status === 401) {
-          setProfileLoadError('Session expired. Please sign out and sign in again.');
-          return;
-        }
-        throw new Error('Unable to load profile.');
-      }
-      const payload = (await response.json()) as {
+      const payload = await adminRequest<{
         user: {
           name?: string | null;
           handle?: string | null;
@@ -427,7 +444,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           avatarUrl?: string | null;
           avatarUpdatedAt?: string | null;
         };
-      };
+      }>('/api/auth/profile/summary', {
+        actionName: 'profile.modal.load',
+      });
       const nextFocusTags = payload.user.focusTags ?? [];
       setProfileForm({
         name: payload.user.name ?? profileSnapshot?.name ?? session?.user?.name ?? '',
@@ -457,6 +476,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     await fetchProfileDetails();
   };
 
+  const handleLogout = async () => {
+    if (isSigningOut) {
+      return;
+    }
+    setIsSigningOut(true);
+    try {
+      const callbackUrl = typeof window !== 'undefined' ? `${window.location.origin}/` : '/';
+      await signOut({ redirect: false, callbackUrl });
+      if (typeof window !== 'undefined') {
+        window.location.replace('/');
+        return;
+      }
+      router.replace('/');
+      router.refresh();
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
+
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -480,59 +518,85 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const saveProfile = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setProfileSaveError(null);
-    const accessToken = await getAccessToken();
-    if (!accessToken) {
-      setProfileSaveError('Session expired. Please sign out and sign in again.');
+
+    const normalizedName = profileForm.name.trim();
+    const normalizedHandle = profileForm.handle.trim();
+    const normalizedProfileTitle = profileForm.profileTitle.trim();
+    const normalizedBio = profileForm.bio.trim();
+    const parsedFocusTags = focusTagsInput
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+    const uniqueFocusTags: string[] = [];
+    const seenFocusTags = new Set<string>();
+    for (const tag of parsedFocusTags) {
+      const key = tag.toLowerCase();
+      if (seenFocusTags.has(key)) continue;
+      seenFocusTags.add(key);
+      uniqueFocusTags.push(tag);
+    }
+
+    if (normalizedName.length > 80) {
+      setProfileSaveError('Name must be 80 characters or fewer.');
       return;
     }
+    if (normalizedHandle.length > 40) {
+      setProfileSaveError('Handle must be 40 characters or fewer.');
+      return;
+    }
+    if (normalizedHandle && !/^[a-zA-Z0-9._-]+$/.test(normalizedHandle)) {
+      setProfileSaveError(
+        'Handle can only include letters, numbers, dots, underscores, and hyphens.',
+      );
+      return;
+    }
+    if (normalizedProfileTitle.length > 120) {
+      setProfileSaveError('Profile title must be 120 characters or fewer.');
+      return;
+    }
+    if (normalizedBio.length > 400) {
+      setProfileSaveError('Bio must be 400 characters or fewer.');
+      return;
+    }
+    if (uniqueFocusTags.length > 30) {
+      setProfileSaveError('You can save up to 30 focus tags.');
+      return;
+    }
+    if (uniqueFocusTags.some((tag) => tag.length > 40)) {
+      setProfileSaveError('Each focus tag must be 40 characters or fewer.');
+      return;
+    }
+
+    const avatarValue = avatarPreview || profileForm.avatarUrl || null;
+    if (typeof avatarValue === 'string' && avatarValue.length > 5_000_000) {
+      setProfileSaveError('Avatar payload is too large.');
+      return;
+    }
+
     setIsProfileSaving(true);
     try {
-      let response = await fetch(`${apiBaseUrl}/api/auth/profile`, {
+      const payload = await adminRequest<{
+        user: {
+          name?: string | null;
+          handle?: string | null;
+          profileTitle?: string | null;
+          bio?: string | null;
+          focusTags?: string[] | null;
+          avatarUrl?: string | null;
+          avatarUpdatedAt?: string | null;
+        };
+      }>('/api/auth/profile', {
         method: 'PATCH',
-        headers: {
-          'content-type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
+        actionName: 'profile.update',
         body: JSON.stringify({
-          name: profileForm.name,
-          handle: profileForm.handle,
-          profileTitle: profileForm.profileTitle,
-          bio: profileForm.bio,
-          focusTags: focusTagsInput
-            .split(',')
-            .map((tag) => tag.trim())
-            .filter((tag) => tag.length > 0),
-          avatarUrl: avatarPreview || profileForm.avatarUrl || null,
+          name: normalizedName,
+          ...(normalizedHandle ? { handle: normalizedHandle } : {}),
+          profileTitle: normalizedProfileTitle,
+          bio: normalizedBio,
+          focusTags: uniqueFocusTags,
+          avatarUrl: avatarValue,
         }),
       });
-      if (response.status === 401 && refreshSession) {
-        const refreshed = await refreshSession();
-        const retryToken = refreshed?.apiAccessToken;
-        if (retryToken) {
-          response = await fetch(`${apiBaseUrl}/api/auth/profile`, {
-            method: 'PATCH',
-            headers: {
-              'content-type': 'application/json',
-              Authorization: `Bearer ${retryToken}`,
-            },
-            body: JSON.stringify({
-              name: profileForm.name,
-              handle: profileForm.handle,
-              profileTitle: profileForm.profileTitle,
-              bio: profileForm.bio,
-              focusTags: focusTagsInput
-                .split(',')
-                .map((tag) => tag.trim())
-                .filter((tag) => tag.length > 0),
-              avatarUrl: avatarPreview || profileForm.avatarUrl || null,
-            }),
-          });
-        }
-      }
-      const payload = await response.json().catch(() => null);
-      if (!response.ok) {
-        throw new Error(payload?.message || 'Failed to update profile.');
-      }
       const nextFocusTags = payload.user.focusTags ?? [];
       setProfileForm({
         name: payload.user.name ?? '',
@@ -576,8 +640,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     comments: 'Comments',
     analytics: 'Analytics',
     activity: 'Activity',
+    logs: 'Logs',
+    newsletter: 'Newsletter',
+    'contact-submissions': 'Contact Submissions',
     search: 'Search',
     users: 'Users',
+    members: 'Members',
     roles: 'Roles',
   };
   const breadcrumbs = useMemo(() => {
@@ -658,7 +726,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
           </div>
 
-          <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-none">
+          <nav className="no-scrollbar flex-1 space-y-1 overflow-y-auto overflow-x-hidden">
             {navItems.map((item) => {
               const isActive = item.href ? isRouteActive(item.href) : false;
               const hasChildren = !!item.children;
@@ -778,15 +846,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <p className="truncate text-[0.85rem] font-medium">{displayName}</p>
                 <p className="truncate text-[0.7rem] text-gray-500">{roleLabel}</p>
               </div>
-              <button
-                type="button"
-                onClick={openProfileModal}
-                className={`text-gray-500 hover:text-white transition-colors shrink-0 ${isDesktopSidebarCollapsed ? 'hidden lg:hidden' : 'block'}`}
-                title="Profile settings"
-                aria-label="Open profile settings"
+              <div
+                className={`flex items-center gap-2 shrink-0 ${isDesktopSidebarCollapsed ? 'hidden lg:hidden' : 'flex'}`}
               >
-                <MdSettings size={18} />
-              </button>
+                <button
+                  type="button"
+                  onClick={openProfileModal}
+                  className="text-gray-500 hover:text-white transition-colors"
+                  title="Profile settings"
+                  aria-label="Open profile settings"
+                >
+                  <MdSettings size={18} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleLogout()}
+                  disabled={isSigningOut}
+                  className="text-gray-500 hover:text-[#ff6b6b] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                  title="Logout"
+                  aria-label="Logout"
+                >
+                  <MdLogout size={18} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -837,23 +919,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Global Search */}
-            <div className="relative hidden md:block group">
-              <MdSearch
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#0f1116] transition-colors"
-                size={18}
-              />
-              <input
-                type="text"
-                placeholder="Search... (Cmd+K)"
-                className="h-9 w-48 lg:w-64 rounded-full border border-[#e1e5ee] bg-gray-50/50 pl-10 pr-4 text-[0.85rem] text-[#0f1116] placeholder-gray-400 focus:border-[#0f1116] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#0f1116] transition-all"
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden lg:flex items-center gap-1">
-                <kbd className="rounded border border-gray-200 bg-white px-1.5 py-0.5 text-[0.6rem] font-medium text-gray-400 shadow-sm">
-                  ⌘K
-                </kbd>
-              </div>
-            </div>
             {canManageCategories &&
             pathname?.startsWith('/dashboard/categories') &&
             !pathname.includes('/trash') ? (
@@ -928,166 +993,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
       </div>
 
-      {isProfileModalOpen ? (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-4 py-6">
-          <div className="w-full max-w-[560px] rounded-[24px] bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[0.8rem] text-[#7a8292]">Profile</p>
-                <h2 className="text-[1.4rem] font-medium text-[#0f1116]">Edit profile</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsProfileModalOpen(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e1e5ee] text-[#6a7280] transition-colors hover:border-[#0f1116] hover:text-[#0f1116]"
-                aria-label="Close edit profile"
-              >
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
-                  <path
-                    d="M6 6l12 12M18 6L6 18"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <form className="mt-5 space-y-4" onSubmit={saveProfile}>
-              {profileLoadError ? (
-                <div className="rounded-[12px] border border-red-100 bg-red-50 px-3 py-2 text-[0.8rem] text-red-600">
-                  {profileLoadError}
-                </div>
-              ) : null}
-              {profileSaveError ? (
-                <div className="rounded-[12px] border border-red-100 bg-red-50 px-3 py-2 text-[0.8rem] text-red-600">
-                  {profileSaveError}
-                </div>
-              ) : null}
-
-              <div className="grid gap-4 sm:grid-cols-[170px_1fr] sm:items-start">
-                <div>
-                  <span className="text-[0.8rem] text-[#7a8292]">Profile photo</span>
-                  <div className="mt-2 flex flex-col gap-3">
-                    <div className="h-16 w-16 overflow-hidden rounded-full bg-[#f0f2f7]">
-                      {avatarPreview || profileForm.avatarUrl ? (
-                        <img
-                          src={avatarPreview || profileForm.avatarUrl}
-                          alt="Profile"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-[0.9rem] font-medium text-[#9aa3b2]">
-                          {displayName.slice(0, 1).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                    <label className="cursor-pointer text-[0.8rem] text-[#1e4fd2]">
-                      Upload photo
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="sr-only"
-                        onChange={handleAvatarChange}
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAvatarPreview(null);
-                        setProfileForm((prev) => ({ ...prev, avatarUrl: '' }));
-                      }}
-                      className="text-left text-[0.75rem] text-[#7a8292]"
-                    >
-                      Remove photo
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-[0.8rem] text-[#7a8292]">Full name</label>
-                    <input
-                      type="text"
-                      value={profileForm.name}
-                      onChange={(event) =>
-                        setProfileForm((prev) => ({ ...prev, name: event.target.value }))
-                      }
-                      className="mt-2 w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[0.8rem] text-[#7a8292]">Role</label>
-                    <input
-                      type="text"
-                      value={profileForm.profileTitle}
-                      onChange={(event) =>
-                        setProfileForm((prev) => ({ ...prev, profileTitle: event.target.value }))
-                      }
-                      className="mt-2 w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="text-[0.8rem] text-[#7a8292]">Handle</label>
-                  <input
-                    type="text"
-                    value={profileForm.handle}
-                    onChange={(event) =>
-                      setProfileForm((prev) => ({ ...prev, handle: event.target.value }))
-                    }
-                    className="mt-2 w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
-                  />
-                </div>
-                <div>
-                  <label className="text-[0.8rem] text-[#7a8292]">Focus tags</label>
-                  <input
-                    type="text"
-                    value={focusTagsInput}
-                    onChange={(event) => setFocusTagsInput(event.target.value)}
-                    placeholder="design, ai, writing"
-                    className="mt-2 w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
-                  />
-                  <p className="mt-1 text-[0.72rem] text-[#9aa3b2]">Separate tags with commas.</p>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[0.8rem] text-[#7a8292]">Bio</label>
-                <textarea
-                  value={profileForm.bio}
-                  onChange={(event) =>
-                    setProfileForm((prev) => ({ ...prev, bio: event.target.value }))
-                  }
-                  rows={3}
-                  className="mt-2 w-full resize-none rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsProfileModalOpen(false)}
-                  className="rounded-full border border-[#e1e5ee] px-4 py-2 text-[0.85rem] text-[#0f1116]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isProfileSaving}
-                  className="rounded-full bg-[#0f1116] px-4 py-2 text-[0.85rem] text-white disabled:opacity-60"
-                >
-                  {isProfileSaving ? 'Saving…' : 'Save changes'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      ) : null}
+      <ProfileSettingsModal
+        isOpen={isProfileModalOpen}
+        displayName={displayName}
+        isProfileSaving={isProfileSaving}
+        profileLoadError={profileLoadError}
+        profileSaveError={profileSaveError}
+        avatarPreview={avatarPreview}
+        profileForm={profileForm}
+        focusTagsInput={focusTagsInput}
+        onRetryLoad={fetchProfileDetails}
+        onClose={() => setIsProfileModalOpen(false)}
+        onSubmit={saveProfile}
+        onAvatarChange={handleAvatarChange}
+        onRemoveAvatar={() => {
+          setAvatarPreview(null);
+          setProfileForm((prev) => ({ ...prev, avatarUrl: '' }));
+        }}
+        onNameChange={(value) => setProfileForm((prev) => ({ ...prev, name: value }))}
+        onProfileTitleChange={(value) =>
+          setProfileForm((prev) => ({ ...prev, profileTitle: value }))
+        }
+        onHandleChange={(value) => setProfileForm((prev) => ({ ...prev, handle: value }))}
+        onFocusTagsInputChange={setFocusTagsInput}
+        onBioChange={(value) => setProfileForm((prev) => ({ ...prev, bio: value }))}
+      />
     </div>
   );
 }

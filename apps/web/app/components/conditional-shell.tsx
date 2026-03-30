@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { usePathname } from 'next/navigation';
 import { SiteHeader } from './site-header';
 import { BackToTopButton } from './back-to-top-button';
@@ -7,7 +8,11 @@ import { BackToTopButton } from './back-to-top-button';
 export function ConditionalHeader() {
   const pathname = usePathname();
   if (pathname?.startsWith('/dashboard')) return null;
-  return <SiteHeader />;
+  return (
+    <Suspense fallback={null}>
+      <SiteHeader />
+    </Suspense>
+  );
 }
 
 export function ConditionalShell({

@@ -334,7 +334,7 @@ export function BlogCommentsSection({
                 <div>
                   {comment.author?.slug ? (
                     <Link
-                      href={`/author/${comment.author.slug}`}
+                      href={`/u/${comment.author.slug}`}
                       className="text-[0.94rem] font-medium text-[#0f1118] transition-colors hover:text-[#374151]"
                     >
                       {comment.author.name}
@@ -471,7 +471,7 @@ export function BlogCommentsSection({
                           <div>
                             {reply.author?.slug ? (
                               <Link
-                                href={`/author/${reply.author.slug}`}
+                                href={`/u/${reply.author.slug}`}
                                 className="text-[0.9rem] font-medium text-[#0f1118] transition-colors hover:text-[#374151]"
                               >
                                 {reply.author.name}

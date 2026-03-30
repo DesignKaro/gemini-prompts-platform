@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Permissions } from './decorators/permissions.decorator';
 import { LoginDto } from './dto/login.dto';
@@ -7,6 +18,8 @@ import { LogoutDto } from './dto/logout.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { PublicProfileParamDto } from './dto/public-profile-param.dto';
+import { ListProfileItemsQueryDto } from './dto/list-profile-items-query.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { PermissionsGuard } from './guards/permissions.guard';
 import type { AuthUser } from './types/auth-user.type';
@@ -85,9 +98,27 @@ export class AuthController {
     return this.authService.getProfileSummary(user.sub);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('membership')
+  async membership(@CurrentUser() user: AuthUser) {
+    return this.authService.getMembershipSummary(user.sub);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('profile/activity')
+  async profileActivity(@CurrentUser() user: AuthUser, @Query() query: ListProfileItemsQueryDto) {
+    return this.authService.getProfileActivity(user.sub, query.skip, query.take);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('profile/saved')
+  async profileSaved(@CurrentUser() user: AuthUser, @Query() query: ListProfileItemsQueryDto) {
+    return this.authService.getProfileSavedPrompts(user.sub, query.skip, query.take);
+  }
+
   @Get('profile/public/:handle')
-  async publicProfile(@Param('handle') handle: string) {
-    return this.authService.getPublicProfile(handle);
+  async publicProfile(@Param() params: PublicProfileParamDto) {
+    return this.authService.getPublicProfile(params.handle);
   }
 
   @UseGuards(JwtAuthGuard)

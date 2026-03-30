@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { normalizePagination } from '../../../common/utils/pagination';
@@ -14,8 +14,13 @@ export type PostCreateInput = {
   postType?: PostType;
   postFormat?: PostFormat;
   featuredImageUrl?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
+  seoFocusKeyword?: string | null;
+  seoCanonicalUrl?: string | null;
+  seoNoIndex?: boolean;
   scheduledAt?: string | Date | null;
   primaryCategoryId?: string | null;
   categoryIds?: string[];
@@ -89,14 +94,20 @@ export class PostsService {
       return { categoryIds: uniqueIds, primaryCategoryId: primaryCategoryId ?? null };
     }
     const existing = await this.prisma.category.findMany({
-      where: { id: { in: lookupIds } },
+      where: { id: { in: lookupIds }, deletedAt: null },
       select: { id: true },
     });
     const existingIds = new Set(existing.map((item) => item.id));
+    const invalidIds = lookupIds.filter((id) => !existingIds.has(id));
+    if (invalidIds.length > 0) {
+      throw new BadRequestException(
+        `One or more categories are invalid or deleted: ${invalidIds.join(', ')}`,
+      );
+    }
+
     return {
-      categoryIds: uniqueIds.filter((id) => existingIds.has(id)),
-      primaryCategoryId:
-        primaryCategoryId && existingIds.has(primaryCategoryId) ? primaryCategoryId : null,
+      categoryIds: uniqueIds,
+      primaryCategoryId: primaryCategoryId ?? null,
     };
   }
 
@@ -104,11 +115,104 @@ export class PostsService {
     const uniqueIds = Array.from(new Set((tagIds ?? []).filter(Boolean)));
     if (uniqueIds.length === 0) return [];
     const existing = await this.prisma.tag.findMany({
-      where: { id: { in: uniqueIds } },
+      where: { id: { in: uniqueIds }, deletedAt: null },
       select: { id: true },
     });
     const existingIds = new Set(existing.map((item) => item.id));
-    return uniqueIds.filter((id) => existingIds.has(id));
+    const invalidIds = uniqueIds.filter((id) => !existingIds.has(id));
+    if (invalidIds.length > 0) {
+      throw new BadRequestException(
+        `One or more tags are invalid or deleted: ${invalidIds.join(', ')}`,
+      );
+    }
+
+    return uniqueIds;
+  }
+
+  private async getFallbackCategoryId() {
+    const category = await this.prisma.category.upsert({
+      where: { slug: 'uncategorized' },
+      update: {
+        name: 'Uncategorized',
+        deletedAt: null,
+      },
+      create: {
+        name: 'Uncategorized',
+        slug: 'uncategorized',
+        description: 'Fallback category for uncategorized content.',
+        sortOrder: 0,
+      },
+      select: { id: true },
+    });
+
+    return category.id;
+  }
+
+  private async getFallbackTagId() {
+    const tag = await this.prisma.tag.upsert({
+      where: { slug: 'default' },
+      update: {
+        name: 'Default',
+        deletedAt: null,
+        color: null,
+      },
+      create: {
+        name: 'Default',
+        slug: 'default',
+        color: null,
+      },
+      select: { id: true },
+    });
+
+    return tag.id;
+  }
+
+  private async ensureCategoryDefaults(
+    value: { categoryIds: string[]; primaryCategoryId: string | null },
+    applyDefaults: boolean,
+  ) {
+    let categoryIds = [...value.categoryIds];
+    let primaryCategoryId = value.primaryCategoryId;
+
+    if (!applyDefaults) {
+      return { categoryIds, primaryCategoryId };
+    }
+
+    if (categoryIds.length === 0 && !primaryCategoryId) {
+      const fallbackCategoryId = await this.getFallbackCategoryId();
+      return {
+        categoryIds: [fallbackCategoryId],
+        primaryCategoryId: fallbackCategoryId,
+      };
+    }
+
+    if (!primaryCategoryId && categoryIds.length > 0) {
+      primaryCategoryId = categoryIds[0] ?? null;
+    }
+
+    if (primaryCategoryId && !categoryIds.includes(primaryCategoryId)) {
+      categoryIds = [primaryCategoryId, ...categoryIds];
+    }
+
+    return {
+      categoryIds: Array.from(new Set(categoryIds)),
+      primaryCategoryId,
+    };
+  }
+
+  private async ensureTagDefaults(tagIds: string[], applyDefaults: boolean) {
+    const uniqueTagIds = Array.from(new Set(tagIds));
+
+    if (!applyDefaults) {
+      return uniqueTagIds;
+    }
+
+    if (uniqueTagIds.length > 0) {
+      return uniqueTagIds;
+    }
+
+    const fallbackTagId = await this.getFallbackTagId();
+    return [fallbackTagId];
   }
 
   private resolvePublicationStateForCreate(input: {
@@ -118,6 +222,11 @@ export class PostsService {
     const status = input.status ?? 'DRAFT';
     const scheduledAt =
       status === 'SCHEDULED' && input.scheduledAt ? new Date(input.scheduledAt) : null;
+
+    if (scheduledAt && Number.isNaN(scheduledAt.getTime())) {
+      throw new BadRequestException('Invalid scheduled date.');
+    }
+
     const publishedAt = status === 'PUBLISHED' ? new Date() : null;
 
     return {
@@ -145,6 +254,9 @@ export class PostsService {
     let scheduledAt = current.scheduledAt;
     if (input.scheduledAt !== undefined) {
       scheduledAt = input.scheduledAt ? new Date(input.scheduledAt) : null;
+      if (scheduledAt && Number.isNaN(scheduledAt.getTime())) {
+        throw new BadRequestException('Invalid scheduled date.');
+      }
     }
 
     if (nextStatus === 'PUBLISHED' || nextStatus === 'DRAFT' || nextStatus === 'ARCHIVED') {
@@ -247,20 +359,38 @@ export class PostsService {
   }
 
   async create(authorId: string, data: PostCreateInput) {
-    const [categoryResult, tagIds] = await Promise.all([
+    const title = data.title?.trim();
+    const slug = data.slug?.trim();
+    if (!title) {
+      throw new BadRequestException('Post title is required.');
+    }
+    if (!slug) {
+      throw new BadRequestException('Post slug is required.');
+    }
+    if (!data.content?.trim()) {
+      throw new BadRequestException('Post content is required.');
+    }
+    if (data.status !== undefined && !Object.values(PromptStatus).includes(data.status)) {
+      throw new BadRequestException('Invalid post status.');
+    }
+
+    const [resolvedCategoryResult, resolvedTagIds] = await Promise.all([
       this.resolveCategoryIds(data.categoryIds, data.primaryCategoryId),
       this.resolveTagIds(data.tagIds),
+    ]);
+    const [categoryResult, tagIds] = await Promise.all([
+      this.ensureCategoryDefaults(resolvedCategoryResult, true),
+      this.ensureTagDefaults(resolvedTagIds, true),
     ]);
     const publicationState = this.resolvePublicationStateForCreate({
       status: data.status,
       scheduledAt: data.scheduledAt,
     });
 
-    const created = await this.prisma.post.create({
-      data: {
+    const createData: Prisma.PostCreateInput = {
         author: { connect: { id: authorId } },
-        title: data.title,
-        slug: data.slug,
+        title,
+        slug,
         excerpt: data.excerpt ?? null,
         content: data.content,
         status: publicationState.status,
@@ -268,8 +398,13 @@ export class PostsService {
         postType: this.normalizePostType(data.postType) ?? 'POST',
         postFormat: this.normalizePostFormat(data.postFormat) ?? 'STANDARD',
         featuredImageUrl: data.featuredImageUrl ?? null,
+        metaTitle: data.metaTitle ?? null,
+        metaDescription: data.metaDescription ?? null,
         seoTitle: data.seoTitle ?? null,
         seoDescription: data.seoDescription ?? null,
+        seoFocusKeyword: data.seoFocusKeyword ?? null,
+        seoCanonicalUrl: data.seoCanonicalUrl ?? null,
+        seoNoIndex: data.seoNoIndex ?? false,
         scheduledAt: publicationState.scheduledAt,
         publishedAt: publicationState.publishedAt,
         primaryCategory: categoryResult.primaryCategoryId
@@ -279,7 +414,10 @@ export class PostsService {
           ? { connect: categoryResult.categoryIds.map((id) => ({ id })) }
           : undefined,
         tags: tagIds.length ? { connect: tagIds.map((id) => ({ id })) } : undefined,
-      },
+    };
+
+    const created = await this.prisma.post.create({
+      data: createData,
     });
 
     await this.auditService.log({
@@ -294,6 +432,19 @@ export class PostsService {
   }
 
   async update(actorId: string, id: string, data: PostUpdateInput) {
+    if (data.title !== undefined && !data.title.trim()) {
+      throw new BadRequestException('Post title cannot be empty.');
+    }
+    if (data.slug !== undefined && !data.slug.trim()) {
+      throw new BadRequestException('Post slug cannot be empty.');
+    }
+    if (data.content !== undefined && !data.content.trim()) {
+      throw new BadRequestException('Post content cannot be empty.');
+    }
+    if (data.status !== undefined && !Object.values(PromptStatus).includes(data.status)) {
+      throw new BadRequestException('Invalid post status.');
+    }
+
     const current = await this.prisma.post.findUnique({
       where: { id },
       select: {
@@ -307,20 +458,25 @@ export class PostsService {
       throw new NotFoundException('Post not found');
     }
 
-    const [categoryResult, tagIds] = await Promise.all([
+    const [resolvedCategoryResult, resolvedTagIds] = await Promise.all([
       this.resolveCategoryIds(data.categoryIds, data.primaryCategoryId),
       this.resolveTagIds(data.tagIds),
+    ]);
+    const [categoryResult, tagIds] = await Promise.all([
+      this.ensureCategoryDefaults(
+        resolvedCategoryResult,
+        data.categoryIds !== undefined || data.primaryCategoryId !== undefined,
+      ),
+      this.ensureTagDefaults(resolvedTagIds, data.tagIds !== undefined),
     ]);
     const publicationState = this.resolvePublicationStateForUpdate(current, {
       status: data.status,
       scheduledAt: data.scheduledAt,
     });
 
-    const updated = await this.prisma.post.update({
-      where: { id },
-      data: {
-        title: data.title,
-        slug: data.slug,
+    const updateData: Prisma.PostUpdateInput = {
+        title: data.title?.trim(),
+        slug: data.slug?.trim(),
         excerpt: data.excerpt,
         content: data.content,
         status: publicationState.status,
@@ -328,8 +484,13 @@ export class PostsService {
         postType: this.normalizePostType(data.postType),
         postFormat: this.normalizePostFormat(data.postFormat),
         featuredImageUrl: data.featuredImageUrl,
+        metaTitle: data.metaTitle,
+        metaDescription: data.metaDescription,
         seoTitle: data.seoTitle,
         seoDescription: data.seoDescription,
+        seoFocusKeyword: data.seoFocusKeyword,
+        seoCanonicalUrl: data.seoCanonicalUrl,
+        seoNoIndex: data.seoNoIndex,
         scheduledAt: publicationState.scheduledAt,
         publishedAt: publicationState.publishedAt,
         primaryCategory:
@@ -342,7 +503,11 @@ export class PostsService {
           ? { set: categoryResult.categoryIds.map((cid) => ({ id: cid })) }
           : undefined,
         tags: data.tagIds ? { set: tagIds.map((tid) => ({ id: tid })) } : undefined,
-      },
+    };
+
+    const updated = await this.prisma.post.update({
+      where: { id },
+      data: updateData,
     });
 
     await this.auditService.log({

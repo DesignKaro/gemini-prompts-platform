@@ -1,7 +1,18 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
+import { SeoSchemaScripts } from '../components/seo-schema-script';
+import { Skeleton } from '../components/ui/skeleton';
 import { getCategoryList } from '../../lib/public-content';
+import { buildPaginatedMetadata, getNormalizedBaseUrl, getSeoSettings } from '../../lib/seo';
+import {
+  buildBreadcrumbSchema,
+  buildCollectionPageSchema,
+  buildItemListSchema,
+  buildWebPageSchema,
+} from '../../lib/structured-data';
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 20;
+const POPULAR_CATEGORY_LIMIT = 10;
 
 type PageProps = {
   searchParams?: Promise<{
@@ -9,142 +20,269 @@ type PageProps = {
   }>;
 };
 
-export const metadata = {
-  title: 'Categories — Gemini Prompts',
-  description: 'Browse categories powered by the Gemini Prompts dashboard.',
-};
+const CATEGORY_IMAGE_FALLBACK =
+  'https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=900';
 
-export default async function CategoriesArchivePage({ searchParams }: PageProps) {
+export async function generateMetadata({ searchParams }: PageProps) {
   const resolvedSearchParams = await searchParams;
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
   const page = Math.max(1, Number.parseInt(resolvedSearchParams?.page ?? '1', 10) || 1);
+  const settings = await getSeoSettings();
+
+  return buildPaginatedMetadata({
+    title: 'Categories',
+    description: 'Browse topic categories for AI prompts, articles, and creator workflows.',
+    basePath: '/category',
+    page,
+    noIndex: settings.noindexCategoryPages,
+  });
+}
+
+function CategoriesArchiveSectionFallback() {
+  return (
+    <>
+      <div className="mt-3">
+        <Skeleton className="h-9 w-56 rounded-full" />
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {Array.from({ length: POPULAR_CATEGORY_LIMIT }).map((_, index) => (
+          <article
+            key={`category-popular-skeleton-${index}`}
+            className="flex items-center gap-3 rounded-[20px] border border-[#e7ebf1] bg-white px-3 py-2.5"
+          >
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24 rounded-full" />
+              <Skeleton className="h-3 w-12 rounded-full" />
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="mt-10">
+        <Skeleton className="h-9 w-56 rounded-full" />
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        {Array.from({ length: 10 }).map((_, index) => (
+          <article
+            key={`category-trending-skeleton-${index}`}
+            className="flex items-center gap-3 rounded-[20px] border border-[#e7ebf1] bg-white p-2.5"
+          >
+            <Skeleton className="h-[68px] w-[132px] rounded-[14px]" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24 rounded-full" />
+              <Skeleton className="h-3 w-16 rounded-full" />
+            </div>
+          </article>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function formatCompactCount(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+async function CategoriesArchiveSection({
+  page,
+  baseUrl,
+  noIndex,
+}: {
+  page: number;
+  baseUrl: string;
+  noIndex: boolean;
+}) {
   const skip = (page - 1) * PAGE_SIZE;
 
-  const categoriesResponse = await getCategoryList({ take: PAGE_SIZE, skip });
+  const [popularResponse, categoriesResponse] = await Promise.all([
+    getCategoryList({ take: POPULAR_CATEGORY_LIMIT, sort: 'popular' }),
+    getCategoryList({ take: PAGE_SIZE, skip, sort: 'popular' }),
+  ]);
+
   const totalPages = Math.max(1, Math.ceil(categoriesResponse.total / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'Home',
-        item: `${baseUrl}/`,
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
+  const popularItems = popularResponse.items.slice(0, POPULAR_CATEGORY_LIMIT);
+  const pagePath = safePage > 1 ? `/category?page=${safePage}` : '/category';
+  const pageUrl = `${baseUrl}${pagePath}`;
+  const schemaItems = [
+    {
+      family: 'webpage' as const,
+      schema: buildWebPageSchema({
+        url: pageUrl,
         name: 'Categories',
-        item: `${baseUrl}/category`,
-      },
-    ],
-  };
+        description: 'Browse topic categories for AI prompts, articles, and creator workflows.',
+      }),
+    },
+    {
+      family: 'breadcrumb' as const,
+      schema: buildBreadcrumbSchema(
+        [
+          { name: 'Home', item: `${baseUrl}/` },
+          { name: 'Categories', item: `${baseUrl}/category` },
+        ],
+        pageUrl,
+      ),
+    },
+    {
+      family: 'collection' as const,
+      schema: buildCollectionPageSchema({
+        url: pageUrl,
+        name: 'Prompt categories',
+        description: 'Popular and trending categories on Gemini Prompts.',
+      }),
+    },
+    {
+      family: 'collection' as const,
+      schema: buildItemListSchema({
+        url: pageUrl,
+        name: 'Category list',
+        idSuffix: 'categories',
+        items: categoriesResponse.items.map((category) => ({
+          name: category.name,
+          url: `${baseUrl}/category/${category.slug}`,
+          image: category.imageUrl,
+        })),
+      }),
+    },
+  ].filter((entry) => Boolean(entry.schema));
 
   return (
-    <main className="page-shell bg-white">
-      <script
-        type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
-      <div className="page-container">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <nav aria-label="Breadcrumb" className="text-[0.9rem] text-[#8b8f99]">
-              <ol className="flex flex-wrap items-center gap-2">
-                <li>
-                  <Link href="/" className="transition-colors hover:text-[#101010]">
-                    Home
-                  </Link>
-                </li>
-                <li className="text-[#c0c6d1]">/</li>
-                <li className="font-medium text-[#101010]">Categories</li>
-              </ol>
-            </nav>
-            <h1 className="section-heading-medium mt-4 text-[2.6rem] leading-[1.05] tracking-[-0.04em] text-[#111118] sm:text-[3.4rem] lg:text-[4rem]">
-              Explore every category
-            </h1>
-            <p className="mt-4 max-w-[620px] text-[1.05rem] leading-[1.7] text-[#5f6773]">
-              Browse the live catalog of categories and dive into curated collections of prompts and
-              posts.
-            </p>
-          </div>
-          <div className="rounded-full bg-[#f1f4f8] px-4 py-2 text-[0.95rem] text-[#4b525e]">
+    <>
+      <SeoSchemaScripts items={schemaItems} noIndex={noIndex} />
+      <section className="mt-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-[2rem] font-medium tracking-[-0.03em] text-[#1a1f2b]">
+            Popular Categories
+          </h2>
+          <div className="rounded-full bg-[#f1f4f8] px-4 py-2 text-[0.9rem] text-[#4b525e]">
             {categoriesResponse.total} total categories
           </div>
         </div>
 
-        <div className="site-section-sub mt-8 grid gap-6 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {categoriesResponse.items.map((category) => (
-            <article
-              key={category.id}
-              className="flex flex-col items-center rounded-[28px] border border-[#e7e7ee] bg-white p-6 text-center"
-            >
-              <div
-                className="h-[120px] w-[120px] rounded-full border border-[#e3e3e3] bg-cover bg-center"
-                style={{
-                  backgroundImage: `url(${
-                    category.imageUrl ||
-                    'https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=900'
-                  })`,
-                }}
-              />
-              <h2 className="mt-5 text-[1.2rem] font-medium text-[#141414]">{category.name}</h2>
-              <p className="mt-2 text-[0.95rem] text-[#6a7280]">{category.totalCount} items</p>
+        {popularItems.length > 0 ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {popularItems.map((category) => (
               <Link
+                key={category.id}
                 href={`/category/${category.slug}`}
-                className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#d8dce2] px-4 py-2 text-[0.9rem] text-[#101010] transition-colors duration-300 hover:border-[#101010] hover:bg-[#101010] hover:text-white"
+                className="flex items-center gap-3 rounded-[20px] border border-[#e4e8ef] bg-white px-3 py-2.5 transition-colors hover:border-[#cfd6e3] hover:bg-[#fbfcff]"
               >
-                View category
-              </Link>
-            </article>
-          ))}
-        </div>
-
-        {totalPages > 1 ? (
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href={`/category?page=${Math.max(1, safePage - 1)}`}
-              aria-disabled={safePage === 1}
-              className={`rounded-full border px-4 py-2 text-[0.95rem] ${
-                safePage === 1
-                  ? 'cursor-not-allowed border-[#e1e5ee] text-[#c0c6d1]'
-                  : 'border-[#d8dce2] text-[#101010] hover:border-[#101010]'
-              }`}
-            >
-              Previous
-            </Link>
-
-            {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
-              <Link
-                key={`page-${pageNumber}`}
-                href={`/category?page=${pageNumber}`}
-                className={`h-10 w-10 rounded-full border text-center text-[0.95rem] leading-[2.35rem] ${
-                  pageNumber === safePage
-                    ? 'border-[#111111] bg-[#111111] text-white'
-                    : 'border-[#d8dce2] text-[#101010] hover:border-[#101010]'
-                }`}
-              >
-                {pageNumber}
+                <div
+                  className="h-11 w-11 shrink-0 rounded-full border border-[#e3e6ee] bg-cover bg-center"
+                  style={{
+                    backgroundImage: `url(${category.imageUrl || CATEGORY_IMAGE_FALLBACK})`,
+                  }}
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-[1.02rem] font-medium text-[#171b24]">{category.name}</p>
+                  <p className="text-[0.95rem] text-[#9aa2b0]">{formatCompactCount(category.totalCount)}</p>
+                </div>
               </Link>
             ))}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-[20px] border border-dashed border-[#d8dee8] px-6 py-7 text-center text-[0.96rem] text-[#677386]">
+            No categories available yet.
+          </div>
+        )}
+      </section>
 
+      <section className="mt-14">
+        <h2 className="text-[2rem] font-medium tracking-[-0.03em] text-[#1a1f2b]">Trending Categories</h2>
+
+        {categoriesResponse.items.length > 0 ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {categoriesResponse.items.map((category) => (
+              <Link
+                key={category.id}
+                href={`/category/${category.slug}`}
+                className="flex items-center gap-3 rounded-[20px] border border-[#e4e8ef] bg-white p-2.5 transition-colors hover:border-[#cfd6e3] hover:bg-[#fbfcff]"
+              >
+                <div
+                  className="h-[72px] w-[138px] shrink-0 rounded-[14px] border border-[#e3e6ee] bg-cover bg-center"
+                  style={{
+                    backgroundImage: `url(${category.imageUrl || CATEGORY_IMAGE_FALLBACK})`,
+                  }}
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-[1.04rem] font-medium text-[#171b24]">{category.name}</p>
+                  <p className="text-[0.95rem] text-[#9aa2b0]">
+                    {formatCompactCount(category.totalCount)} items
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-[20px] border border-dashed border-[#d8dee8] px-6 py-7 text-center text-[0.96rem] text-[#677386]">
+            No categories available yet.
+          </div>
+        )}
+      </section>
+
+      {totalPages > 1 ? (
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href={`/category?page=${Math.max(1, safePage - 1)}`}
+            aria-disabled={safePage === 1}
+            className={`rounded-full border px-4 py-2 text-[0.95rem] ${
+              safePage === 1
+                ? 'cursor-not-allowed border-[#e1e5ee] text-[#c0c6d1]'
+                : 'border-[#d8dce2] text-[#101010] hover:border-[#101010]'
+            }`}
+          >
+            Previous
+          </Link>
+
+          {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
             <Link
-              href={`/category?page=${Math.min(totalPages, safePage + 1)}`}
-              aria-disabled={safePage === totalPages}
-              className={`rounded-full border px-4 py-2 text-[0.95rem] ${
-                safePage === totalPages
-                  ? 'cursor-not-allowed border-[#e1e5ee] text-[#c0c6d1]'
+              key={`page-${pageNumber}`}
+              href={`/category?page=${pageNumber}`}
+              className={`h-10 w-10 rounded-full border text-center text-[0.95rem] leading-[2.35rem] ${
+                pageNumber === safePage
+                  ? 'border-[#111111] bg-[#111111] text-white'
                   : 'border-[#d8dce2] text-[#101010] hover:border-[#101010]'
               }`}
             >
-              Next
+              {pageNumber}
             </Link>
-          </div>
-        ) : null}
+          ))}
+
+          <Link
+            href={`/category?page=${Math.min(totalPages, safePage + 1)}`}
+            aria-disabled={safePage === totalPages}
+            className={`rounded-full border px-4 py-2 text-[0.95rem] ${
+              safePage === totalPages
+                ? 'cursor-not-allowed border-[#e1e5ee] text-[#c0c6d1]'
+                : 'border-[#d8dce2] text-[#101010] hover:border-[#101010]'
+            }`}
+          >
+            Next
+          </Link>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+export default async function CategoriesArchivePage({ searchParams }: PageProps) {
+  const resolvedSearchParams = await searchParams;
+  const page = Math.max(1, Number.parseInt(resolvedSearchParams?.page ?? '1', 10) || 1);
+  const seoSettings = await getSeoSettings();
+  const baseUrl = getNormalizedBaseUrl(seoSettings);
+  const shouldNoIndex = seoSettings.noindexCategoryPages || (page > 1 && seoSettings.noindexPaginatedArchives);
+
+  return (
+    <main className="page-shell-tight bg-white">
+      <div className="page-container-wide max-w-[1380px]">
+        <h1 className="sr-only">Categories Archive</h1>
+
+        <Suspense fallback={<CategoriesArchiveSectionFallback />}>
+          <CategoriesArchiveSection page={page} baseUrl={baseUrl} noIndex={shouldNoIndex} />
+        </Suspense>
       </div>
     </main>
   );

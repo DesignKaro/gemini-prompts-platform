@@ -1,9 +1,57 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { AnimatedCounter } from '../components/animated-counter';
 import { AuthorAvatar } from '../components/author-avatar';
+import { SeoSchemaScripts } from '../components/seo-schema-script';
+import { Skeleton } from '../components/ui/skeleton';
 import { getAuthorList, type PublicAuthor } from '../../lib/public-content';
-export default async function AboutPage() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:30001';
+import { buildMetadata, getNormalizedBaseUrl, getSeoSettings } from '../../lib/seo';
+import { buildBreadcrumbSchema, buildWebPageSchema } from '../../lib/structured-data';
+
+export async function generateMetadata() {
+  const settings = await getSeoSettings();
+
+  return buildMetadata({
+    title: 'About',
+    description:
+      'Learn about Gemini Prompts, our curation philosophy, and how we help creators ship faster with practical AI workflows.',
+    path: '/about',
+    noIndex: settings.noindexStaticPages,
+  });
+}
+
+function AboutTrendingAuthorsFallback() {
+  return (
+    <>
+      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <article
+            key={`about-author-skeleton-${index}`}
+            className="flex items-center gap-4 rounded-[22px] border border-[#e6e9f2] bg-white p-5"
+          >
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div className="min-w-0 flex-1">
+              <Skeleton className="h-5 w-28 rounded-full" />
+              <Skeleton className="mt-2 h-4 w-20 rounded-full" />
+            </div>
+            <Skeleton className="h-9 w-16 rounded-full" />
+          </article>
+        ))}
+      </div>
+
+      <div className="mt-8 flex justify-center">
+        <Link
+          href="/author"
+          className="rounded-full border border-[#d8dce2] bg-white px-6 py-3 text-[0.95rem] text-[#101010] transition-colors hover:border-[#101010] hover:bg-[#101010] hover:text-white"
+        >
+          View more authors
+        </Link>
+      </div>
+    </>
+  );
+}
+
+async function AboutTrendingAuthorsSection() {
   let trendingAuthors: PublicAuthor[] = [];
 
   try {
@@ -16,24 +64,84 @@ export default async function AboutPage() {
     trendingAuthors = [];
   }
 
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'Home',
-        item: `${baseUrl}/`,
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
+  return (
+    <>
+      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {trendingAuthors.map((author) => {
+          const articleCount =
+            author.totalCount ?? (author.promptCount ?? 0) + (author.postCount ?? 0);
+
+          return (
+            <article
+              key={author.id}
+              className="flex items-center gap-4 rounded-[22px] border border-[#e6e9f2] bg-white p-5"
+            >
+              <AuthorAvatar
+                name={author.name}
+                avatarUrl={author.avatarUrl}
+                avatarUpdatedAt={author.avatarUpdatedAt}
+                className="h-12 w-12"
+                initialClassName="text-[0.82rem]"
+              />
+              <div className="min-w-0">
+                <h3 className="truncate text-[1.05rem] font-medium text-[#111118]">{author.name}</h3>
+                <p className="truncate text-[0.92rem] text-[#6a7280]">
+                  {articleCount} article{articleCount === 1 ? '' : 's'}
+                </p>
+              </div>
+              <Link
+                href={`/u/${author.slug}`}
+                className="ml-auto rounded-full border border-[#e1e5ee] bg-[#f8fafc] px-4 py-2 text-[0.9rem] text-[#4b525e] transition-colors hover:bg-white"
+              >
+                View
+              </Link>
+            </article>
+          );
+        })}
+      </div>
+
+      {trendingAuthors.length === 0 ? (
+        <p className="mt-4 text-[0.95rem] text-[#6a7280]">No authors available right now.</p>
+      ) : null}
+
+      <div className="mt-8 flex justify-center">
+        <Link
+          href="/author"
+          className="rounded-full border border-[#d8dce2] bg-white px-6 py-3 text-[0.95rem] text-[#101010] transition-colors hover:border-[#101010] hover:bg-[#101010] hover:text-white"
+        >
+          View more authors
+        </Link>
+      </div>
+    </>
+  );
+}
+
+export default async function AboutPage() {
+  const seoSettings = await getSeoSettings();
+  const baseUrl = getNormalizedBaseUrl(seoSettings);
+  const pageUrl = `${baseUrl}/about`;
+  const shouldNoIndex = seoSettings.noindexStaticPages;
+  const schemaItems = [
+    {
+      family: 'webpage' as const,
+      schema: buildWebPageSchema({
+        url: pageUrl,
         name: 'About',
-        item: `${baseUrl}/about`,
-      },
-    ],
-  };
+        description:
+          'Learn about Gemini Prompts, our curation philosophy, and how we help creators ship faster with practical AI workflows.',
+      }),
+    },
+    {
+      family: 'breadcrumb' as const,
+      schema: buildBreadcrumbSchema(
+        [
+          { name: 'Home', item: `${baseUrl}/` },
+          { name: 'About', item: pageUrl },
+        ],
+        pageUrl,
+      ),
+    },
+  ].filter((entry) => Boolean(entry.schema));
 
   const valueCards = [
     {
@@ -63,7 +171,7 @@ export default async function AboutPage() {
       title: 'Prompts',
       description:
         'Browse trending prompt packs across technology, business, design, marketing, and more.',
-      href: '/prompt',
+      href: '/prompts',
       cta: 'Explore prompts',
       tone: 'bg-[#f8fafc]',
     },
@@ -94,11 +202,7 @@ export default async function AboutPage() {
 
   return (
     <main className="page-shell-tight bg-white">
-      <script
-        type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
+      <SeoSchemaScripts items={schemaItems} noIndex={shouldNoIndex} />
 
       <div className="mx-auto w-full max-w-[1300px]">
         <nav aria-label="Breadcrumb" className="text-[0.9rem] text-[#8b8f99]">
@@ -129,7 +233,7 @@ export default async function AboutPage() {
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <Link
-                href="/prompt"
+                href="/prompts"
                 className="rounded-full bg-[#111111] px-6 py-3 text-[0.98rem] text-white transition-colors hover:bg-black"
               >
                 Explore prompts
@@ -296,55 +400,9 @@ export default async function AboutPage() {
               Fetched live from the backend, sorted by popularity.
             </p>
           </div>
-
-          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {trendingAuthors.map((author) => {
-              const articleCount =
-                author.totalCount ?? (author.promptCount ?? 0) + (author.postCount ?? 0);
-
-              return (
-                <article
-                  key={author.id}
-                  className="flex items-center gap-4 rounded-[22px] border border-[#e6e9f2] bg-white p-5"
-                >
-                  <AuthorAvatar
-                    name={author.name}
-                    avatarUrl={author.avatarUrl}
-                    avatarUpdatedAt={author.avatarUpdatedAt}
-                    className="h-12 w-12"
-                    initialClassName="text-[0.82rem]"
-                  />
-                  <div className="min-w-0">
-                    <h3 className="truncate text-[1.05rem] font-medium text-[#111118]">
-                      {author.name}
-                    </h3>
-                    <p className="truncate text-[0.92rem] text-[#6a7280]">
-                      {articleCount} article{articleCount === 1 ? '' : 's'}
-                    </p>
-                  </div>
-                  <Link
-                    href={`/author/${author.slug}`}
-                    className="ml-auto rounded-full border border-[#e1e5ee] bg-[#f8fafc] px-4 py-2 text-[0.9rem] text-[#4b525e] transition-colors hover:bg-white"
-                  >
-                    View
-                  </Link>
-                </article>
-              );
-            })}
-          </div>
-
-          {trendingAuthors.length === 0 ? (
-            <p className="mt-4 text-[0.95rem] text-[#6a7280]">No authors available right now.</p>
-          ) : null}
-
-          <div className="mt-8 flex justify-center">
-            <Link
-              href="/author"
-              className="rounded-full border border-[#d8dce2] bg-white px-6 py-3 text-[0.95rem] text-[#101010] transition-colors hover:border-[#101010] hover:bg-[#101010] hover:text-white"
-            >
-              View more authors
-            </Link>
-          </div>
+          <Suspense fallback={<AboutTrendingAuthorsFallback />}>
+            <AboutTrendingAuthorsSection />
+          </Suspense>
         </section>
 
         <section className="mt-16 overflow-hidden rounded-[30px] border border-[#111111] bg-[#111111] px-7 py-10 text-white sm:px-12 sm:py-12">
@@ -360,7 +418,7 @@ export default async function AboutPage() {
             </div>
             <div className="flex flex-wrap items-center gap-3 lg:justify-end">
               <Link
-                href="/prompt"
+                href="/prompts"
                 className="rounded-full bg-white px-6 py-3 text-[0.98rem] text-[#111111] transition-colors hover:bg-[#d5ea52]"
               >
                 Explore prompts

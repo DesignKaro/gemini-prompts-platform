@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
@@ -75,10 +75,19 @@ export class TagsService {
   }
 
   async create(actorId: string, data: TagCreateInput) {
+    const name = data.name?.trim();
+    const slug = data.slug?.trim();
+    if (!name) {
+      throw new BadRequestException('Tag name is required.');
+    }
+    if (!slug) {
+      throw new BadRequestException('Tag slug is required.');
+    }
+
     const tag = await this.prisma.tag.create({
       data: {
-        name: data.name,
-        slug: data.slug,
+        name,
+        slug,
         color: data.color ?? null,
       },
     });
@@ -95,11 +104,18 @@ export class TagsService {
   }
 
   async update(actorId: string, id: string, data: TagUpdateInput) {
+    if (data.name !== undefined && !data.name.trim()) {
+      throw new BadRequestException('Tag name cannot be empty.');
+    }
+    if (data.slug !== undefined && !data.slug.trim()) {
+      throw new BadRequestException('Tag slug cannot be empty.');
+    }
+
     const tag = await this.prisma.tag.update({
       where: { id },
       data: {
-        name: data.name,
-        slug: data.slug,
+        name: data.name?.trim(),
+        slug: data.slug?.trim(),
         color: data.color ?? undefined,
       },
     });
@@ -116,9 +132,85 @@ export class TagsService {
   }
 
   async remove(actorId: string, id: string) {
-    const tag = await this.prisma.tag.update({
-      where: { id },
-      data: { deletedAt: new Date() },
+    const tag = await this.prisma.tag.findUnique({ where: { id } });
+    if (!tag) {
+      throw new NotFoundException('Tag not found');
+    }
+
+    const removedTag = await this.prisma.$transaction(async (tx) => {
+      const fallbackTag = await tx.tag.upsert({
+        where: { slug: 'default' },
+        update: {
+          name: 'Default',
+          deletedAt: null,
+          color: null,
+        },
+        create: {
+          name: 'Default',
+          slug: 'default',
+          color: null,
+        },
+      });
+
+      if (fallbackTag.id === id) {
+        throw new BadRequestException('Cannot delete the fallback Default tag.');
+      }
+
+      const promptsWithTag = await tx.prompt.findMany({
+        where: { tags: { some: { id } } },
+        select: { id: true, tags: { where: { id: fallbackTag.id }, select: { id: true } } },
+      });
+
+      for (const prompt of promptsWithTag) {
+        await tx.prompt.update({
+          where: { id: prompt.id },
+          data: {
+            tags: {
+              disconnect: { id },
+              ...(prompt.tags.length === 0 ? { connect: { id: fallbackTag.id } } : {}),
+            },
+          },
+        });
+      }
+
+      const postsWithTag = await tx.post.findMany({
+        where: { tags: { some: { id } } },
+        select: { id: true, tags: { where: { id: fallbackTag.id }, select: { id: true } } },
+      });
+
+      for (const post of postsWithTag) {
+        await tx.post.update({
+          where: { id: post.id },
+          data: {
+            tags: {
+              disconnect: { id },
+              ...(post.tags.length === 0 ? { connect: { id: fallbackTag.id } } : {}),
+            },
+          },
+        });
+      }
+
+      const collabsWithTag = await tx.collab.findMany({
+        where: { tags: { some: { id } } },
+        select: { id: true, tags: { where: { id: fallbackTag.id }, select: { id: true } } },
+      });
+
+      for (const collab of collabsWithTag) {
+        await tx.collab.update({
+          where: { id: collab.id },
+          data: {
+            tags: {
+              disconnect: { id },
+              ...(collab.tags.length === 0 ? { connect: { id: fallbackTag.id } } : {}),
+            },
+          },
+        });
+      }
+
+      return tx.tag.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
     });
 
     await this.auditService.log({
@@ -128,7 +220,7 @@ export class TagsService {
       targetId: id,
     });
 
-    return tag;
+    return removedTag;
   }
 
   async restore(actorId: string, id: string) {

@@ -10,13 +10,16 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { PostsService, PostCreateInput, PostUpdateInput } from './posts.service';
+import { PostsService } from './posts.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../../auth/types/auth-user.type';
-import { PromptStatus, PromptVisibility } from '@prisma/client';
+import { ListPostsQueryDto } from './dto/list-posts-query.dto';
+import { CreatePostDto } from './dto/create-post.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
+import { IdParamDto } from '../../../common/dto/id-param.dto';
 
 @ApiTags('Admin Posts')
 @ApiBearerAuth()
@@ -27,57 +30,51 @@ export class PostsController {
 
   @Get()
   @Permissions('posts:read')
-  findAll(
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
-    @Query('search') search?: string,
-    @Query('status') status?: PromptStatus,
-    @Query('visibility') visibility?: PromptVisibility,
-    @Query('categoryId') categoryId?: string,
-    @Query('tagId') tagId?: string,
-    @Query('sort') sort?: 'recent' | 'views' | 'az',
-    @Query('trash') trash?: string,
-  ) {
+  findAll(@Query() query: ListPostsQueryDto) {
     return this.postsService.findAll({
-      skip: skip ? parseInt(skip, 10) : 0,
-      take: take ? parseInt(take, 10) : 20,
-      search,
-      status,
-      visibility,
-      categoryId,
-      tagId,
-      sort,
-      trash: trash === 'true' || trash === '1',
+      skip: query.skip,
+      take: query.take,
+      search: query.search,
+      status: query.status,
+      visibility: query.visibility,
+      categoryId: query.categoryId,
+      tagId: query.tagId,
+      sort: query.sort,
+      trash: query.trash,
     });
   }
 
   @Get(':id')
   @Permissions('posts:read')
-  findOne(@Param('id') id: string) {
-    return this.postsService.findOne(id);
+  findOne(@Param() params: IdParamDto) {
+    return this.postsService.findOne(params.id);
   }
 
   @Post()
   @Permissions('posts:manage')
-  create(@CurrentUser() user: AuthUser, @Body() body: PostCreateInput) {
+  create(@CurrentUser() user: AuthUser, @Body() body: CreatePostDto) {
     return this.postsService.create(user.sub, body);
   }
 
   @Patch(':id')
   @Permissions('posts:manage')
-  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() body: PostUpdateInput) {
-    return this.postsService.update(user.sub, id, body);
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param() params: IdParamDto,
+    @Body() body: UpdatePostDto,
+  ) {
+    return this.postsService.update(user.sub, params.id, body);
   }
 
   @Patch(':id/restore')
   @Permissions('posts:manage')
-  restore(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.postsService.restore(user.sub, id);
+  restore(@CurrentUser() user: AuthUser, @Param() params: IdParamDto) {
+    return this.postsService.restore(user.sub, params.id);
   }
 
   @Delete(':id')
   @Permissions('posts:manage')
-  remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.postsService.remove(user.sub, id);
+  remove(@CurrentUser() user: AuthUser, @Param() params: IdParamDto) {
+    return this.postsService.remove(user.sub, params.id);
   }
 }

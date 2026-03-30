@@ -31,7 +31,7 @@ export function PostCardUI({
     >
       <Link
         href={href}
-        className="group flex h-full flex-col rounded-[20px] bg-white p-2.5 transition-colors duration-300 hover:bg-[#f2f4f7]"
+        className="group flex h-full flex-col rounded-[20px] border border-[#eceff4] bg-white p-2.5 transition-colors duration-300 hover:border-[#e1e6ee] hover:bg-[#f2f4f7]"
       >
         <div
           role="img"
@@ -52,11 +52,11 @@ export function PostCardUI({
           {title}
         </TitleTag>
 
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5">
-          <span className="inline-flex rounded-[10px] bg-[#f2f4f7] px-3 py-1.5 text-[0.9rem] font-normal text-[#10141d]">
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-2.5 pt-5">
+          <span className="inline-flex rounded-[9px] bg-[#f2f4f7] px-2.5 py-1 text-[0.82rem] font-normal text-[#10141d]">
             {readTime}
           </span>
-          <span className="inline-flex rounded-full bg-[#d5ea52] px-4 py-1.5 text-[0.84rem] font-normal text-[#0f1116] transition-colors duration-300 group-hover:bg-[#c6dc45]">
+          <span className="inline-flex rounded-full bg-[#d5ea52] px-3 py-1 text-[0.78rem] font-normal text-[#0f1116] transition-colors duration-300 group-hover:bg-[#c6dc45]">
             Read more
           </span>
         </div>

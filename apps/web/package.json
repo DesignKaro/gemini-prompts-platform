@@ -7,7 +7,12 @@
     "build": "next build",
     "start": "next start -H 127.0.0.1 -p 30001",
     "lint": "eslint \"app/**/*.{ts,tsx}\"",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts",
+    "dashboard:arch-check": "node scripts/check-dashboard-structure.mjs && node scripts/check-dashboard-fetch.mjs",
+    "perf:budget": "node scripts/check-performance-budgets.mjs",
+    "smoke:dashboard": "node scripts/dashboard-stability-smoke.mjs"
   },
   "dependencies": {
     "@gp/types": "0.1.0",
@@ -32,11 +37,16 @@
     "react-icons": "5.6.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "6.0.1",
     "autoprefixer": "^10.4.21",
     "eslint-config-next": "15.5.14",
+    "jsdom": "29.0.1",
     "postcss": "^8.5.3",
-    "tailwindcss": "^3.4.17"
+    "tailwindcss": "^3.4.17",
+    "vitest": "4.1.2"
   }
 }

@@ -1,0 +1,80 @@
+name: Dashboard Reliability Gate
+
+on:
+  pull_request:
+    paths:
+      - 'apps/web/app/dashboard/**'
+      - 'apps/web/features/dashboard/**'
+      - 'apps/web/scripts/check-dashboard-*.mjs'
+      - 'apps/web/scripts/dashboard-stability-smoke.mjs'
+      - 'apps/api/src/modules/admin/**'
+      - 'apps/api/prisma/**'
+      - 'docs/ops/dashboard-*.md'
+      - 'docs/architecture/DASHBOARD_ADMIN_ARCHITECTURE.md'
+      - 'package.json'
+      - 'apps/web/package.json'
+      - 'apps/api/package.json'
+      - 'package-lock.json'
+      - '.github/workflows/dashboard-reliability.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/web/app/dashboard/**'
+      - 'apps/web/features/dashboard/**'
+      - 'apps/web/scripts/check-dashboard-*.mjs'
+      - 'apps/web/scripts/dashboard-stability-smoke.mjs'
+      - 'apps/api/src/modules/admin/**'
+      - 'apps/api/prisma/**'
+      - 'docs/ops/dashboard-*.md'
+      - 'docs/architecture/DASHBOARD_ADMIN_ARCHITECTURE.md'
+      - 'package.json'
+      - 'apps/web/package.json'
+      - 'apps/api/package.json'
+      - 'package-lock.json'
+      - '.github/workflows/dashboard-reliability.yml'
+
+jobs:
+  reliability-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Web/API typecheck
+        run: |
+          npm run typecheck -w @gemini-prompts/web
+          npm run typecheck -w @gemini-prompts/api
+
+      - name: Web/API lint
+        run: |
+          npm run lint -w @gemini-prompts/web
+          npm run lint -w @gemini-prompts/api
+
+      - name: Dashboard architecture checks
+        run: npm run dashboard:arch-check
+
+      - name: DB check
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run db:check -w @gemini-prompts/api
+
+      - name: DB integrity audit
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run db:integrity:audit -w @gemini-prompts/api
+
+      - name: Dashboard smoke
+        env:
+          DASHBOARD_SMOKE_API_BASE: ${{ secrets.DASHBOARD_SMOKE_API_BASE }}
+          DASHBOARD_SMOKE_TOKEN: ${{ secrets.DASHBOARD_SMOKE_TOKEN }}
+        run: npm run dashboard:smoke

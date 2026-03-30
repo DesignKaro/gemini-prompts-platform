@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 function resolvePositiveInt(value: string | undefined, fallback: number): number {
   if (!value) return fallback;
@@ -36,8 +36,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   constructor() {
     const datasourceUrl = buildDatasourceUrl(process.env.DATABASE_URL);
-    super(
-      datasourceUrl
+    super({
+      ...(datasourceUrl
         ? {
             datasources: {
               db: {
@@ -45,8 +45,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
               },
             },
           }
-        : undefined,
-    );
+        : {}),
+      log: [{ emit: 'event', level: 'query' }],
+    });
+
+    this.registerSlowQueryLogger();
   }
 
   async onModuleInit(): Promise<void> {
@@ -111,5 +114,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
     }
+  }
+
+  private registerSlowQueryLogger() {
+    const slowQueryThresholdMs = resolvePositiveInt(process.env.SLOW_QUERY_THRESHOLD_MS, 300);
+
+    (this as PrismaClient).$on('query' as never, (event: Prisma.QueryEvent) => {
+      if (event.duration < slowQueryThresholdMs) return;
+      this.logger.warn(`[SLOW_QUERY] duration=${event.duration}ms target=${event.target}`);
+    });
   }
 }
