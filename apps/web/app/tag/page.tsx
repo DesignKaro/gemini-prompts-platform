@@ -68,7 +68,7 @@ function TagsArchiveSectionFallback() {
         <Skeleton className="h-10 w-36 rounded-full" />
       </div>
 
-      <div className="site-section-sub overflow-hidden rounded-[22px] border border-[#e1e4ea] bg-white">
+      <div className="site-section-sub mt-3 overflow-hidden rounded-[22px] border border-[#e1e4ea] bg-white">
         <div className="px-5 py-5 sm:px-7 sm:py-6">
           <div className="flex flex-wrap gap-2.5">
             {Array.from({ length: 16 }).map((_, index) => (
@@ -148,7 +148,7 @@ async function TagsArchiveSection({
         {tagsResponse.total} total tags
       </div>
 
-      <div className="site-section-sub overflow-hidden rounded-[22px] border border-[#e1e4ea] bg-white">
+      <div className="site-section-sub mt-3 overflow-hidden rounded-[22px] border border-[#e1e4ea] bg-white">
         <div className="px-5 py-5 sm:px-7 sm:py-6">
           <div className="flex flex-wrap gap-2.5">
             {tagsResponse.items.length > 0 ? (

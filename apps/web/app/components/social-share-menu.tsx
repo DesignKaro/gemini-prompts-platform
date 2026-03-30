@@ -15,9 +15,15 @@ type SocialShareMenuProps = {
   shareUrl: string;
   shareText: string;
   align?: 'left' | 'right';
+  onShare?: () => void;
 };
 
-export function SocialShareMenu({ shareUrl, shareText, align = 'right' }: SocialShareMenuProps) {
+export function SocialShareMenu({
+  shareUrl,
+  shareText,
+  align = 'right',
+  onShare,
+}: SocialShareMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -76,6 +82,7 @@ export function SocialShareMenu({ shareUrl, shareText, align = 'right' }: Social
 
   const openShare = (url: string | undefined) => {
     if (!url) return;
+    onShare?.();
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
@@ -114,6 +121,7 @@ export function SocialShareMenu({ shareUrl, shareText, align = 'right' }: Social
             onClick={async () => {
               try {
                 await navigator.clipboard.writeText(shareUrl);
+                onShare?.();
                 setCopied(true);
               } catch {
                 setCopied(false);

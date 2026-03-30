@@ -172,6 +172,12 @@ export class PublicController {
     );
   }
 
+  @Post('prompts/:id/share')
+  sharePrompt(@Param('id') id: string, @Req() request: HttpRequest) {
+    const viewer = this.resolveOptionalViewer(request);
+    return this.publicService.sharePrompt(id, viewer?.sub);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('prompts/:id/save')
   savePrompt(@Param('id') id: string, @CurrentUser() user: AuthUser) {

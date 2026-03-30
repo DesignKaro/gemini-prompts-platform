@@ -2452,7 +2452,7 @@ export default function HomePageClient({
               className="min-h-[280px] overflow-hidden rounded-[28px] bg-cover bg-center sm:min-h-[420px] sm:rounded-[32px] lg:min-h-[560px] lg:rounded-[34px]"
               style={{
                 backgroundImage:
-                  'url(https://media.geminiprompts.io/gemini_prompts/media/2026/03/59447655a4eedf8d1686d549f3b63bfc.webp)',
+                  'url(https://media.geminiprompts.io/gemini_prompts/media/2026/03/2eea63366998b2ff86593433c67d0c31.webp)',
               }}
             />
 

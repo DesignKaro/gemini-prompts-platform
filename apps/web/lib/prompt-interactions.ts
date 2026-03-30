@@ -164,6 +164,13 @@ export async function savePrompt(promptId: string, accessToken: string) {
   });
 }
 
+export async function trackPromptShare(promptId: string, accessToken?: string | null) {
+  return requestPromptApi<{ tracked: boolean }>(`/prompts/${encodeURIComponent(promptId)}/share`, {
+    method: 'POST',
+    accessToken,
+  });
+}
+
 export async function unsavePrompt(promptId: string, accessToken: string) {
   return requestPromptApi<PromptSaveResponse>(`/prompts/${encodeURIComponent(promptId)}/save`, {
     method: 'DELETE',

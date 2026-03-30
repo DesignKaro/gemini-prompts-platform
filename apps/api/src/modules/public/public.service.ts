@@ -1773,6 +1773,21 @@ export class PublicService {
     };
   }
 
+  async sharePrompt(promptId: string, userId?: string | null) {
+    await this.prisma.$transaction(async (tx) => {
+      const prompt = await this.findPublicPromptSnapshot(promptId, tx, undefined, 'published');
+      await tx.engagementEvent.create({
+        data: {
+          promptId: prompt.id,
+          userId: userId ?? null,
+          eventType: EngagementEventType.SHARE,
+        },
+      });
+    });
+
+    return { tracked: true };
+  }
+
   async unsavePrompt(promptId: string, user: AuthUser): Promise<PromptSaveResponse> {
     let saveCount = 0;
 

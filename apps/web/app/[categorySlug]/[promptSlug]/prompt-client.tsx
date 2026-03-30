@@ -14,6 +14,7 @@ import {
   createPromptComment,
   fetchPromptComments,
   likeComment as requestLikeComment,
+  trackPromptShare,
   type PromptCommentSummary,
 } from '../../../lib/prompt-interactions';
 
@@ -149,6 +150,9 @@ export function PromptPrimaryActions({
           type="button"
           onClick={async () => {
             const ok = await writeToClipboard(shareUrl);
+            if (ok) {
+              void trackPromptShare(promptId).catch(() => null);
+            }
             setLinkCopied(ok);
             setTimeout(() => setLinkCopied(false), 1400);
           }}
@@ -163,7 +167,13 @@ export function PromptPrimaryActions({
           <span className="sr-only">{linkCopied ? 'Link copied' : 'Copy link'}</span>
         </button>
 
-        <SocialShareMenu shareUrl={shareUrl} shareText={`Check out ${title} on Gemini Prompts.`} />
+        <SocialShareMenu
+          shareUrl={shareUrl}
+          shareText={`Check out ${title} on Gemini Prompts.`}
+          onShare={() => {
+            void trackPromptShare(promptId).catch(() => null);
+          }}
+        />
       </div>
     </div>
   );
@@ -843,10 +853,12 @@ export function PromptCommentsSection({
 }
 
 export function PromptMobileBar({
+  promptId,
   title,
   promptText,
   shareUrl,
 }: {
+  promptId: string;
   title: string;
   promptText: string;
   shareUrl: string;
@@ -867,7 +879,13 @@ export function PromptMobileBar({
         >
           {copied ? 'Copied' : 'Copy prompt'}
         </button>
-        <SocialShareMenu shareUrl={shareUrl} shareText={`Check out ${title} on Gemini Prompts.`} />
+        <SocialShareMenu
+          shareUrl={shareUrl}
+          shareText={`Check out ${title} on Gemini Prompts.`}
+          onShare={() => {
+            void trackPromptShare(promptId).catch(() => null);
+          }}
+        />
       </div>
     </div>
   );

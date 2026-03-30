@@ -26,6 +26,7 @@ import {
   MdErrorOutline,
   MdEmail,
   MdContactMail,
+  MdRefresh,
 } from 'react-icons/md';
 import { BRAND_LOGO_URL } from '../../lib/site-assets';
 import {
@@ -88,6 +89,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isProfileSaving, setIsProfileSaving] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isClearingPublicCache, setIsClearingPublicCache] = useState(false);
+  const [cacheClearNotice, setCacheClearNotice] = useState<string | null>(null);
   const [profileLoadError, setProfileLoadError] = useState<string | null>(null);
   const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -126,11 +129,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const canViewNewsletterSubmissions = canViewActivity;
   const canViewContactSubmissions = hasAnyPermission(session, ['contacts:read', 'contacts:manage']);
   const canViewUsers = hasAnyPermission(session, ['users:read', 'users:manage']);
+  const canManageUsers = hasAnyPermission(session, ['users:manage']);
   const canViewMembers = isProtectedSuperadminEmail(session?.user?.email);
   const canViewRoles = hasAnyPermission(session, ['roles:read', 'roles:manage']);
   const canViewSeo = hasAnyPermission(session, ['roles:manage']);
   const canViewSeoIntegrations = isProtectedSuperadminEmail(session?.user?.email);
   const canCreateContent = canManagePrompts || canManagePosts;
+  const canClearPublicCache =
+    canManagePrompts || canManagePosts || canManageCategories || canManageTags || canManageUsers;
+
+  const handleClearPublicCache = async () => {
+    if (isClearingPublicCache) return;
+    setIsClearingPublicCache(true);
+    setCacheClearNotice(null);
+
+    try {
+      const response = await fetch('/api/admin/cache/clear', {
+        method: 'POST',
+        cache: 'no-store',
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | { message?: string }
+        | null;
+
+      if (!response.ok) {
+        throw new Error(payload?.message || 'Unable to clear cache right now.');
+      }
+
+      setCacheClearNotice(payload?.message || 'Public site cache cleared.');
+      router.refresh();
+    } catch (error) {
+      setCacheClearNotice(error instanceof Error ? error.message : 'Unable to clear cache right now.');
+    } finally {
+      setIsClearingPublicCache(false);
+    }
+  };
 
   const navItems = useMemo<DashboardNavItem[]>(() => {
     const contentChildren: DashboardNavChild[] = [
@@ -921,6 +954,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-3">
+            {canClearPublicCache ? (
+              <button
+                type="button"
+                onClick={() => void handleClearPublicCache()}
+                disabled={isClearingPublicCache}
+                className="hidden items-center gap-2 rounded-full border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 sm:flex"
+                title="Clear public site cache"
+                aria-label="Clear public site cache"
+              >
+                <MdRefresh size={16} className={isClearingPublicCache ? 'animate-spin' : ''} />
+                {isClearingPublicCache ? 'Clearing...' : 'Clear cache'}
+              </button>
+            ) : null}
             {canManageCategories &&
             pathname?.startsWith('/dashboard/categories') &&
             !pathname.includes('/trash') ? (
@@ -983,6 +1029,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             ) : null}
           </div>
         </header>
+
+        {cacheClearNotice ? (
+          <div className="border-b border-[#eef2f6] bg-[#f8fbff] px-4 py-2 text-[0.82rem] text-[#445066] lg:px-8">
+            {cacheClearNotice}
+          </div>
+        ) : null}
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto bg-[#f7f9fc] p-4 lg:p-8">

@@ -1,7 +1,9 @@
 import { resolveApiBaseUrl } from './utils/api-base-url';
+import { getPublicCacheVersion } from './public-cache-version';
 
 const API_BASE_URL = resolveApiBaseUrl();
 const DEFAULT_PUBLIC_REVALIDATE_SECONDS = 600;
+export const PUBLIC_CONTENT_CACHE_TAG = 'public-content';
 const DEV_WARNING_THROTTLE_MS = 15_000;
 const DEV_API_UNAVAILABLE_COOLDOWN_MS = 2_500;
 
@@ -201,8 +203,12 @@ async function fetchPublicApi<T>(
     });
   }
 
-  const query = searchParams.toString();
-  const url = `${API_BASE_URL}/api/public/${path}${query ? `?${query}` : ''}`;
+  const cacheVersion = getPublicCacheVersion();
+  if (cacheVersion) {
+    searchParams.set('_v', cacheVersion);
+  }
+  const resolvedQuery = searchParams.toString();
+  const url = `${API_BASE_URL}/api/public/${path}${resolvedQuery ? `?${resolvedQuery}` : ''}`;
   const shouldBypassCache = options.noStore === true || process.env.NODE_ENV !== 'production';
   const resolvedRevalidate = shouldBypassCache
     ? null
@@ -216,7 +222,10 @@ async function fetchPublicApi<T>(
     response = await fetchWithRetries(
       url,
       resolvedRevalidate
-        ? { headers: requestHeaders, next: { revalidate: resolvedRevalidate } }
+        ? {
+            headers: requestHeaders,
+            next: { revalidate: resolvedRevalidate, tags: [PUBLIC_CONTENT_CACHE_TAG] },
+          }
         : { headers: requestHeaders, cache: 'no-store' },
     );
   } catch (error) {

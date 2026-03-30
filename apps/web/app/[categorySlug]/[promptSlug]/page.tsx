@@ -254,7 +254,12 @@ async function PromptDetailPageContent({ params }: PageProps) {
       <PromptWidgetHydrator />
 
       {!prompt.isLocked ? (
-        <PromptMobileBar title={prompt.title} promptText={promptText} shareUrl={canonicalUrl} />
+        <PromptMobileBar
+          promptId={prompt.id}
+          title={prompt.title}
+          promptText={promptText}
+          shareUrl={canonicalUrl}
+        />
       ) : null}
 
       <div className="page-container">

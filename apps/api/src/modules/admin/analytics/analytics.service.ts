@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { EngagementEventType, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   AnalyticsPromptsQueryDto,
@@ -69,7 +69,10 @@ export class AnalyticsService {
       postViewsTotal,
       newUsersCount,
       revenueTotal,
-      engagementByType,
+      engagementEventCounts,
+      likesCount,
+      savesCount,
+      shareCount,
       topPrompts,
       topPosts,
       viewSeriesRows,
@@ -92,6 +95,18 @@ export class AnalyticsService {
         where: { createdAt: { gte: from } },
         _count: { _all: true },
       }),
+      this.prisma.promptLike.count({
+        where: { createdAt: { gte: from } },
+      }),
+      this.prisma.savedPrompt.count({
+        where: { createdAt: { gte: from } },
+      }),
+      this.prisma.engagementEvent.count({
+        where: {
+          createdAt: { gte: from },
+          eventType: 'SHARE',
+        },
+      }),
       this.prisma.prompt.findMany({
         where: { deletedAt: null },
         orderBy: { viewCount: 'desc' },
@@ -113,9 +128,9 @@ export class AnalyticsService {
       `,
     ]);
 
-    const engagementMap = new Map<EngagementEventType, number>();
-    for (const row of engagementByType) {
-      engagementMap.set(row.eventType, row._count._all);
+    const engagementEventCountMap = new Map<string, number>();
+    for (const row of engagementEventCounts) {
+      engagementEventCountMap.set(row.eventType, row._count._all);
     }
 
     const seriesMap = new Map<string, number>();
@@ -153,10 +168,10 @@ export class AnalyticsService {
         newUsers: newUsersCount,
       },
       engagement: {
-        views: engagementMap.get('VIEW') ?? 0,
-        likes: engagementMap.get('LIKE') ?? 0,
-        saves: engagementMap.get('SAVE') ?? 0,
-        shares: engagementMap.get('SHARE') ?? 0,
+        views: engagementEventCountMap.get('VIEW') ?? 0,
+        likes: likesCount,
+        saves: savesCount,
+        shares: shareCount,
       },
       series: {
         labels: seriesLabels,
