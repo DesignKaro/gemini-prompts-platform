@@ -2452,7 +2452,7 @@ export default function HomePageClient({
               className="min-h-[280px] overflow-hidden rounded-[28px] bg-cover bg-center sm:min-h-[420px] sm:rounded-[32px] lg:min-h-[560px] lg:rounded-[34px]"
               style={{
                 backgroundImage:
-                  'url(https://media.geminiprompts.io/gemini_prompts/media/2026/03/0174a6eeeef99c013ff586162a9fff7c.webp)',
+                  'url(https://media.geminiprompts.io/gemini_prompts/media/2026/03/59447655a4eedf8d1686d549f3b63bfc.webp)',
               }}
             />
 
@@ -2543,16 +2543,12 @@ export default function HomePageClient({
                   'url(https://media.geminiprompts.io/gemini_prompts/media/2026/03/612bbc3b63c12674cfc84d784cf94e9f.webp)',
               }}
             >
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0f172acc] via-[#0f172a26] to-transparent" />
+              <div className="absolute inset-0 bg-[#0b1120]/22" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0f172ae0] via-[#0f172a66] to-transparent" />
               <div className="relative z-10 flex h-full min-h-[196px] flex-col justify-end sm:min-h-[220px]">
                 <h3 className="max-w-[10rem] text-[2.5rem] leading-[0.95] tracking-[-0.06em] text-white sm:text-[3.6rem]">
                   Gemini Prompt Trends
                 </h3>
-              </div>
-              <div className="absolute bottom-4 right-4 z-10 flex h-[92px] w-[92px] items-center justify-center bg-[#ff6631] text-center text-[0.88rem] font-medium uppercase leading-tight text-white [clip-path:polygon(50%_0%,61%_24%,86%_7%,74%_32%,100%_34%,77%_50%,100%_66%,74%_68%,86%_93%,61%_76%,50%_100%,39%_76%,14%_93%,26%_68%,0%_66%,23%_50%,0%_34%,26%_32%,14%_7%,39%_24%)] sm:bottom-5 sm:right-5 sm:h-[118px] sm:w-[118px] sm:text-[1rem]">
-                NEW
-                <br />
-                WEEKLY
               </div>
             </article>
           </div>
