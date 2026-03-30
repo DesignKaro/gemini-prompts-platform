@@ -3333,9 +3333,9 @@ export default function HomePageClient({
                     <button
                       type="button"
                       onClick={() => toggleFaq(item.id)}
-                      className="flex w-full items-start gap-4 text-left"
+                      className="flex w-full items-center gap-4 text-left sm:items-start"
                     >
-                      <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#d5ea52] text-[1.15rem] leading-none text-[#101010]">
+                      <span className="inline-flex h-10 w-10 min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full bg-[#d5ea52] text-[1.6rem] font-medium leading-none text-[#101010] sm:mt-0.5 sm:h-7 sm:w-7 sm:min-h-7 sm:min-w-7 sm:text-[1.15rem] sm:font-normal">
                         {isOpen ? '−' : '+'}
                       </span>
                       <span className="text-[1.2rem] leading-[1.35] tracking-[-0.01em] text-[#141922] sm:text-[1.45rem]">

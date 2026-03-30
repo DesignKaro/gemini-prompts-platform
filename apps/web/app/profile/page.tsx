@@ -569,7 +569,7 @@ function ProfilePageContent() {
         <div className="page-container-wide">
           <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
             <div className="rounded-[32px] border border-[#e2e6ee] bg-white p-6 sm:p-8 lg:p-10">
-              <div className="flex flex-wrap items-center gap-5 sm:flex-nowrap sm:justify-between">
+              <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
                   <AuthorAvatar
                     name={avatarFallbackName}
@@ -591,7 +591,7 @@ function ProfilePageContent() {
                     ) : null}
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex w-full flex-wrap gap-2 sm:w-auto">
                   <button
                     type="button"
                     onClick={() => {
@@ -599,15 +599,15 @@ function ProfilePageContent() {
                       setIsEditOpen(true);
                     }}
                     disabled={status !== 'authenticated'}
-                    className="rounded-full border border-[#d7dde6] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] transition-colors duration-300 hover:border-[#0f1116] hover:bg-[#0f1116] hover:text-white"
+                    className="w-full rounded-full border border-[#d7dde6] bg-white px-4 py-2 text-[0.85rem] text-[#0f1116] transition-colors duration-300 hover:border-[#0f1116] hover:bg-[#0f1116] hover:text-white sm:w-auto"
                   >
                     Edit profile
                   </button>
-                  <div className="relative" data-share-menu>
+                  <div className="relative w-full sm:w-auto" data-share-menu>
                     <button
                       type="button"
                       onClick={() => setIsShareOpen((prev) => !prev)}
-                      className="rounded-full bg-[#0f1116] px-4 py-2 text-[0.85rem] text-white transition-transform duration-300 hover:-translate-y-0.5"
+                      className="w-full rounded-full bg-[#0f1116] px-4 py-2 text-[0.85rem] text-white transition-transform duration-300 hover:-translate-y-0.5 sm:w-auto"
                       aria-expanded={isShareOpen}
                       aria-haspopup="menu"
                     >
@@ -616,7 +616,7 @@ function ProfilePageContent() {
                     {isShareOpen ? (
                       <div
                         role="menu"
-                        className="absolute right-0 top-[calc(100%+10px)] z-40 flex max-w-[min(calc(100vw-1.5rem),22rem)] flex-wrap items-center gap-2 rounded-[20px] border border-[#e6e9ef] bg-white px-3 py-2.5 shadow-[0_8px_20px_rgba(15,18,24,0.08)] sm:left-0 sm:right-auto sm:max-w-none sm:flex-nowrap"
+                        className="absolute left-1/2 top-[calc(100%+10px)] z-40 flex w-[min(calc(100vw-2rem),22rem)] -translate-x-1/2 flex-wrap items-center gap-2 rounded-[20px] border border-[#e6e9ef] bg-white px-3 py-2.5 shadow-[0_8px_20px_rgba(15,18,24,0.08)] sm:left-0 sm:w-auto sm:translate-x-0 sm:flex-nowrap"
                       >
                         <button
                           type="button"
@@ -887,47 +887,83 @@ function ProfilePageContent() {
                   No activity yet. Save or publish a prompt to see updates here.
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-[16px] border border-[#e8ecf4]">
-                  <table className="w-full min-w-[560px] text-left">
-                    <thead className="bg-[#f8fafd] text-[0.7rem] uppercase tracking-[0.08em] text-[#7a8292]">
-                      <tr>
-                        <th className="px-3 py-2.5 font-semibold">Time</th>
-                        <th className="px-3 py-2.5 font-semibold">Activity</th>
-                        <th className="px-3 py-2.5 font-semibold">Prompt</th>
-                        <th className="px-3 py-2.5 font-semibold">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white">
-                      {activityTimeline.map((item) => (
-                        <tr key={item.id} className="border-t border-[#eef1f6] align-middle">
-                          <td className="px-3 py-2.5">
-                            <span
-                              className={`inline-flex rounded-full px-2 py-0.5 text-[0.72rem] ${item.tone}`}
+                <>
+                  <div className="space-y-2.5 md:hidden">
+                    {activityTimeline.map((item) => (
+                      <article
+                        key={`${item.id}-mobile`}
+                        className="rounded-[16px] border border-[#e8ecf4] bg-white p-3.5"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-[0.88rem] font-medium text-[#10141c]">{item.title}</p>
+                            <p className="mt-1 text-[0.8rem] text-[#667080]">{item.detail}</p>
+                          </div>
+                          <span
+                            className={`inline-flex rounded-full px-2 py-0.5 text-[0.72rem] ${item.tone}`}
+                          >
+                            {item.time}
+                          </span>
+                        </div>
+                        <div className="mt-3">
+                          {item.promptSlug ? (
+                            <Link
+                              href={`/prompt/${item.promptSlug}`}
+                              className="inline-flex rounded-full border border-[#d4d9e2] px-2.5 py-1 text-[0.72rem] text-[#10141c] transition-colors duration-300 hover:border-[#10141c] hover:bg-[#10141c] hover:text-white"
                             >
-                              {item.time}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2.5 text-[0.88rem] font-medium text-[#10141c]">
-                            {item.title}
-                          </td>
-                          <td className="px-3 py-2.5 text-[0.82rem] text-[#667080]">{item.detail}</td>
-                          <td className="px-3 py-2.5">
-                            {item.promptSlug ? (
-                              <Link
-                                href={`/prompt/${item.promptSlug}`}
-                                className="inline-flex rounded-full border border-[#d4d9e2] px-2.5 py-1 text-[0.72rem] text-[#10141c] transition-colors duration-300 hover:border-[#10141c] hover:bg-[#10141c] hover:text-white"
-                              >
-                                Open
-                              </Link>
-                            ) : (
-                              <span className="text-[0.76rem] text-[#a0a8b6]">—</span>
-                            )}
-                          </td>
+                              Open
+                            </Link>
+                          ) : (
+                            <span className="text-[0.76rem] text-[#a0a8b6]">—</span>
+                          )}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                  <div className="hidden overflow-x-auto rounded-[16px] border border-[#e8ecf4] md:block">
+                    <table className="w-full min-w-[560px] text-left">
+                      <thead className="bg-[#f8fafd] text-[0.7rem] uppercase tracking-[0.08em] text-[#7a8292]">
+                        <tr>
+                          <th className="px-3 py-2.5 font-semibold">Time</th>
+                          <th className="px-3 py-2.5 font-semibold">Activity</th>
+                          <th className="px-3 py-2.5 font-semibold">Prompt</th>
+                          <th className="px-3 py-2.5 font-semibold">Action</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="bg-white">
+                        {activityTimeline.map((item) => (
+                          <tr key={item.id} className="border-t border-[#eef1f6] align-middle">
+                            <td className="px-3 py-2.5">
+                              <span
+                                className={`inline-flex rounded-full px-2 py-0.5 text-[0.72rem] ${item.tone}`}
+                              >
+                                {item.time}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2.5 text-[0.88rem] font-medium text-[#10141c]">
+                              {item.title}
+                            </td>
+                            <td className="px-3 py-2.5 text-[0.82rem] text-[#667080]">
+                              {item.detail}
+                            </td>
+                            <td className="px-3 py-2.5">
+                              {item.promptSlug ? (
+                                <Link
+                                  href={`/prompt/${item.promptSlug}`}
+                                  className="inline-flex rounded-full border border-[#d4d9e2] px-2.5 py-1 text-[0.72rem] text-[#10141c] transition-colors duration-300 hover:border-[#10141c] hover:bg-[#10141c] hover:text-white"
+                                >
+                                  Open
+                                </Link>
+                              ) : (
+                                <span className="text-[0.76rem] text-[#a0a8b6]">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -985,7 +1021,7 @@ function ProfilePageContent() {
                     </div>
                     <Link
                       href={`/prompt/${prompt.slug}`}
-                      className="rounded-full border border-[#d4d9e2] px-3 py-1.5 text-[0.72rem] text-[#10141c] transition-colors duration-300 hover:border-[#10141c] hover:bg-[#10141c] hover:text-white"
+                      className="self-start rounded-full border border-[#d4d9e2] px-3 py-1.5 text-[0.72rem] text-[#10141c] transition-colors duration-300 hover:border-[#10141c] hover:bg-[#10141c] hover:text-white sm:self-auto"
                     >
                       Open
                     </Link>

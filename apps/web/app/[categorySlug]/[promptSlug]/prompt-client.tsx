@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { FaBookmark, FaHeart, FaRegBookmark, FaRegHeart, FaReply } from 'react-icons/fa6';
+import { FaBookmark, FaHeart, FaRegBookmark, FaRegComment, FaRegHeart, FaReply } from 'react-icons/fa6';
 import { LuCheck, LuCopy, LuLink } from 'react-icons/lu';
 import { AuthorAvatar } from '../../components/author-avatar';
 import { InlineSpinner } from '../../components/ui/inline-spinner';
@@ -857,17 +857,62 @@ export function PromptMobileBar({
   title,
   promptText,
   shareUrl,
+  initialLikeCount,
+  initialSaveCount,
+  initialCommentCount,
 }: {
   promptId: string;
   title: string;
   promptText: string;
   shareUrl: string;
+  initialLikeCount: number;
+  initialSaveCount: number;
+  initialCommentCount: number;
 }) {
   const [copied, setCopied] = useState(false);
+  const { likeCount, commentCount, likedByIp, likePending, likePrompt } = usePromptInteractions({
+    promptId,
+    initialLikeCount,
+    initialSaveCount,
+    initialCommentCount,
+  });
 
   return (
     <div className="fixed inset-x-0 bottom-4 z-40 px-4 sm:hidden">
-      <div className="mx-auto flex max-w-[560px] items-center justify-between gap-3 rounded-full border border-[#e6e9f2] bg-white/90 p-2 shadow-[0_18px_60px_rgba(16,24,40,0.12)] backdrop-blur">
+      <div className="mx-auto flex max-w-[560px] items-center justify-between gap-3 rounded-full border border-[#e6e9f2] bg-white/95 p-2 shadow-[0_24px_70px_rgba(10,15,25,0.24),0_8px_24px_rgba(10,15,25,0.12)] backdrop-blur">
+        <button
+          type="button"
+          onClick={() => void likePrompt()}
+          disabled={likedByIp || likePending}
+          className={`inline-flex h-11 min-w-[3.5rem] items-center justify-center gap-1 rounded-full border px-3 text-[0.86rem] font-medium transition-colors ${
+            likedByIp
+              ? 'border-[#f4c9d6] bg-[#ffecef] text-[#e11d48]'
+              : 'border-[#e0e3e9] bg-[#f1f3f6] text-[#2d333e] hover:border-[#c9d0da] hover:bg-[#e8ecf2]'
+          } disabled:cursor-not-allowed disabled:opacity-80`}
+          aria-pressed={likedByIp}
+          title={likedByIp ? 'Liked' : 'Like prompt'}
+        >
+          {likePending ? (
+            <InlineSpinner size="xs" className={likedByIp ? 'text-[#e11d48]' : 'text-[#2d333e]'} />
+          ) : likedByIp ? (
+            <FaHeart className="h-3.5 w-3.5" />
+          ) : (
+            <FaRegHeart className="h-3.5 w-3.5" />
+          )}
+          <span>{likeCount}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const commentsEl = document.getElementById('comments');
+            commentsEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+          className="inline-flex h-11 min-w-[3.5rem] items-center justify-center gap-1 rounded-full border border-[#e0e3e9] bg-[#f1f3f6] px-3 text-[0.86rem] font-medium text-[#2d333e] transition-colors hover:border-[#c9d0da] hover:bg-[#e8ecf2]"
+          title="Jump to comments"
+        >
+          <FaRegComment className="h-3.5 w-3.5" />
+          <span>{commentCount}</span>
+        </button>
         <button
           type="button"
           onClick={async () => {
@@ -882,6 +927,7 @@ export function PromptMobileBar({
         <SocialShareMenu
           shareUrl={shareUrl}
           shareText={`Check out ${title} on Gemini Prompts.`}
+          menuPlacement="above"
           onShare={() => {
             void trackPromptShare(promptId).catch(() => null);
           }}

@@ -259,6 +259,9 @@ async function PromptDetailPageContent({ params }: PageProps) {
           title={prompt.title}
           promptText={promptText}
           shareUrl={canonicalUrl}
+          initialLikeCount={prompt.likeCount}
+          initialSaveCount={prompt.saveCount}
+          initialCommentCount={prompt.commentCount}
         />
       ) : null}
 

@@ -15,6 +15,7 @@ type SocialShareMenuProps = {
   shareUrl: string;
   shareText: string;
   align?: 'left' | 'right';
+  menuPlacement?: 'below' | 'above';
   onShare?: () => void;
 };
 
@@ -22,6 +23,7 @@ export function SocialShareMenu({
   shareUrl,
   shareText,
   align = 'right',
+  menuPlacement = 'below',
   onShare,
 }: SocialShareMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -86,7 +88,12 @@ export function SocialShareMenu({
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const menuPositionClass = align === 'left' ? 'left-0' : 'right-0';
+  const menuPositionClass =
+    align === 'left'
+      ? 'left-0 sm:left-0 sm:translate-x-0'
+      : 'left-1/2 -translate-x-1/2 sm:left-auto sm:right-0 sm:translate-x-0';
+  const menuPlacementClass =
+    menuPlacement === 'above' ? 'bottom-[calc(100%+12px)]' : 'top-[calc(100%+10px)]';
 
   return (
     <div ref={containerRef} className="relative" data-share-menu>
@@ -104,7 +111,7 @@ export function SocialShareMenu({
       {isOpen ? (
         <div
           role="menu"
-          className={`absolute ${menuPositionClass} top-[calc(100%+10px)] z-40 flex max-w-[min(calc(100vw-1.5rem),22rem)] flex-wrap items-center gap-2 rounded-[20px] border border-[#e6e9ef] bg-white px-3 py-2.5 shadow-[0_8px_20px_rgba(15,18,24,0.08)] sm:max-w-none sm:flex-nowrap`}
+          className={`absolute ${menuPositionClass} ${menuPlacementClass} z-50 flex w-[min(calc(100vw-2rem),22rem)] flex-nowrap items-center gap-2 overflow-x-auto rounded-[20px] border border-[#e6e9ef] bg-white px-3 py-2.5 shadow-[0_14px_34px_rgba(15,18,24,0.18)] sm:w-auto sm:max-w-none`}
         >
           <button
             type="button"
