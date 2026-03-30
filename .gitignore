@@ -19,6 +19,7 @@ apps/web/.next.broken-*/
 apps/web/.next.rebuild-*/
 apps/web/.next.stale-*/
 apps/web/.next_stale_*/
+*.tsbuildinfo
 dist
 coverage
 .turbo
@@ -35,6 +36,7 @@ logs
 
 # Local npm cache (should never be committed)
 .npm-cache/
+backups/
 
 # Prisma
 apps/api/prisma/dev.db

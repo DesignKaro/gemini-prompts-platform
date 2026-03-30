@@ -10,6 +10,7 @@ import {
   PromptVisibility,
   WebsitePromptKind,
 } from '@prisma/client';
+import { MediaStorageService } from '../../media-storage/media-storage.service';
 
 export type PromptCreateInput = {
   title: string;
@@ -45,6 +46,7 @@ export class PromptsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly mediaStorageService: MediaStorageService,
   ) {}
 
   private readonly mediaRefPrefix = 'media:';
@@ -67,6 +69,97 @@ export class PromptsService {
       .slice(0, 5);
   }
 
+  private async buildPromptMediaUsageRows(
+    targetId: string,
+    featuredImageUrl?: string | null,
+    galleryImageUrls?: unknown,
+  ): Promise<Prisma.MediaUsageCreateManyInput[]> {
+    const rows: Prisma.MediaUsageCreateManyInput[] = [];
+    const dedupe = new Set<string>();
+    const pendingByUrl = new Map<string, Set<string>>();
+
+    const addRow = (assetId: string, field: string) => {
+      const key = `${assetId}:${field}`;
+      if (dedupe.has(key)) return;
+      dedupe.add(key);
+      rows.push({
+        assetId,
+        targetType: 'PROMPT',
+        targetId,
+        field,
+      });
+    };
+
+    const registerField = (rawValue: string | null | undefined, field: string) => {
+      if (typeof rawValue !== 'string') return;
+      const normalized = rawValue.trim();
+      if (!normalized) return;
+
+      const refId = this.extractMediaRef(normalized);
+      if (refId) {
+        addRow(refId, field);
+        return;
+      }
+
+      if (!pendingByUrl.has(normalized)) {
+        pendingByUrl.set(normalized, new Set<string>());
+      }
+      pendingByUrl.get(normalized)?.add(field);
+    };
+
+    registerField(featuredImageUrl ?? null, 'featuredImageUrl');
+    for (const galleryEntry of this.normalizeGalleryImageUrls(galleryImageUrls)) {
+      registerField(galleryEntry, 'galleryImageUrls');
+    }
+
+    if (pendingByUrl.size > 0) {
+      const assets = await this.prisma.mediaAsset.findMany({
+        where: {
+          url: { in: Array.from(pendingByUrl.keys()) },
+        },
+        select: { id: true, url: true },
+      });
+
+      const assetByUrl = new Map(assets.map((asset) => [asset.url, asset.id]));
+      for (const [url, fields] of pendingByUrl) {
+        const assetId = assetByUrl.get(url);
+        if (!assetId) continue;
+        for (const field of fields) {
+          addRow(assetId, field);
+        }
+      }
+    }
+
+    return rows;
+  }
+
+  private async syncPromptMediaUsage(
+    targetId: string,
+    featuredImageUrl?: string | null,
+    galleryImageUrls?: unknown,
+  ) {
+    const rows = await this.buildPromptMediaUsageRows(
+      targetId,
+      featuredImageUrl,
+      galleryImageUrls,
+    );
+
+    await this.prisma.mediaUsage.deleteMany({
+      where: {
+        targetType: 'PROMPT',
+        targetId,
+      },
+    });
+
+    if (rows.length === 0) {
+      return;
+    }
+
+    await this.prisma.mediaUsage.createMany({
+      data: rows,
+    });
+  }
+
   private normalizeGalleryImageInput(
     value?: string[] | null,
   ): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput | undefined {
@@ -83,6 +176,22 @@ export class PromptsService {
       .slice(0, 5);
 
     return normalized.length > 0 ? normalized : Prisma.DbNull;
+  }
+
+  private async normalizeGalleryImageUrlsForStorage(value?: string[] | null) {
+    if (value === undefined || value === null) {
+      return value;
+    }
+
+    const normalized: string[] = [];
+    for (const entry of value) {
+      const hostedUrl = await this.mediaStorageService.maybeUploadImageDataUrl(entry, 'prompts');
+      if (typeof hostedUrl === 'string' && hostedUrl.trim().length > 0) {
+        normalized.push(hostedUrl.trim());
+      }
+    }
+
+    return normalized;
   }
 
   private async hydratePromptImages<
@@ -442,12 +551,21 @@ export class PromptsService {
       scheduledAt: data.scheduledAt,
     });
 
+    const hostedFeaturedImage = await this.mediaStorageService.maybeUploadImageDataUrl(
+      data.featuredImageUrl,
+      'prompts',
+    );
+    const hostedGallery = await this.normalizeGalleryImageUrlsForStorage(data.galleryImageUrls);
+    const normalizedContent = (
+      await this.mediaStorageService.replaceInlineImageDataUrls(data.content, 'editor')
+    ).html;
+
     const createData: Prisma.PromptCreateInput = {
         author: { connect: { id: authorId } },
         title,
         slug,
         description: data.description ?? null,
-        content: data.content,
+        content: normalizedContent,
         promptType: data.promptType,
         imageMode: data.imageMode ?? null,
         websitePromptKind: data.websitePromptKind ?? null,
@@ -455,8 +573,8 @@ export class PromptsService {
         websiteFeature: data.websiteFeature ?? null,
         visibility: data.visibility ?? 'FREE',
         status: publicationState.status,
-        featuredImageUrl: data.featuredImageUrl ?? null,
-        galleryImageUrls: this.normalizeGalleryImageInput(data.galleryImageUrls) ?? Prisma.DbNull,
+        featuredImageUrl: hostedFeaturedImage ?? null,
+        galleryImageUrls: this.normalizeGalleryImageInput(hostedGallery) ?? Prisma.DbNull,
         metaTitle: data.metaTitle ?? null,
         metaDescription: data.metaDescription ?? null,
         seoTitle: data.seoTitle ?? null,
@@ -478,6 +596,11 @@ export class PromptsService {
     const created = await this.prisma.prompt.create({
       data: createData,
     });
+    await this.syncPromptMediaUsage(
+      created.id,
+      created.featuredImageUrl,
+      created.galleryImageUrls,
+    );
 
     await this.auditService.log({
       actorId: authorId,
@@ -530,11 +653,21 @@ export class PromptsService {
       scheduledAt: data.scheduledAt,
     });
 
+    const hostedFeaturedImage =
+      data.featuredImageUrl === undefined
+        ? undefined
+        : await this.mediaStorageService.maybeUploadImageDataUrl(data.featuredImageUrl, 'prompts');
+    const hostedGallery = await this.normalizeGalleryImageUrlsForStorage(data.galleryImageUrls);
+    const normalizedContent =
+      data.content === undefined
+        ? undefined
+        : (await this.mediaStorageService.replaceInlineImageDataUrls(data.content, 'editor')).html;
+
     const updateData: Prisma.PromptUpdateInput = {
         title: data.title?.trim(),
         slug: data.slug?.trim(),
         description: data.description,
-        content: data.content,
+        content: normalizedContent,
         promptType: data.promptType,
         imageMode: data.imageMode,
         websitePromptKind: data.websitePromptKind,
@@ -542,11 +675,11 @@ export class PromptsService {
         websiteFeature: data.websiteFeature,
         visibility: data.visibility,
         status: publicationState.status,
-        featuredImageUrl: data.featuredImageUrl,
+        featuredImageUrl: hostedFeaturedImage,
         galleryImageUrls:
-          data.galleryImageUrls === undefined
+          hostedGallery === undefined
             ? undefined
-            : this.normalizeGalleryImageInput(data.galleryImageUrls),
+            : this.normalizeGalleryImageInput(hostedGallery),
         metaTitle: data.metaTitle,
         metaDescription: data.metaDescription,
         seoTitle: data.seoTitle,
@@ -572,6 +705,11 @@ export class PromptsService {
       where: { id },
       data: updateData,
     });
+    await this.syncPromptMediaUsage(
+      updated.id,
+      updated.featuredImageUrl,
+      updated.galleryImageUrls,
+    );
 
     await this.auditService.log({
       actorId,

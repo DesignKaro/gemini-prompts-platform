@@ -3,13 +3,18 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
@@ -19,6 +24,7 @@ import { MediaService } from './media.service';
 import { ListMediaQueryDto } from './dto/list-media-query.dto';
 import { CreateMediaDto } from './dto/create-media.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
+import { UploadMediaDto } from './dto/upload-media.dto';
 import { IdParamDto } from '../../../common/dto/id-param.dto';
 
 @ApiTags('Admin Media')
@@ -51,6 +57,22 @@ export class MediaController {
   @Permissions('media:manage')
   create(@CurrentUser() user: AuthUser, @Body() body: CreateMediaDto) {
     return this.mediaService.create(user.sub, body);
+  }
+
+  @Post('upload')
+  @Permissions('media:manage')
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 12 * 1024 * 1024 },
+    }),
+  )
+  upload(
+    @CurrentUser() user: AuthUser,
+    @UploadedFile() file: { buffer: Buffer; mimetype: string; originalname: string },
+    @Body() body: UploadMediaDto,
+  ) {
+    return this.mediaService.uploadFile(user.sub, file, body);
   }
 
   @Patch(':id')

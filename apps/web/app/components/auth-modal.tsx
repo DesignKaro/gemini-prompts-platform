@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { getAuthRedirectTarget, redirectToAuthPath } from '../../lib/utils/auth-callback';
+import { LoadingButton } from './ui/loading-button';
 
 type AuthModalProps = {
   isOpen?: boolean;
@@ -175,6 +176,7 @@ export function AuthModal({
   const [passwordError, setPasswordError] = useState('');
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const firstFocusableRef = useRef<HTMLButtonElement>(null);
 
@@ -192,6 +194,7 @@ export function AuthModal({
     setPasswordFocused(false);
     setEmailEditable(false);
     setPasswordEditable(false);
+    setGoogleSubmitting(false);
 
     const focusTimer = window.setTimeout(() => {
       firstFocusableRef.current?.focus();
@@ -343,6 +346,16 @@ export function AuthModal({
       );
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleContinue = async () => {
+    if (googleSubmitting) return;
+    setGoogleSubmitting(true);
+    try {
+      await signIn('google', { callbackUrl });
+    } finally {
+      setGoogleSubmitting(false);
     }
   };
 
@@ -640,14 +653,16 @@ export function AuthModal({
           ) : null}
         </div>
 
-        <button
+        <LoadingButton
           type="button"
+          pending={isSubmitting}
+          pendingLabel="Please wait..."
+          spinnerSize="xs"
           className="mt-3.5 h-[54px] w-full rounded-[14px] bg-[#1f6bff] text-[1rem] leading-none text-white transition hover:bg-[#1c5ddd] disabled:cursor-not-allowed disabled:opacity-70"
           onClick={handleEmailContinue}
-          disabled={isSubmitting}
         >
-          {isSubmitting ? 'Please wait...' : 'Continue'}
-        </button>
+          Continue
+        </LoadingButton>
         {formError ? (
           <p className="mt-3 text-center text-[0.95rem] leading-[1.3] text-[#c94040]">
             {formError}
@@ -662,11 +677,17 @@ export function AuthModal({
           <span className="h-px flex-1 bg-[#e5e7ec]" />
         </div>
 
-        <button
+        <LoadingButton
           type="button"
+          pending={googleSubmitting}
+          pendingLabel="Please wait..."
+          spinnerSize="xs"
           aria-label="Continue with Google"
           className="mt-4 flex h-[50px] w-full items-center justify-center gap-3 rounded-[12px] border border-[#d6dae2] bg-white text-[0.95rem] leading-none text-[#161a22] transition hover:border-[#bbc2ce]"
-          onClick={() => signIn('google', { callbackUrl })}
+          onClick={() => {
+            void handleGoogleContinue();
+          }}
+          disabled={isSubmitting}
         >
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f6f7fa]">
             <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 shrink-0">
@@ -689,7 +710,7 @@ export function AuthModal({
             </svg>
           </span>
           <span>Continue with Google</span>
-        </button>
+        </LoadingButton>
       </div>
     </div>
   );

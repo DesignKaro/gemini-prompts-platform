@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
-import faviconLogo from '../../Assets/favicon.svg';
+import { FAVICON_LOGO_URL } from '../../lib/site-assets';
 import { AuthModal } from './auth-modal';
 import { MobileMenu } from './mobile-menu';
 import { SearchModal } from './search-modal';
@@ -320,12 +320,13 @@ export function SiteHeader() {
                   Gemini
                 </span>
                 <Image
-                  src={faviconLogo}
+                  src={FAVICON_LOGO_URL}
                   alt=""
                   width={28}
                   height={28}
                   className="h-[1.55rem] w-[1.55rem] object-contain sm:h-[2.25rem] sm:w-[2.25rem]"
                   priority
+                  unoptimized
                   aria-hidden="true"
                 />
                 <span className="text-[0.82rem] font-normal uppercase leading-none tracking-[0.025em] text-[#0e1015] sm:text-[1.15rem]">

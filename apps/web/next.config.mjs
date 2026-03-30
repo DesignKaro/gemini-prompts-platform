@@ -32,6 +32,14 @@ const nextConfig = {
         protocol: 'https',
         hostname: 's3.amazonaws.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'media.argro.io',
+      },
+      {
+        protocol: 'https',
+        hostname: 'media.geminiprompts.io',
+      },
     ],
   },
   async redirects() {

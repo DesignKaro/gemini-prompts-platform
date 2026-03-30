@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { useAdminApi } from '../../../components/dashboard/use-admin-api';
 import { ActionError } from '../../../components/dashboard/action-error';
+import { LoadingButton } from '../../../components/ui/loading-button';
 
 const RichTextEditor = dynamic(() => import('../../../components/rich-text-editor'), {
   ssr: false,
@@ -200,6 +201,7 @@ export default function CreateContentPage() {
   const [publishResult, setPublishResult] = useState<PublishResult>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [savingTarget, setSavingTarget] = useState<Status | null>(null);
 
   useEffect(() => {
     setEditId(editParam);
@@ -692,25 +694,20 @@ export default function CreateContentPage() {
       throw new Error('Image must be 5MB or smaller.');
     }
 
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(new Error('Unable to read image file.'));
-      reader.readAsDataURL(file);
-    });
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('title', file.name);
 
-    const uploaded = await request<{ id?: string; url?: string | null }>('/api/admin/media', {
+    const uploaded = await request<{ id?: string; url?: string | null }>('/api/admin/media/upload', {
       method: 'POST',
       actionName: 'dashboard.media.create',
-      body: JSON.stringify({
-        title: file.name,
-        url: dataUrl,
-        mime: file.type,
-        size: file.size,
-      }),
+      body: formData,
     });
 
-    const uploadedUrl = uploaded.url?.trim() || dataUrl;
+    const uploadedUrl = uploaded.url?.trim();
+    if (!uploadedUrl) {
+      throw new Error('Upload succeeded but no media URL was returned.');
+    }
     const persistedValue =
       typeof uploaded.id === 'string' && uploaded.id.trim().length > 0
         ? `media:${uploaded.id.trim()}`
@@ -762,6 +759,7 @@ export default function CreateContentPage() {
   };
 
   const handleSave = async (targetStatus: Status) => {
+    if (isSaving) return;
     const err = validate(targetStatus);
     if (err) {
       setValidationError(err);
@@ -770,6 +768,7 @@ export default function CreateContentPage() {
 
     setValidationError(null);
     setIsSaving(true);
+    setSavingTarget(targetStatus);
     setPublishResult(null);
 
     const trimmedTitle = title.trim();
@@ -1002,6 +1001,7 @@ export default function CreateContentPage() {
       setPublishResult('error');
     } finally {
       setIsSaving(false);
+      setSavingTarget(null);
     }
   };
 
@@ -1719,35 +1719,38 @@ export default function CreateContentPage() {
                     </button>
 
                     {/* Save Draft */}
-                    <button
+                    <LoadingButton
                       type="button"
                       onClick={() => handleSave('Draft')}
-                      disabled={isSaving}
+                      pending={isSaving && savingTarget === 'Draft'}
+                      pendingLabel="Saving draft..."
+                      spinnerSize="xs"
+                      spinnerClassName="text-[#0f1116]"
+                      disabled={isSaving && savingTarget !== 'Draft'}
                       className="flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] shadow-sm transition-colors hover:bg-gray-50 disabled:opacity-60"
                     >
                       <span className="hidden sm:block">Save Draft</span>
                       <span className="sm:hidden">Draft</span>
-                    </button>
+                    </LoadingButton>
 
                     {/* Publish */}
-                    <button
+                    <LoadingButton
                       type="button"
                       onClick={() => {
                         const target = status === 'Scheduled' ? 'Scheduled' : 'Published';
                         handleSave(target);
                       }}
-                      disabled={isSaving}
+                      pending={
+                        isSaving && (savingTarget === 'Published' || savingTarget === 'Scheduled')
+                      }
+                      pendingLabel={status === 'Scheduled' ? 'Scheduling...' : 'Publishing...'}
+                      spinnerSize="xs"
+                      spinnerClassName="text-[#0f1116]"
+                      disabled={isSaving && savingTarget === 'Draft'}
                       className="flex items-center gap-2 rounded-xl bg-[#d5ea52] px-5 py-2 text-[0.85rem] font-medium text-[#0f1116] shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60"
                     >
-                      {isSaving ? (
-                        <span className="flex items-center gap-2">
-                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0f1116]/30 border-t-[#0f1116]" />
-                          Saving…
-                        </span>
-                      ) : (
-                        <>{status === 'Scheduled' ? 'Schedule' : 'Publish'}</>
-                      )}
-                    </button>
+                      <>{status === 'Scheduled' ? 'Schedule' : 'Publish'}</>
+                    </LoadingButton>
                   </div>
                 </div>
               </div>

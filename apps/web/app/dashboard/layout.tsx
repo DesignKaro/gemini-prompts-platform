@@ -27,7 +27,7 @@ import {
   MdEmail,
   MdContactMail,
 } from 'react-icons/md';
-import brandLogo from '../../Assets/Branding/logo.svg';
+import { BRAND_LOGO_URL } from '../../lib/site-assets';
 import {
   hasAnyPermission,
   hasDashboardAccess as userHasDashboardAccess,
@@ -705,12 +705,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className={`flex items-center overflow-hidden transition-all duration-300 ${isDesktopSidebarCollapsed ? 'lg:w-0 lg:opacity-0' : 'w-[150px] opacity-100'}`}
             >
               <Image
-                src={brandLogo}
+                src={BRAND_LOGO_URL}
                 alt="Gemini Prompts"
                 width={200}
                 height={44}
                 className="h-auto min-w-[150px] object-contain brightness-0 invert"
                 priority
+                unoptimized
               />
             </Link>
             {isDesktopSidebarCollapsed && (
@@ -884,11 +885,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
             <Link href="/" className="flex items-center lg:hidden">
               <Image
-                src={brandLogo}
+                src={BRAND_LOGO_URL}
                 alt="Gemini Prompts"
                 width={180}
                 height={40}
                 className="h-auto w-[120px] object-contain"
+                unoptimized
               />
             </Link>
             <nav

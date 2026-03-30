@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { FaHeart, FaRegHeart, FaReply } from 'react-icons/fa6';
 import { AuthorAvatar } from '../../components/author-avatar';
+import { InlineSpinner } from '../../components/ui/inline-spinner';
+import { LoadingButton } from '../../components/ui/loading-button';
 import { usePromptInteractions } from '../../components/prompt-interactions/use-prompt-interactions';
 import {
   PromptApiError,
@@ -284,16 +286,18 @@ export function BlogCommentsSection({
               <p className="text-[0.84rem] text-[#6b7280]">
                 New comments are submitted for moderation first.
               </p>
-              <button
+              <LoadingButton
                 type="button"
                 onClick={() => {
                   void submitComment();
                 }}
-                disabled={submitting}
+                pending={submitting}
+                pendingLabel="Submitting…"
+                spinnerSize="xs"
                 className="inline-flex h-10 items-center justify-center rounded-full bg-[#111111] px-5 text-[0.92rem] text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {submitting ? 'Submitting…' : 'Submit comment'}
-              </button>
+                Submit comment
+              </LoadingButton>
             </div>
           </div>
         ) : (
@@ -388,23 +392,29 @@ export function BlogCommentsSection({
                       </button>
                     )}
                     <span className="text-[#c7ced8]">/</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void likeComment(comment.id);
-                      }}
-                      disabled={Boolean(likePendingByCommentId[comment.id])}
-                      aria-pressed={comment.likedByViewer}
-                      className={`inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
-                        comment.likedByViewer
-                          ? 'bg-[#fce8ed] text-[#dc4b74]'
-                          : 'bg-[#eef1f5] text-[#6b7280] hover:text-[#111827]'
-                      }`}
-                    >
-                      {comment.likedByViewer ? (
-                        <FaHeart className="h-4 w-4" />
-                      ) : (
-                        <FaRegHeart className="h-4 w-4" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void likeComment(comment.id);
+                        }}
+                        disabled={Boolean(likePendingByCommentId[comment.id])}
+                        aria-busy={Boolean(likePendingByCommentId[comment.id]) || undefined}
+                        aria-pressed={comment.likedByViewer}
+                        className={`inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
+                          comment.likedByViewer
+                            ? 'bg-[#fce8ed] text-[#dc4b74]'
+                            : 'bg-[#eef1f5] text-[#6b7280] hover:text-[#111827]'
+                        }`}
+                      >
+                        {likePendingByCommentId[comment.id] ? (
+                          <InlineSpinner
+                            size="xs"
+                            className={comment.likedByViewer ? 'text-[#dc4b74]' : 'text-[#6b7280]'}
+                          />
+                        ) : comment.likedByViewer ? (
+                          <FaHeart className="h-4 w-4" />
+                        ) : (
+                          <FaRegHeart className="h-4 w-4" />
                       )}
                     </button>
                     <span className="text-[1rem] text-[#111827]">{comment.likeCount}</span>
@@ -438,16 +448,18 @@ export function BlogCommentsSection({
                     >
                       Cancel
                     </button>
-                    <button
+                    <LoadingButton
                       type="button"
                       onClick={() => {
                         void submitReply(comment.id);
                       }}
-                      disabled={replySubmittingFor === comment.id}
+                      pending={replySubmittingFor === comment.id}
+                      pendingLabel="Submitting…"
+                      spinnerSize="xs"
                       className="inline-flex h-9 items-center justify-center rounded-full bg-[#111111] px-4 text-[0.85rem] text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-70"
                     >
-                      {replySubmittingFor === comment.id ? 'Submitting…' : 'Submit reply'}
-                    </button>
+                      Submit reply
+                    </LoadingButton>
                   </div>
                 </div>
               ) : null}
@@ -507,6 +519,7 @@ export function BlogCommentsSection({
                                   void likeComment(reply.id);
                                 }}
                                 disabled={Boolean(likePendingByCommentId[reply.id])}
+                                aria-busy={Boolean(likePendingByCommentId[reply.id]) || undefined}
                                 aria-pressed={reply.likedByViewer}
                                 className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
                                   reply.likedByViewer
@@ -514,7 +527,12 @@ export function BlogCommentsSection({
                                     : 'bg-[#eef1f5] text-[#6b7280] hover:text-[#111827]'
                                 }`}
                               >
-                                {reply.likedByViewer ? (
+                                {likePendingByCommentId[reply.id] ? (
+                                  <InlineSpinner
+                                    size="xs"
+                                    className={reply.likedByViewer ? 'text-[#dc4b74]' : 'text-[#6b7280]'}
+                                  />
+                                ) : reply.likedByViewer ? (
                                   <FaHeart className="h-3.5 w-3.5" />
                                 ) : (
                                   <FaRegHeart className="h-3.5 w-3.5" />

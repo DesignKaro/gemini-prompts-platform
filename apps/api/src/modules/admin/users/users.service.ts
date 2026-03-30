@@ -16,6 +16,7 @@ import {
   PROTECTED_SUPERADMIN_EMAIL,
   isProtectedSuperadminEmail,
 } from '../../auth/utils/superadmin.util';
+import { MediaStorageService } from '../../media-storage/media-storage.service';
 
 type OwnedUserRecords = {
   prompts: number;
@@ -52,7 +53,54 @@ type MembershipUserRecord = {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mediaStorageService: MediaStorageService,
+  ) {}
+
+  private readonly mediaRefPrefix = 'media:';
+
+  private extractMediaRef(value?: string | null): string | null {
+    if (!value) return null;
+    if (!value.startsWith(this.mediaRefPrefix)) return null;
+    const id = value.slice(this.mediaRefPrefix.length).trim();
+    return id || null;
+  }
+
+  private async syncUserAvatarMediaUsage(userId: string, avatarUrl?: string | null) {
+    const normalized = avatarUrl?.trim();
+    const refId = this.extractMediaRef(normalized ?? null);
+    const assetId =
+      refId ??
+      (normalized
+        ? (
+            await this.prisma.mediaAsset.findFirst({
+              where: { url: normalized },
+              select: { id: true },
+            })
+          )?.id
+        : null);
+
+    await this.prisma.mediaUsage.deleteMany({
+      where: {
+        targetType: 'USER',
+        targetId: userId,
+      },
+    });
+
+    if (!assetId) {
+      return;
+    }
+
+    await this.prisma.mediaUsage.create({
+      data: {
+        assetId,
+        targetType: 'USER',
+        targetId: userId,
+        field: 'avatarUrl',
+      },
+    });
+  }
 
   private normalizeUserForResponse<T extends { email: string; role: UserRole }>(user: T): T {
     if (isProtectedSuperadminEmail(user.email)) {
@@ -433,10 +481,28 @@ export class UsersService {
       this.normalizeManagedRole(existing.email, requestedRole);
     }
 
+    const updateData = { ...data };
+    const avatarInput = data.avatarUrl;
+    const avatarValue =
+      typeof avatarInput === 'string'
+        ? avatarInput
+        : avatarInput && typeof avatarInput === 'object' && 'set' in avatarInput
+          ? avatarInput.set
+          : undefined;
+
+    if (typeof avatarValue === 'string') {
+      const hostedAvatar = await this.mediaStorageService.maybeUploadImageDataUrl(
+        avatarValue,
+        'avatars',
+      );
+      updateData.avatarUrl = hostedAvatar;
+    }
+
     const updated = await this.prisma.user.update({
       where: { id },
-      data,
+      data: updateData,
     });
+    await this.syncUserAvatarMediaUsage(updated.id, updated.avatarUrl);
     return this.normalizeUserForResponse(updated);
   }
 

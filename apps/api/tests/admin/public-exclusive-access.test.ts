@@ -148,7 +148,7 @@ describe('PublicService exclusive access policy', () => {
     expect(canAccessExclusiveContent(resolvedViewer)).toBe(true);
   });
 
-  it('drops inline or oversized media URLs from prompt summaries', () => {
+  it('keeps valid inline image data URLs in prompt summaries', () => {
     const service = createService();
     const toPromptSummary = (
       service as unknown as {
@@ -161,6 +161,7 @@ describe('PublicService exclusive access policy', () => {
       }
     ).toPromptSummary.bind(service);
 
+    const inlineImage = `data:image/png;base64,${'x'.repeat(5000)}`;
     const summary = toPromptSummary(
       {
         id: 'p_1',
@@ -169,11 +170,11 @@ describe('PublicService exclusive access policy', () => {
         description: 'Description',
         promptType: 'CONTENT',
         visibility: PromptVisibility.FREE,
-        featuredImageUrl: `data:image/png;base64,${'x'.repeat(5000)}`,
+        featuredImageUrl: inlineImage,
         metaTitle: null,
         metaDescription: null,
         galleryImageUrls: [
-          `data:image/png;base64,${'x'.repeat(5000)}`,
+          inlineImage,
           'https://cdn.example.com/image.png',
         ],
         publishedAt: new Date('2026-03-30T00:00:00.000Z'),
@@ -195,10 +196,10 @@ describe('PublicService exclusive access policy', () => {
       },
       0,
       undefined,
-      { compact: true },
+      { compact: false },
     );
 
-    expect(summary.image).toBeNull();
-    expect(summary.galleryImages).toEqual(['https://cdn.example.com/image.png']);
+    expect(summary.image).toBe(inlineImage);
+    expect(summary.galleryImages).toEqual([inlineImage, 'https://cdn.example.com/image.png']);
   });
 });

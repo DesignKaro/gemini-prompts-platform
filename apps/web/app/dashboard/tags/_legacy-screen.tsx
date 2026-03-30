@@ -14,6 +14,8 @@ import {
 import { useAdminApi } from '../../components/dashboard/use-admin-api';
 import { ActionError } from '../../components/dashboard/action-error';
 import { bulkActionMessage, runBulkAction } from '../../components/dashboard/bulk-action';
+import { InlineSpinner } from '../../components/ui/inline-spinner';
+import { LoadingButton } from '../../components/ui/loading-button';
 
 type Tag = {
   id: string;
@@ -44,14 +46,23 @@ type TagResponse = {
   total: number;
 };
 
+const TAG_PENDING_KEY = {
+  create: 'dashboard.tags.create',
+  update: (id: string) => `dashboard.tags.update:${id}`,
+  delete: (id: string) => `dashboard.tags.delete:${id}`,
+  bulkDelete: 'dashboard.tags.bulk.delete',
+};
+
 function TagModal({
   editTag,
   onSave,
   onClose,
+  pending,
 }: {
   editTag: Tag | null;
   onSave: (name: string, color: string) => void;
   onClose: () => void;
+  pending: boolean;
 }) {
   const [name, setName] = useState(editTag?.name ?? '');
   const [color, setColor] = useState(editTag?.color ?? PRESET_COLORS[0]!);
@@ -59,6 +70,7 @@ function TagModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (pending) return;
     if (!name.trim()) {
       setError('Tag name is required.');
       return;
@@ -155,16 +167,21 @@ function TagModal({
             <button
               type="button"
               onClick={onClose}
+              disabled={pending}
               className="flex-1 rounded-xl border border-[#e1e5ee] py-2 text-[0.85rem] text-gray-600 hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
-            <button
+            <LoadingButton
               type="submit"
+              pending={pending}
+              pendingLabel={editTag ? 'Saving...' : 'Creating...'}
+              spinnerSize="xs"
+              spinnerClassName="text-white"
               className="flex-1 rounded-xl bg-[#0f1116] py-2 text-[0.85rem] font-medium text-white hover:opacity-90 transition-opacity"
             >
               {editTag ? 'Save Changes' : 'Create Tag'}
-            </button>
+            </LoadingButton>
           </div>
         </form>
       </div>
@@ -174,7 +191,7 @@ function TagModal({
 }
 
 export default function TagsPage() {
-  const { request, status: authStatus } = useAdminApi();
+  const { request, status: authStatus, isPending } = useAdminApi();
   const [tags, setTags] = useState<Tag[]>([]);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -235,15 +252,20 @@ export default function TagsPage() {
         color,
       };
       if (editingTag) {
+        const pendingKey = TAG_PENDING_KEY.update(editingTag.id);
+        if (isPending(pendingKey)) return;
         await request(`/api/admin/tags/${editingTag.id}`, {
           method: 'PATCH',
           actionName: 'dashboard.tags.update',
+          pendingKey,
           body: JSON.stringify(payload),
         });
       } else {
+        if (isPending(TAG_PENDING_KEY.create)) return;
         await request('/api/admin/tags', {
           method: 'POST',
           actionName: 'dashboard.tags.create',
+          pendingKey: TAG_PENDING_KEY.create,
           body: JSON.stringify(payload),
         });
       }
@@ -266,11 +288,14 @@ export default function TagsPage() {
   };
 
   const handleDelete = async (id: string) => {
+    const pendingKey = TAG_PENDING_KEY.delete(id);
+    if (isPending(pendingKey)) return;
     setLoadError(null);
     try {
       await request(`/api/admin/tags/${id}`, {
         method: 'DELETE',
         actionName: 'dashboard.tags.delete',
+        pendingKey,
       });
       setTags((prev) => prev.filter((t) => t.id !== id));
       setSelectedIds((prev) => prev.filter((sid) => sid !== id));
@@ -283,6 +308,7 @@ export default function TagsPage() {
   };
 
   const handleBulkDelete = async () => {
+    if (isPending(TAG_PENDING_KEY.bulkDelete)) return;
     try {
       const result = await runBulkAction({
         ids: selectedIds,
@@ -291,6 +317,7 @@ export default function TagsPage() {
           request(`/api/admin/tags/${id}`, {
             method: 'DELETE',
             actionName: 'dashboard.tags.delete',
+            pendingKey: TAG_PENDING_KEY.bulkDelete,
           }).then(() => undefined),
       });
 
@@ -346,13 +373,16 @@ export default function TagsPage() {
                 Cancel
               </button>
               {selectedIds.length > 0 && (
-                <button
+                <LoadingButton
                   type="button"
                   onClick={handleBulkDelete}
+                  pending={isPending(TAG_PENDING_KEY.bulkDelete)}
+                  pendingLabel={`Deleting selected (${selectedIds.length})...`}
+                  spinnerSize="xs"
                   className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-[0.85rem] font-medium text-red-600 shadow-sm hover:bg-red-100 transition-colors"
                 >
                   Delete Selected ({selectedIds.length})
-                </button>
+                </LoadingButton>
               )}
             </>
           ) : (
@@ -442,6 +472,7 @@ export default function TagsPage() {
                   <button
                     type="button"
                     onClick={() => openEdit(tag)}
+                    disabled={isPending(TAG_PENDING_KEY.delete(tag.id))}
                     className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-gray-100 hover:text-[#0f1116] transition-colors"
                     title="Edit tag"
                   >
@@ -450,16 +481,20 @@ export default function TagsPage() {
 
                   {deleteConfirmId === tag.id ? (
                     <div className="flex items-center gap-1">
-                      <button
+                      <LoadingButton
                         type="button"
                         onClick={() => handleDelete(tag.id)}
+                        pending={isPending(TAG_PENDING_KEY.delete(tag.id))}
+                        pendingLabel="Deleting..."
+                        spinnerSize="xs"
                         className="rounded-full bg-red-50 px-2 py-1 text-[0.72rem] font-medium text-red-700 hover:bg-red-100 transition-colors"
                       >
                         Confirm
-                      </button>
+                      </LoadingButton>
                       <button
                         type="button"
                         onClick={() => setDeleteConfirmId(null)}
+                        disabled={isPending(TAG_PENDING_KEY.delete(tag.id))}
                         className="rounded-full bg-gray-50 px-2 py-1 text-[0.72rem] text-gray-500 hover:bg-gray-100 transition-colors"
                       >
                         Cancel
@@ -469,10 +504,16 @@ export default function TagsPage() {
                     <button
                       type="button"
                       onClick={() => setDeleteConfirmId(tag.id)}
+                      disabled={isPending(TAG_PENDING_KEY.delete(tag.id))}
+                      aria-busy={isPending(TAG_PENDING_KEY.delete(tag.id)) || undefined}
                       className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-red-50 hover:text-[#b91c1c] transition-colors"
                       title="Delete tag"
                     >
-                      <MdDeleteOutline size={15} />
+                      {isPending(TAG_PENDING_KEY.delete(tag.id)) ? (
+                        <InlineSpinner size="xs" className="text-[#b91c1c]" />
+                      ) : (
+                        <MdDeleteOutline size={15} />
+                      )}
                     </button>
                   )}
                 </div>
@@ -513,7 +554,16 @@ export default function TagsPage() {
       </div>
 
       {isModalOpen && (
-        <TagModal editTag={editingTag} onSave={handleSave} onClose={() => setIsModalOpen(false)} />
+        <TagModal
+          editTag={editingTag}
+          onSave={handleSave}
+          onClose={() => setIsModalOpen(false)}
+          pending={
+            editingTag
+              ? isPending(TAG_PENDING_KEY.update(editingTag.id))
+              : isPending(TAG_PENDING_KEY.create)
+          }
+        />
       )}
     </div>
   );

@@ -11,6 +11,8 @@ import {
 import { useAdminApi } from '../../../components/dashboard/use-admin-api';
 import { ActionError } from '../../../components/dashboard/action-error';
 import { bulkActionMessage, runBulkAction } from '../../../components/dashboard/bulk-action';
+import { InlineSpinner } from '../../../components/ui/inline-spinner';
+import { LoadingButton } from '../../../components/ui/loading-button';
 import { formatBytes, formatRelativeTimeOrDash } from '../../../../lib/utils/format';
 
 type MediaItem = {
@@ -36,8 +38,13 @@ type MediaResponse = {
   total: number;
 };
 
+const MEDIA_UPLOAD_PENDING_KEY = 'dashboard.media.upload';
+const MEDIA_BULK_DELETE_PENDING_KEY = 'dashboard.media.bulk.delete';
+const MEDIA_SAVE_PENDING_KEY_PREFIX = 'dashboard.media.save:';
+const MEDIA_DELETE_PENDING_KEY_PREFIX = 'dashboard.media.delete:';
+
 export default function MediaManagementPage() {
-  const { request, status: authStatus } = useAdminApi();
+  const { request, status: authStatus, isPending } = useAdminApi();
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeMediaId, setActiveMediaId] = useState<string | null>(null);
@@ -53,6 +60,14 @@ export default function MediaManagementPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const activeMedia = mediaItems.find((m) => m.id === activeMediaId);
+  const isUploading = isPending(MEDIA_UPLOAD_PENDING_KEY);
+  const isBulkDeleting = isPending(MEDIA_BULK_DELETE_PENDING_KEY);
+  const isActiveMediaSaving = activeMediaId
+    ? isPending(`${MEDIA_SAVE_PENDING_KEY_PREFIX}${activeMediaId}`)
+    : false;
+  const isActiveMediaDeleting = activeMediaId
+    ? isPending(`${MEDIA_DELETE_PENDING_KEY_PREFIX}${activeMediaId}`)
+    : false;
 
   const refreshMedia = useCallback(async () => {
     if (authStatus !== 'authenticated') return;
@@ -147,11 +162,13 @@ export default function MediaManagementPage() {
 
   const saveMediaDetails = async () => {
     if (!activeMediaId || !activeMedia) return;
+    if (isActiveMediaSaving) return;
     setIsSavingDetails(true);
     try {
       await request(`/api/admin/media/${activeMediaId}`, {
         method: 'PATCH',
         actionName: 'dashboard.media.update',
+        pendingKey: `${MEDIA_SAVE_PENDING_KEY_PREFIX}${activeMediaId}`,
         body: JSON.stringify({
           altText: draftDetails.altText,
           title: draftDetails.title,
@@ -165,11 +182,13 @@ export default function MediaManagementPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (isPending(`${MEDIA_DELETE_PENDING_KEY_PREFIX}${id}`)) return;
     setLoadError(null);
     try {
       await request(`/api/admin/media/${id}`, {
         method: 'DELETE',
         actionName: 'dashboard.media.delete',
+        pendingKey: `${MEDIA_DELETE_PENDING_KEY_PREFIX}${id}`,
       });
       setMediaItems((prev) => prev.filter((i) => i.id !== id));
       setSelectedIds((prev) => prev.filter((i) => i !== id));
@@ -182,6 +201,7 @@ export default function MediaManagementPage() {
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
+    if (isBulkDeleting) return;
     setLoadError(null);
     try {
       const result = await runBulkAction({
@@ -191,6 +211,7 @@ export default function MediaManagementPage() {
           request(`/api/admin/media/${id}`, {
             method: 'DELETE',
             actionName: 'dashboard.media.delete',
+            pendingKey: MEDIA_BULK_DELETE_PENDING_KEY,
           }).then(() => undefined),
       });
       const failedIds = new Set(result.failures.map((entry) => entry.id));
@@ -217,24 +238,18 @@ export default function MediaManagementPage() {
 
   const handleUpload = async (file?: File | null) => {
     if (!file) return;
+    if (isUploading) return;
     setLoadError(null);
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(new Error('Unable to read file.'));
-        reader.readAsDataURL(file);
-      });
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', file.name);
 
-      await request('/api/admin/media', {
+      await request('/api/admin/media/upload', {
         method: 'POST',
         actionName: 'dashboard.media.create',
-        body: JSON.stringify({
-          url: dataUrl,
-          title: file.name,
-          mime: file.type || null,
-          size: file.size || null,
-        }),
+        pendingKey: MEDIA_UPLOAD_PENDING_KEY,
+        body: formData,
       });
 
       await refreshMedia();
@@ -271,14 +286,16 @@ export default function MediaManagementPage() {
                   Cancel
                 </button>
                 {selectedIds.length > 0 && (
-                  <button
+                  <LoadingButton
                     type="button"
                     onClick={handleBulkDelete}
+                    pending={isBulkDeleting}
+                    pendingLabel={`Deleting (${selectedIds.length})…`}
                     className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-[0.85rem] font-medium text-red-600 shadow-sm hover:bg-red-100 transition-colors shrink-0"
                   >
                     <MdDeleteOutline size={16} />
                     Delete Selected ({selectedIds.length})
-                  </button>
+                  </LoadingButton>
                 )}
               </>
             ) : (
@@ -307,12 +324,20 @@ export default function MediaManagementPage() {
                     : 'Upload your first image or asset to build the library.'}
                 </p>
               </div>
-              <label className="mt-2 cursor-pointer rounded-xl bg-[#d5ea52] px-6 py-2.5 text-[0.85rem] font-medium text-[#0f1116] shadow-sm hover:opacity-90 transition-opacity">
-                Upload Media
+              <label
+                className={`mt-2 rounded-xl bg-[#d5ea52] px-6 py-2.5 text-[0.85rem] font-medium text-[#0f1116] shadow-sm transition-opacity ${
+                  isUploading ? 'cursor-not-allowed opacity-75 pointer-events-none' : 'cursor-pointer hover:opacity-90'
+                }`}
+              >
+                <span className="inline-flex items-center gap-2">
+                  {isUploading ? <InlineSpinner size="xs" className="text-[#0f1116]" /> : null}
+                  <span>{isUploading ? 'Uploading…' : 'Upload Media'}</span>
+                </span>
                 <input
                   type="file"
                   className="hidden"
                   accept="image/*"
+                  disabled={isUploading}
                   onChange={(event) => handleUpload(event.target.files?.[0])}
                 />
               </label>
@@ -336,12 +361,20 @@ export default function MediaManagementPage() {
                       {allSelected ? 'Deselect all' : 'Select all'}
                     </button>
                   )}
-                  <label className="cursor-pointer rounded-full bg-[#0f1116] px-5 py-2 text-[0.85rem] font-medium text-white hover:opacity-90 transition-opacity">
-                    Upload new
+                  <label
+                    className={`rounded-full bg-[#0f1116] px-5 py-2 text-[0.85rem] font-medium text-white transition-opacity ${
+                      isUploading ? 'cursor-not-allowed opacity-70 pointer-events-none' : 'cursor-pointer hover:opacity-90'
+                    }`}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      {isUploading ? <InlineSpinner size="xs" className="text-white" /> : null}
+                      <span>{isUploading ? 'Uploading…' : 'Upload new'}</span>
+                    </span>
                     <input
                       type="file"
                       className="hidden"
                       accept="image/*"
+                      disabled={isUploading}
                       onChange={(event) => handleUpload(event.target.files?.[0])}
                     />
                   </label>
@@ -536,22 +569,27 @@ export default function MediaManagementPage() {
                   >
                     Reset
                   </button>
-                  <button
+                  <LoadingButton
                     type="button"
                     onClick={saveMediaDetails}
-                    disabled={!isDetailsDirty || isSavingDetails}
+                    pending={isSavingDetails || isActiveMediaSaving}
+                    pendingLabel="Saving…"
+                    disabled={!isDetailsDirty}
                     className="rounded-full bg-[#0f1116] px-4 py-2 text-[0.8rem] text-white disabled:opacity-50"
                   >
-                    {isSavingDetails ? 'Saving…' : 'Save changes'}
-                  </button>
+                    Save changes
+                  </LoadingButton>
                 </div>
-                <button
+                <LoadingButton
                   type="button"
                   onClick={() => handleDelete(activeMedia.id)}
-                  className="font-medium text-[#b94a4a] text-[0.85rem] hover:underline"
+                  pending={isActiveMediaDeleting}
+                  pendingLabel="Deleting…"
+                  spinnerSize="xs"
+                  className="font-medium text-[#b94a4a] text-[0.85rem] hover:underline disabled:opacity-70"
                 >
                   Delete permanently
-                </button>
+                </LoadingButton>
               </div>
             </div>
           ) : (

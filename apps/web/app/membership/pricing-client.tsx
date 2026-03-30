@@ -15,6 +15,7 @@ import {
 } from '../../lib/membership-management';
 import { redirectToSignInModal } from '../../lib/utils/auth-redirect';
 import { refreshSession } from '../../lib/utils/session';
+import { LoadingButton } from '../components/ui/loading-button';
 
 type BillingCycle = MembershipCheckoutCycle;
 
@@ -514,20 +515,19 @@ export default function MembershipPricing() {
           </ul>
 
           <div className="relative mt-6 flex flex-col gap-3 sm:mt-7 sm:flex-row sm:flex-wrap sm:items-center">
-            <button
+            <LoadingButton
               type="button"
               onClick={() => {
                 void startCheckout();
               }}
-              disabled={checkoutPending || isPremiumMember}
+              pending={checkoutPending}
+              pendingLabel="Processing…"
+              spinnerSize="xs"
+              disabled={isPremiumMember}
               className="inline-flex h-11 w-full items-center justify-center rounded-full bg-[#d5ea52] px-5 text-[0.95rem] font-medium text-[#101418] transition-colors hover:bg-[#cbe246] disabled:cursor-not-allowed disabled:opacity-75 sm:w-auto"
             >
-              {checkoutPending
-                ? 'Processing…'
-                : isPremiumMember
-                  ? 'Premium Active'
-                  : 'Join Premium'}
-            </button>
+              {isPremiumMember ? 'Premium Active' : 'Join Premium'}
+            </LoadingButton>
             <Link
               href="/exclusive"
               className="inline-flex h-11 w-full items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 text-[0.95rem] text-white transition-colors hover:bg-white/15 sm:w-auto"

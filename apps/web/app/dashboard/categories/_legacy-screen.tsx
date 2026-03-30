@@ -14,6 +14,8 @@ import {
 import { useAdminApi } from '../../components/dashboard/use-admin-api';
 import { ActionError } from '../../components/dashboard/action-error';
 import { bulkActionMessage, runBulkAction } from '../../components/dashboard/bulk-action';
+import { InlineSpinner } from '../../components/ui/inline-spinner';
+import { LoadingButton } from '../../components/ui/loading-button';
 
 type Category = {
   id: string;
@@ -64,7 +66,7 @@ const createEmptyCategoryState = () => ({
 });
 
 export default function CategoriesPage() {
-  const { request, status: authStatus } = useAdminApi();
+  const { request, status: authStatus, isPending } = useAdminApi();
   const [categories, setCategories] = useState<Category[]>([]);
   const [mediaLibrary, setMediaLibrary] = useState<MediaItem[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -81,6 +83,7 @@ export default function CategoriesPage() {
   const [search, setSearch] = useState('');
   const [mediaSearch, setMediaSearch] = useState('');
   const [isSelectMode, setIsSelectMode] = useState(false);
+  const isBulkDeleting = isPending('dashboard.categories.bulk.delete');
 
   useEffect(() => {
     if (authStatus !== 'authenticated') return;
@@ -274,31 +277,25 @@ export default function CategoriesPage() {
 
   const handleMediaUpload = async (file?: File | null) => {
     if (!file) return;
+    if (isUploadingMedia) return;
 
     setIsUploadingMedia(true);
     setLoadError(null);
 
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(new Error('Unable to read file.'));
-        reader.readAsDataURL(file);
-      });
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', file.name);
 
       const created = await request<{
         id: string;
         title?: string | null;
         url: string;
-      }>('/api/admin/media', {
+      }>('/api/admin/media/upload', {
         method: 'POST',
         actionName: 'dashboard.media.create',
-        body: JSON.stringify({
-          url: dataUrl,
-          title: file.name,
-          mime: file.type || null,
-          size: file.size || null,
-        }),
+        pendingKey: 'dashboard.categories.media.upload',
+        body: formData,
       });
 
       const uploadedItem = {
@@ -334,11 +331,13 @@ export default function CategoriesPage() {
   };
 
   const handleDeleteCategory = async (categoryId: string) => {
+    if (isPending(`dashboard.categories.delete:${categoryId}`)) return;
     setLoadError(null);
     try {
       await request(`/api/admin/categories/${categoryId}`, {
         method: 'DELETE',
         actionName: 'dashboard.categories.delete',
+        pendingKey: `dashboard.categories.delete:${categoryId}`,
       });
       setCategories((current) => current.filter((category) => category.id !== categoryId));
       setSelectedIds((current) => current.filter((id) => id !== categoryId));
@@ -349,6 +348,7 @@ export default function CategoriesPage() {
   };
 
   const handleBulkDelete = async () => {
+    if (isBulkDeleting) return;
     try {
       const result = await runBulkAction({
         ids: selectedIds,
@@ -357,6 +357,7 @@ export default function CategoriesPage() {
           request(`/api/admin/categories/${id}`, {
             method: 'DELETE',
             actionName: 'dashboard.categories.delete',
+            pendingKey: 'dashboard.categories.bulk.delete',
           }).then(() => undefined),
       });
 
@@ -413,14 +414,17 @@ export default function CategoriesPage() {
                 Cancel
               </button>
               {selectedIds.length > 0 && (
-                <button
+                <LoadingButton
                   type="button"
                   onClick={handleBulkDelete}
+                  pending={isBulkDeleting}
+                  pendingLabel={`Deleting (${selectedIds.length})…`}
+                  spinnerSize="xs"
                   className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-[0.85rem] font-medium text-red-600 shadow-sm hover:bg-red-100 transition-colors"
                 >
                   <MdDeleteOutline size={16} />
                   Delete ({selectedIds.length})
-                </button>
+                </LoadingButton>
               )}
             </>
           ) : (
@@ -549,9 +553,15 @@ export default function CategoriesPage() {
                                     setActiveMenuId(null);
                                     handleDeleteCategory(category.id);
                                   }}
+                                  disabled={isPending(`dashboard.categories.delete:${category.id}`)}
                                   className="flex w-full items-center gap-2 rounded-[10px] px-3 py-2 text-[0.8rem] text-[#b94a4a] hover:bg-[#fff4f4] transition-colors"
                                 >
-                                  <MdDeleteOutline size={16} /> Delete
+                                  {isPending(`dashboard.categories.delete:${category.id}`) ? (
+                                    <InlineSpinner size="xs" className="text-[#b94a4a]" />
+                                  ) : (
+                                    <MdDeleteOutline size={16} />
+                                  )}{' '}
+                                  Delete
                                 </button>
                               </div>
                             </>
@@ -779,13 +789,15 @@ export default function CategoriesPage() {
                     >
                       Cancel
                     </button>
-                    <button
+                    <LoadingButton
                       type="submit"
-                      disabled={isSaving}
+                      pending={isSaving}
+                      pendingLabel="Saving…"
+                      spinnerSize="xs"
                       className="rounded-xl bg-[#0f1116] px-4 py-2 text-[0.85rem] font-medium text-white hover:opacity-90 disabled:opacity-60"
                     >
-                      {isSaving ? 'Saving…' : editingCategoryId ? 'Save Changes' : 'Save Category'}
-                    </button>
+                      {editingCategoryId ? 'Save Changes' : 'Save Category'}
+                    </LoadingButton>
                   </div>
                 </form>
               </div>
@@ -826,12 +838,20 @@ export default function CategoriesPage() {
                         />
                       </div>
 
-                      <label className="inline-flex cursor-pointer items-center justify-center rounded-full bg-[#0f1116] px-5 py-2.5 text-[0.85rem] font-medium text-white transition-opacity hover:opacity-90">
-                        {isUploadingMedia ? 'Uploading…' : 'Upload new'}
+                      <label
+                        className={`inline-flex items-center justify-center rounded-full bg-[#0f1116] px-5 py-2.5 text-[0.85rem] font-medium text-white transition-opacity ${
+                          isUploadingMedia ? 'cursor-not-allowed opacity-70 pointer-events-none' : 'cursor-pointer hover:opacity-90'
+                        }`}
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          {isUploadingMedia ? <InlineSpinner size="xs" className="text-white" /> : null}
+                          <span>{isUploadingMedia ? 'Uploading…' : 'Upload new'}</span>
+                        </span>
                         <input
                           type="file"
                           className="hidden"
                           accept="image/*"
+                          disabled={isUploadingMedia}
                           onChange={(event) => {
                             const file = event.target.files?.[0];
                             void handleMediaUpload(file);

@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { FaInstagram, FaWhatsapp } from 'react-icons/fa6';
-import brandLogo from '../../Assets/Branding/logo.svg';
+import { BRAND_LOGO_URL } from '../../lib/site-assets';
 
 type FooterLink = {
   href: string;
@@ -107,11 +107,12 @@ export function SiteFooter() {
             <div className="col-span-2 max-w-[21rem] lg:col-span-1">
               <Link href="/" className="inline-flex items-center">
                 <Image
-                  src={brandLogo}
+                  src={BRAND_LOGO_URL}
                   alt="Gemini Prompts"
                   width={248}
                   height={44}
                   className="h-auto w-[210px] object-contain brightness-0 invert"
+                  unoptimized
                 />
               </Link>
 

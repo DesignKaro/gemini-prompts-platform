@@ -13,6 +13,8 @@ import {
 import { useAdminApi } from '../../../components/dashboard/use-admin-api';
 import { ActionError } from '../../../components/dashboard/action-error';
 import { bulkActionMessage, runBulkAction } from '../../../components/dashboard/bulk-action';
+import { InlineSpinner } from '../../../components/ui/inline-spinner';
+import { LoadingButton } from '../../../components/ui/loading-button';
 import { formatRelativeTimeOrDash } from '../../../../lib/utils/format';
 
 type ApiPromptStatus = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED';
@@ -71,7 +73,7 @@ function getStatusLabel(status: ApiPromptStatus, visibility: ApiVisibility) {
 }
 
 export default function PromptsManagementPage() {
-  const { request, status: authStatus } = useAdminApi();
+  const { request, status: authStatus, isPending } = useAdminApi();
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [total, setTotal] = useState(0);
@@ -91,6 +93,10 @@ export default function PromptsManagementPage() {
     null,
   );
   const [bulkMenuOpen, setBulkMenuOpen] = useState(false);
+  const isBulkDeletePending = isPending('dashboard.prompts.bulk.delete');
+  const isBulkCategoryPending = isPending('dashboard.prompts.bulk.category.update');
+  const isBulkStatusPending = isPending('dashboard.prompts.bulk.status.update');
+  const isAnyBulkPending = isBulkDeletePending || isBulkCategoryPending || isBulkStatusPending;
 
   useEffect(() => {
     if (authStatus !== 'authenticated') return;
@@ -179,10 +185,12 @@ export default function PromptsManagementPage() {
   }, [activeTab, authStatus, categoryFilter, request, search, sortFilter]);
 
   const trashPrompt = async (id: string) => {
+    if (isPending(`dashboard.prompts.delete:${id}`)) return;
     try {
       await request(`/api/admin/prompts/${id}`, {
         method: 'DELETE',
         actionName: 'dashboard.prompts.delete',
+        pendingKey: `dashboard.prompts.delete:${id}`,
       });
       setPrompts((prev) => prev.filter((p) => p.id !== id));
       setSelectedIds((prev) => prev.filter((item) => item !== id));
@@ -225,6 +233,7 @@ export default function PromptsManagementPage() {
   };
 
   const handleBulkStatusChange = async (nextStatus: 'Published' | 'Draft' | 'Scheduled') => {
+    if (isBulkStatusPending) return;
     const mappedStatus =
       nextStatus === 'Published' ? 'PUBLISHED' : nextStatus === 'Draft' ? 'DRAFT' : 'SCHEDULED';
     try {
@@ -235,6 +244,7 @@ export default function PromptsManagementPage() {
           request(`/api/admin/prompts/${id}/status`, {
             method: 'PATCH',
             actionName: 'dashboard.prompts.status.update',
+            pendingKey: 'dashboard.prompts.bulk.status.update',
             body: JSON.stringify({ status: mappedStatus }),
           }).then(() => undefined),
       });
@@ -260,6 +270,7 @@ export default function PromptsManagementPage() {
   };
 
   const handleBulkCategoryChange = async (categoryId: string) => {
+    if (isBulkCategoryPending) return;
     const category = categories.find((item) => item.id === categoryId);
     if (!category) return;
     try {
@@ -270,6 +281,7 @@ export default function PromptsManagementPage() {
           request(`/api/admin/prompts/${id}`, {
             method: 'PATCH',
             actionName: 'dashboard.prompts.category.update',
+            pendingKey: 'dashboard.prompts.bulk.category.update',
             body: JSON.stringify({
               primaryCategoryId: categoryId,
               categoryIds: [categoryId],
@@ -298,6 +310,7 @@ export default function PromptsManagementPage() {
   };
 
   const handleBulkDelete = async () => {
+    if (isBulkDeletePending) return;
     try {
       const result = await runBulkAction({
         ids: selectedIds,
@@ -306,6 +319,7 @@ export default function PromptsManagementPage() {
           request(`/api/admin/prompts/${id}`, {
             method: 'DELETE',
             actionName: 'dashboard.prompts.delete',
+            pendingKey: 'dashboard.prompts.bulk.delete',
           }).then(() => undefined),
       });
       const failedIds = new Set(result.failures.map((entry) => entry.id));
@@ -486,9 +500,13 @@ export default function PromptsManagementPage() {
                     setBulkMenuOpen(!bulkMenuOpen);
                     setActiveBulkAction('category');
                   }}
+                  aria-busy={isBulkCategoryPending || undefined}
                   className="rounded-full border border-[#e1e5ee] px-3 py-1.5 text-[0.78rem] text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Edit Category
+                  <span className="inline-flex items-center gap-2">
+                    {isBulkCategoryPending ? <InlineSpinner size="xs" className="text-gray-600" /> : null}
+                    <span>Edit Category</span>
+                  </span>
                 </button>
                 {bulkMenuOpen && activeBulkAction === 'category' && (
                   <div className="absolute left-0 mt-2 z-30 w-48 rounded-[12px] border border-[#e2e6ee] bg-white p-1.5 shadow-xl">
@@ -497,6 +515,7 @@ export default function PromptsManagementPage() {
                         key={cat.id}
                         type="button"
                         onClick={() => handleBulkCategoryChange(cat.id)}
+                        disabled={isAnyBulkPending}
                         className="block w-full rounded-md px-3 py-1.5 text-left text-[0.82rem] hover:bg-gray-50"
                       >
                         {cat.name}
@@ -521,9 +540,13 @@ export default function PromptsManagementPage() {
                     setBulkMenuOpen(!bulkMenuOpen);
                     setActiveBulkAction('status');
                   }}
+                  aria-busy={isBulkStatusPending || undefined}
                   className="rounded-full border border-[#e1e5ee] px-3 py-1.5 text-[0.78rem] text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Edit Status
+                  <span className="inline-flex items-center gap-2">
+                    {isBulkStatusPending ? <InlineSpinner size="xs" className="text-gray-600" /> : null}
+                    <span>Edit Status</span>
+                  </span>
                 </button>
                 {bulkMenuOpen && activeBulkAction === 'status' && (
                   <div className="absolute left-0 mt-2 z-30 w-40 rounded-[12px] border border-[#e2e6ee] bg-white p-1.5 shadow-xl">
@@ -534,6 +557,7 @@ export default function PromptsManagementPage() {
                         onClick={() =>
                           handleBulkStatusChange(status as 'Published' | 'Draft' | 'Scheduled')
                         }
+                        disabled={isAnyBulkPending}
                         className="block w-full rounded-md px-3 py-1.5 text-left text-[0.82rem] hover:bg-gray-50"
                       >
                         {status}
@@ -543,13 +567,16 @@ export default function PromptsManagementPage() {
                 )}
               </div>
               {selectedIds.length > 0 && (
-                <button
+                <LoadingButton
                   type="button"
                   onClick={handleBulkDelete}
+                  pending={isBulkDeletePending}
+                  pendingLabel="Deleting selected…"
+                  spinnerSize="xs"
                   className="rounded-full bg-red-50 border border-red-100 px-3 py-1.5 text-[0.78rem] text-red-600 hover:bg-red-100 transition-colors"
                 >
                   Delete Selected
-                </button>
+                </LoadingButton>
               )}
             </div>
           )}
@@ -619,10 +646,16 @@ export default function PromptsManagementPage() {
                     <button
                       type="button"
                       onClick={() => trashPrompt(prompt.id)}
+                      disabled={isPending(`dashboard.prompts.delete:${prompt.id}`)}
+                      aria-busy={isPending(`dashboard.prompts.delete:${prompt.id}`) || undefined}
                       className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#c64a4a] transition-colors hover:bg-red-50"
                       aria-label="Move prompt to trash"
                     >
-                      <MdDeleteOutline size={18} />
+                      {isPending(`dashboard.prompts.delete:${prompt.id}`) ? (
+                        <InlineSpinner size="xs" className="text-[#c64a4a]" />
+                      ) : (
+                        <MdDeleteOutline size={18} />
+                      )}
                     </button>
                   </div>
                 </div>

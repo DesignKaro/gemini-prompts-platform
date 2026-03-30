@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { refreshSession as refreshSessionOnce } from '../../lib/utils/session';
 import { useSearchParams } from 'next/navigation';
 import { AuthorAvatar } from '../components/author-avatar';
+import { LoadingButton } from '../components/ui/loading-button';
 import {
   FaFacebookF,
   FaHeart,
@@ -1293,13 +1294,16 @@ function ProfilePageContent() {
                 >
                   Cancel
                 </button>
-                <button
+                <LoadingButton
                   type="submit"
-                  disabled={isSaving || status !== 'authenticated'}
+                  pending={isSaving}
+                  pendingLabel="Saving..."
+                  spinnerSize="xs"
+                  disabled={status !== 'authenticated'}
                   className="rounded-full bg-[#0f1116] px-4 py-2 text-[0.82rem] text-white transition-transform duration-300 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  {isSaving ? 'Saving...' : 'Save changes'}
-                </button>
+                  Save changes
+                </LoadingButton>
               </div>
             </form>
           </div>

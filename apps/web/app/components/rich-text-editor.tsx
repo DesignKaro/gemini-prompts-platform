@@ -286,30 +286,22 @@ function ImagePicker({ editor, disabled }: { editor: Editor | null; disabled: bo
       return;
     }
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(new Error('Read failed'));
-        reader.readAsDataURL(file);
-      });
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', file.name);
 
       const response = await request<{ id?: string; url: string; title?: string | null }>(
-        '/api/admin/media',
+        '/api/admin/media/upload',
         {
-        method: 'POST',
-        body: JSON.stringify({
-          url: dataUrl,
-          title: file.name,
-          mime: file.type,
-          size: file.size,
-        }),
+          method: 'POST',
+          body: formData,
         },
       );
 
       // Instead of inserting directly, select it in the library and switch tabs
       const newItem: MediaItem = {
         id: response.id || Math.random().toString(), // fallback id for legacy response shapes
-        url: response.url || dataUrl,
+        url: response.url,
         title: response.title?.trim() || file.name,
       };
       setLibraryMedia((prev) => [newItem, ...prev]);

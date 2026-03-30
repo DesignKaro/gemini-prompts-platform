@@ -98,6 +98,9 @@ type RazorpayPaymentResponse = {
 export class PublicService {
   private readonly logger = new Logger(PublicService.name);
   private readonly mediaRefPrefix = 'media:';
+  private readonly inlineImageDataUrlPattern =
+    /^data:image\/(?:avif|gif|jpeg|jpg|png|webp);base64,[a-z0-9+/=\s]+$/i;
+  private readonly inlineImageDataMaxLength = 1_500_000;
   private readonly interactionIpSecret: string;
   private readonly razorpayKeyId: string;
   private readonly razorpayKeySecret: string;
@@ -153,9 +156,16 @@ export class PublicService {
       return null;
     }
 
-    // Never expose inline/base64 media blobs in listing/detail payloads.
     if (normalized.startsWith('data:')) {
-      return null;
+      if (!this.inlineImageDataUrlPattern.test(normalized)) {
+        return null;
+      }
+
+      if (normalized.length > this.inlineImageDataMaxLength) {
+        return null;
+      }
+
+      return normalized;
     }
 
     if (normalized.length > maxLength) {

@@ -6,6 +6,7 @@ import { MdRestoreFromTrash, MdDeleteOutline, MdOutlineChatBubbleOutline } from 
 import { useAdminApi } from '../../../components/dashboard/use-admin-api';
 import { ActionError } from '../../../components/dashboard/action-error';
 import { bulkActionMessage, runBulkAction } from '../../../components/dashboard/bulk-action';
+import { LoadingButton } from '../../../components/ui/loading-button';
 import { formatRelativeTimeOrDash } from '../../../lib/utils/format';
 
 type TrashedComment = {
@@ -32,14 +33,23 @@ type CommentResponse = {
   total: number;
 };
 
+const TRASH_PENDING_KEY = {
+  restore: (id: string) => `dashboard.comments.trash.restore:${id}`,
+  delete: (id: string) => `dashboard.comments.trash.delete:${id}`,
+  bulkRestore: 'dashboard.comments.trash.bulk.restore',
+  bulkDelete: 'dashboard.comments.trash.bulk.delete',
+};
+
 export default function CommentsTrashPage() {
-  const { request, status: authStatus } = useAdminApi();
+  const { request, status: authStatus, isPending } = useAdminApi();
   const [items, setItems] = useState<TrashedComment[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const isBulkRestorePending = isPending(TRASH_PENDING_KEY.bulkRestore);
+  const isBulkDeletePending = isPending(TRASH_PENDING_KEY.bulkDelete);
 
   useEffect(() => {
     if (authStatus !== 'authenticated') return;
@@ -106,10 +116,12 @@ export default function CommentsTrashPage() {
   };
 
   const restore = async (id: string) => {
+    if (isPending(TRASH_PENDING_KEY.restore(id))) return;
     try {
       await request(`/api/admin/comments/${id}`, {
         method: 'PATCH',
         actionName: 'dashboard.comments.restore',
+        pendingKey: TRASH_PENDING_KEY.restore(id),
         body: JSON.stringify({ status: 'PENDING' }),
       });
       setItems((p) => p.filter((i) => i.id !== id));
@@ -126,10 +138,12 @@ export default function CommentsTrashPage() {
   };
 
   const deletePerm = async (id: string) => {
+    if (isPending(TRASH_PENDING_KEY.delete(id))) return;
     try {
       await request(`/api/admin/comments/${id}`, {
         method: 'DELETE',
         actionName: 'dashboard.comments.delete-permanent',
+        pendingKey: TRASH_PENDING_KEY.delete(id),
       });
       setItems((p) => p.filter((i) => i.id !== id));
     } catch (err) {
@@ -149,6 +163,7 @@ export default function CommentsTrashPage() {
   const toggleAll = () => setSelected(allSelected ? new Set() : new Set(items.map((i) => i.id)));
 
   const restoreSelected = async () => {
+    if (isBulkRestorePending) return;
     try {
       const selectedIds = Array.from(selected);
       const result = await runBulkAction({
@@ -158,6 +173,7 @@ export default function CommentsTrashPage() {
           request(`/api/admin/comments/${id}`, {
             method: 'PATCH',
             actionName: 'dashboard.comments.restore',
+            pendingKey: TRASH_PENDING_KEY.bulkRestore,
             body: JSON.stringify({ status: 'PENDING' }),
           }).then(() => undefined),
       });
@@ -175,6 +191,7 @@ export default function CommentsTrashPage() {
   };
 
   const deleteSelected = async () => {
+    if (isBulkDeletePending) return;
     try {
       const selectedIds = Array.from(selected);
       const result = await runBulkAction({
@@ -184,6 +201,7 @@ export default function CommentsTrashPage() {
           request(`/api/admin/comments/${id}`, {
             method: 'DELETE',
             actionName: 'dashboard.comments.delete-permanent',
+            pendingKey: TRASH_PENDING_KEY.bulkDelete,
           }).then(() => undefined),
       });
       const failedIds = new Set(result.failures.map((entry) => entry.id));
@@ -252,22 +270,26 @@ export default function CommentsTrashPage() {
             Select all ({items.length})
           </label>
           <div className="flex gap-2">
-            <button
+            <LoadingButton
               type="button"
               onClick={restoreSelected}
+              pending={isBulkRestorePending}
+              pendingLabel="Restoring…"
               disabled={selected.size === 0}
               className="flex items-center gap-1.5 rounded-xl border border-[#e1e5ee] px-3 py-2 text-[0.8rem] text-gray-700 hover:bg-gray-50 disabled:opacity-40"
             >
               <MdRestoreFromTrash size={15} /> Restore selected
-            </button>
-            <button
+            </LoadingButton>
+            <LoadingButton
               type="button"
               onClick={deleteSelected}
+              pending={isBulkDeletePending}
+              pendingLabel="Deleting…"
               disabled={selected.size === 0}
               className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-2 text-[0.8rem] text-white hover:bg-red-700 disabled:opacity-40"
             >
               <MdDeleteOutline size={15} /> Delete selected
-            </button>
+            </LoadingButton>
           </div>
         </div>
       )}
@@ -301,22 +323,28 @@ export default function CommentsTrashPage() {
                     {item.trashedAt}
                   </p>
                   <div className="mt-3 flex items-center gap-2">
-                    <button
+                    <LoadingButton
                       type="button"
                       onClick={() => restore(item.id)}
+                      pending={isPending(TRASH_PENDING_KEY.restore(item.id))}
+                      pendingLabel="Restoring…"
+                      spinnerSize="xs"
                       className="flex items-center gap-1.5 rounded-xl bg-[#0f1116] px-3 py-2 text-[0.78rem] font-medium text-white hover:opacity-90 transition-opacity"
                     >
                       <MdRestoreFromTrash size={14} /> Restore
-                    </button>
+                    </LoadingButton>
                     {confirmId === item.id ? (
                       <>
-                        <button
+                        <LoadingButton
                           type="button"
                           onClick={() => deletePerm(item.id)}
+                          pending={isPending(TRASH_PENDING_KEY.delete(item.id))}
+                          pendingLabel="Deleting…"
+                          spinnerSize="xs"
                           className="rounded-xl bg-red-600 px-3 py-2 text-[0.78rem] font-medium text-white hover:bg-red-700"
                         >
                           Confirm
-                        </button>
+                        </LoadingButton>
                         <button
                           type="button"
                           onClick={() => setConfirmId(null)}

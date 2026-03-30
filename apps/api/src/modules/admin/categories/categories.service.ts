@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { normalizePagination } from '../../../common/utils/pagination';
+import { MediaStorageService } from '../../media-storage/media-storage.service';
 
 export type CategoryCreateInput = {
   name: string;
@@ -21,7 +22,99 @@ export class CategoriesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly mediaStorageService: MediaStorageService,
   ) {}
+
+  private readonly mediaRefPrefix = 'media:';
+
+  private extractMediaRef(value?: string | null): string | null {
+    if (!value) return null;
+    if (!value.startsWith(this.mediaRefPrefix)) return null;
+    const id = value.slice(this.mediaRefPrefix.length).trim();
+    return id || null;
+  }
+
+  private async hydrateCategoryImageRefs<T extends { imageUrl?: string | null }>(
+    items: T[],
+  ): Promise<T[]> {
+    const ids = new Set<string>();
+
+    for (const item of items) {
+      const refId = this.extractMediaRef(item.imageUrl ?? null);
+      if (refId) ids.add(refId);
+    }
+
+    if (ids.size === 0) {
+      return items;
+    }
+
+    const assets = await this.prisma.mediaAsset.findMany({
+      where: { id: { in: Array.from(ids) } },
+      select: { id: true, url: true },
+    });
+    const assetMap = new Map(assets.map((asset) => [asset.id, asset.url]));
+
+    return items.map((item) => {
+      const refId = this.extractMediaRef(item.imageUrl ?? null);
+      if (!refId) return item;
+      return {
+        ...item,
+        imageUrl: assetMap.get(refId) ?? null,
+      };
+    });
+  }
+
+  private async buildCategoryMediaUsageRows(
+    targetId: string,
+    imageUrl?: string | null,
+  ): Promise<Prisma.MediaUsageCreateManyInput[]> {
+    const normalized = imageUrl?.trim();
+    if (!normalized) {
+      return [];
+    }
+
+    const refId = this.extractMediaRef(normalized);
+    const assetId =
+      refId ??
+      (
+        await this.prisma.mediaAsset.findFirst({
+          where: { url: normalized },
+          select: { id: true },
+        })
+      )?.id;
+
+    if (!assetId) {
+      return [];
+    }
+
+    return [
+      {
+        assetId,
+        targetType: 'CATEGORY',
+        targetId,
+        field: 'imageUrl',
+      },
+    ];
+  }
+
+  private async syncCategoryMediaUsage(targetId: string, imageUrl?: string | null) {
+    const rows = await this.buildCategoryMediaUsageRows(targetId, imageUrl);
+
+    await this.prisma.mediaUsage.deleteMany({
+      where: {
+        targetType: 'CATEGORY',
+        targetId,
+      },
+    });
+
+    if (rows.length === 0) {
+      return;
+    }
+
+    await this.prisma.mediaUsage.createMany({
+      data: rows,
+    });
+  }
 
   private async ensureParentExists(parentId: string) {
     const parent = await this.prisma.category.findFirst({
@@ -68,9 +161,10 @@ export class CategoriesService {
       }),
       this.prisma.category.count({ where }),
     ]);
+    const hydratedItems = await this.hydrateCategoryImageRefs(items);
 
     return {
-      items: items.map((category) => ({
+      items: hydratedItems.map((category) => ({
         ...category,
         stats: {
           prompts: category._count.prompts,
@@ -92,7 +186,8 @@ export class CategoriesService {
     if (!category) {
       throw new NotFoundException('Category not found');
     }
-    return category;
+    const [hydrated] = await this.hydrateCategoryImageRefs([category]);
+    return hydrated ?? category;
   }
 
   async create(actorId: string, data: CategoryCreateInput) {
@@ -108,17 +203,23 @@ export class CategoriesService {
       await this.ensureParentExists(data.parentId);
     }
 
+    const hostedImageUrl = await this.mediaStorageService.maybeUploadImageDataUrl(
+      data.imageUrl,
+      'categories',
+    );
+
     const category = await this.prisma.category.create({
       data: {
         name,
         slug,
         description: data.description ?? null,
-        imageUrl: data.imageUrl ?? null,
+        imageUrl: hostedImageUrl ?? null,
         colorConfig: data.colorConfig ?? undefined,
         sortOrder: data.sortOrder ?? 0,
         parent: data.parentId ? { connect: { id: data.parentId } } : undefined,
       },
     });
+    await this.syncCategoryMediaUsage(category.id, category.imageUrl);
 
     await this.auditService.log({
       actorId,
@@ -128,7 +229,8 @@ export class CategoriesService {
       metadata: { name: category.name },
     });
 
-    return category;
+    const [hydrated] = await this.hydrateCategoryImageRefs([category]);
+    return hydrated ?? category;
   }
 
   async update(actorId: string, id: string, data: CategoryUpdateInput) {
@@ -145,13 +247,18 @@ export class CategoriesService {
       await this.ensureParentExists(data.parentId);
     }
 
+    const hostedImageUrl =
+      data.imageUrl === undefined
+        ? undefined
+        : await this.mediaStorageService.maybeUploadImageDataUrl(data.imageUrl, 'categories');
+
     const category = await this.prisma.category.update({
       where: { id },
       data: {
         name: data.name?.trim(),
         slug: data.slug?.trim(),
         description: data.description ?? undefined,
-        imageUrl: data.imageUrl ?? undefined,
+        imageUrl: hostedImageUrl ?? undefined,
         colorConfig: data.colorConfig ?? undefined,
         sortOrder: data.sortOrder ?? undefined,
         parent:
@@ -159,9 +266,10 @@ export class CategoriesService {
             ? undefined
             : data.parentId
               ? { connect: { id: data.parentId } }
-              : { disconnect: true },
+            : { disconnect: true },
       },
     });
+    await this.syncCategoryMediaUsage(category.id, category.imageUrl);
 
     await this.auditService.log({
       actorId,
@@ -171,7 +279,8 @@ export class CategoriesService {
       metadata: { name: category.name },
     });
 
-    return category;
+    const [hydrated] = await this.hydrateCategoryImageRefs([category]);
+    return hydrated ?? category;
   }
 
   async remove(actorId: string, id: string) {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { LoadingButton } from './ui/loading-button';
 
 type SubmitState = 'idle' | 'submitting' | 'success' | 'error';
 
@@ -182,14 +183,15 @@ export function ContactMessageForm({ source = 'contact_page', pagePath }: Contac
         />
       </label>
 
-      <button
+      <LoadingButton
         type="submit"
+        pending={isSubmitting}
+        pendingLabel="Sending..."
+        spinnerSize="xs"
         className="h-[50px] w-full rounded-full bg-[#111111] px-6 text-[1rem] text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-70"
-        disabled={isSubmitting}
-        aria-busy={isSubmitting}
       >
-        {isSubmitting ? 'Sending...' : 'Send message'}
-      </button>
+        Send message
+      </LoadingButton>
 
       {submitState === 'success' ? (
         <p className="text-[0.88rem] leading-[1.6] text-emerald-700" role="status">

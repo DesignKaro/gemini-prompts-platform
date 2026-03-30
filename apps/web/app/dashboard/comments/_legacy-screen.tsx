@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import Link from 'next/link';
 import {
   MdSearch,
   MdFilterList,
@@ -17,6 +18,8 @@ import {
 import { useAdminApi } from '../../components/dashboard/use-admin-api';
 import { ActionError } from '../../components/dashboard/action-error';
 import { bulkActionMessage, runBulkAction } from '../../components/dashboard/bulk-action';
+import { AuthorAvatar } from '../../components/author-avatar';
+import { LoadingButton } from '../../components/ui/loading-button';
 import { formatRelativeTimeOrDash, titleCase } from '../../../lib/utils/format';
 
 type CommentStatus = 'PENDING' | 'APPROVED' | 'TRASH';
@@ -25,7 +28,10 @@ type Comment = {
   id: string;
   authorName: string;
   authorEmail?: string | null;
-  avatarInitials: string;
+  authorHandle?: string | null;
+  authorAvatarUrl?: string | null;
+  authorAvatarUpdatedAt?: string | null;
+  authorProfileHref?: string | null;
   targetTitle: string;
   content: string;
   status: CommentStatus;
@@ -41,7 +47,14 @@ type CommentResponse = {
     createdAt: string;
     parentId?: string | null;
     targetTitle?: string | null;
-    author?: { id: string; name?: string | null; email?: string | null } | null;
+    author?: {
+      id: string;
+      name?: string | null;
+      email?: string | null;
+      handle?: string | null;
+      avatarUrl?: string | null;
+      avatarUpdatedAt?: string | null;
+    } | null;
   }>;
   total: number;
 };
@@ -50,6 +63,15 @@ const STATUS_TABS = ['All', 'Pending', 'Approved', 'Trash'] as const;
 type StatusTab = (typeof STATUS_TABS)[number];
 
 const BULK_OPTIONS = ['Approve selected', 'Move to Trash', 'Delete permanently'];
+const COMMENT_PENDING_KEY = {
+  approve: (id: string) => `dashboard.comments.approve:${id}`,
+  trash: (id: string) => `dashboard.comments.trash:${id}`,
+  update: (id: string) => `dashboard.comments.update:${id}`,
+  reply: (id: string) => `dashboard.comments.reply:${id}`,
+  bulkApprove: 'dashboard.comments.bulk.approve',
+  bulkTrash: 'dashboard.comments.bulk.trash',
+  bulkDelete: 'dashboard.comments.bulk.delete',
+};
 
 function statusStyles(status: CommentStatus) {
   if (status === 'APPROVED') return 'bg-green-50 text-green-600 border-green-100';
@@ -58,7 +80,7 @@ function statusStyles(status: CommentStatus) {
 }
 
 export default function CommentsPage() {
-  const { request, status: authStatus } = useAdminApi();
+  const { request, status: authStatus, isPending } = useAdminApi();
   const [comments, setComments] = useState<Comment[]>([]);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<StatusTab>('All');
@@ -76,6 +98,10 @@ export default function CommentsPage() {
   // Edit Comment State
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState('');
+  const isBulkProcessing =
+    isPending(COMMENT_PENDING_KEY.bulkApprove) ||
+    isPending(COMMENT_PENDING_KEY.bulkTrash) ||
+    isPending(COMMENT_PENDING_KEY.bulkDelete);
 
   useEffect(() => {
     if (authStatus !== 'authenticated') return;
@@ -98,21 +124,15 @@ export default function CommentsPage() {
           if (requestIdRef.current !== requestId) return;
           const mapped = (payload.items ?? []).map((item) => {
             const authorName = item.author?.name || item.author?.email || 'Anonymous';
-            const emailFallback = item.author?.email?.trim() || '';
-            const initialsSource = authorName !== 'Anonymous' ? authorName : emailFallback;
-            const initials = initialsSource
-              ? initialsSource
-                  .split(' ')
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .map((part) => part[0]?.toUpperCase() ?? '')
-                  .join('')
-              : 'NA';
+            const authorHandle = item.author?.handle?.trim() || null;
             return {
               id: item.id,
               authorName,
               authorEmail: item.author?.email ?? null,
-              avatarInitials: initials || 'NA',
+              authorHandle,
+              authorAvatarUrl: item.author?.avatarUrl ?? null,
+              authorAvatarUpdatedAt: item.author?.avatarUpdatedAt ?? null,
+              authorProfileHref: authorHandle ? `/u/${encodeURIComponent(authorHandle)}` : null,
               targetTitle: item.targetTitle ?? 'Untitled',
               content: item.content,
               status: item.status,
@@ -140,10 +160,12 @@ export default function CommentsPage() {
   }, [authStatus, request, search]);
 
   const approveComment = async (id: string) => {
+    if (isPending(COMMENT_PENDING_KEY.approve(id))) return;
     try {
       await request(`/api/admin/comments/${id}`, {
         method: 'PATCH',
         actionName: 'dashboard.comments.approve',
+        pendingKey: COMMENT_PENDING_KEY.approve(id),
         body: JSON.stringify({ status: 'APPROVED' }),
       });
       setComments((prev) => prev.map((c) => (c.id === id ? { ...c, status: 'APPROVED' } : c)));
@@ -154,10 +176,12 @@ export default function CommentsPage() {
   };
 
   const trashComment = async (id: string) => {
+    if (isPending(COMMENT_PENDING_KEY.trash(id))) return;
     try {
       await request(`/api/admin/comments/${id}`, {
         method: 'PATCH',
         actionName: 'dashboard.comments.trash',
+        pendingKey: COMMENT_PENDING_KEY.trash(id),
         body: JSON.stringify({ status: 'TRASH' }),
       });
       setComments((prev) => prev.map((c) => (c.id === id ? { ...c, status: 'TRASH' } : c)));
@@ -169,30 +193,29 @@ export default function CommentsPage() {
 
   const sendReply = async (id: string) => {
     if (!replyText.trim()) return;
+    if (isPending(COMMENT_PENDING_KEY.reply(id))) return;
     try {
       const created = await request<CommentResponse['items'][number]>(
         `/api/admin/comments/${id}/reply`,
         {
           method: 'POST',
           actionName: 'dashboard.comments.reply',
+          pendingKey: COMMENT_PENDING_KEY.reply(id),
           body: JSON.stringify({ content: replyText.trim() }),
         },
       );
       const authorName = created.author?.name || created.author?.email || 'You';
-      const initialsSource = authorName || created.author?.email || 'You';
-      const initials = initialsSource
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part) => part[0]?.toUpperCase() ?? '')
-        .join('');
+      const authorHandle = created.author?.handle?.trim() || null;
       setComments((prev) => [
         ...prev,
         {
           id: created.id,
           authorName,
           authorEmail: created.author?.email ?? null,
-          avatarInitials: initials || 'YOU',
+          authorHandle,
+          authorAvatarUrl: created.author?.avatarUrl ?? null,
+          authorAvatarUpdatedAt: created.author?.avatarUpdatedAt ?? null,
+          authorProfileHref: authorHandle ? `/u/${encodeURIComponent(authorHandle)}` : null,
           targetTitle: created.targetTitle ?? 'Untitled',
           content: created.content,
           status: created.status,
@@ -210,10 +233,12 @@ export default function CommentsPage() {
 
   const saveEdit = async (id: string) => {
     if (!editCommentText.trim()) return;
+    if (isPending(COMMENT_PENDING_KEY.update(id))) return;
     try {
       await request(`/api/admin/comments/${id}`, {
         method: 'PATCH',
         actionName: 'dashboard.comments.update',
+        pendingKey: COMMENT_PENDING_KEY.update(id),
         body: JSON.stringify({ content: editCommentText.trim() }),
       });
       setComments((prev) =>
@@ -240,6 +265,7 @@ export default function CommentsPage() {
   };
 
   const handleBulk = async (action: string) => {
+    if (isBulkProcessing) return;
     try {
       const selectedList = Array.from(selectedIds);
       if (action === 'Approve selected') {
@@ -250,6 +276,7 @@ export default function CommentsPage() {
             request(`/api/admin/comments/${id}`, {
               method: 'PATCH',
               actionName: 'dashboard.comments.approve',
+              pendingKey: COMMENT_PENDING_KEY.bulkApprove,
               body: JSON.stringify({ status: 'APPROVED' }),
             }).then(() => undefined),
         });
@@ -275,6 +302,7 @@ export default function CommentsPage() {
             request(`/api/admin/comments/${id}`, {
               method: 'PATCH',
               actionName: 'dashboard.comments.trash',
+              pendingKey: COMMENT_PENDING_KEY.bulkTrash,
               body: JSON.stringify({ status: 'TRASH' }),
             }).then(() => undefined),
         });
@@ -300,6 +328,7 @@ export default function CommentsPage() {
             request(`/api/admin/comments/${id}`, {
               method: 'DELETE',
               actionName: 'dashboard.comments.delete-permanent',
+              pendingKey: COMMENT_PENDING_KEY.bulkDelete,
             }).then(() => undefined),
         });
         const failedIds = new Set(result.failures.map((entry) => entry.id));
@@ -418,14 +447,16 @@ export default function CommentsPage() {
                 Cancel
               </button>
               <div className="relative">
-                <button
+                <LoadingButton
                   type="button"
                   onClick={() => setIsBulkOpen((v) => !v)}
+                  pending={isBulkProcessing}
+                  pendingLabel="Processing…"
                   disabled={selectedIds.size === 0}
                   className="inline-flex items-center gap-2 rounded-xl bg-[#0f1116] px-4 py-2 text-[0.85rem] font-medium text-white shadow-sm hover:opacity-90 transition-opacity disabled:opacity-40"
                 >
                   Bulk actions {selectedIds.size > 0 && `(${selectedIds.size})`}
-                </button>
+                </LoadingButton>
                 {isBulkOpen && selectedIds.size > 0 && (
                   <div className="absolute right-0 top-[calc(100%+6px)] z-20 w-52 rounded-[14px] border border-[#e2e6ee] bg-white p-1.5 shadow-xl">
                     {BULK_OPTIONS.map((opt) => (
@@ -433,6 +464,7 @@ export default function CommentsPage() {
                         key={opt}
                         type="button"
                         onClick={() => handleBulk(opt)}
+                        disabled={isBulkProcessing}
                         className={`flex w-full items-center rounded-[10px] px-3 py-2 text-[0.82rem] hover:bg-gray-50 transition-colors text-left ${
                           opt === 'Delete permanently' ? 'text-[#b94a4a]' : 'text-[#0f1116]'
                         }`}
@@ -535,18 +567,41 @@ export default function CommentsPage() {
                           className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded accent-[#0f1116]"
                         />
                       )}
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f0f2f7] text-[0.8rem] font-medium text-[#0f1116]">
-                        {comment.avatarInitials}
-                      </div>
+                      <AuthorAvatar
+                        name={comment.authorName}
+                        avatarUrl={comment.authorAvatarUrl}
+                        avatarUpdatedAt={comment.authorAvatarUpdatedAt}
+                        className="h-10 w-10 text-[0.8rem] font-medium text-[#0f1116]"
+                        initialClassName="text-[0.8rem] font-medium text-[#0f1116]"
+                      />
                       <div className="space-y-1 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-[0.9rem] font-medium text-[#0f1116]">
-                            {comment.authorName}
-                          </p>
+                          {comment.authorProfileHref ? (
+                            <Link
+                              href={comment.authorProfileHref}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[0.9rem] font-medium text-[#0f1116] hover:underline"
+                            >
+                              {comment.authorName}
+                            </Link>
+                          ) : (
+                            <p className="text-[0.9rem] font-medium text-[#0f1116]">
+                              {comment.authorName}
+                            </p>
+                          )}
+                          {comment.authorHandle ? (
+                            <span className="rounded-full bg-[#eef2f7] px-2 py-0.5 text-[0.72rem] font-medium text-[#556070]">
+                              @{comment.authorHandle}
+                            </span>
+                          ) : null}
                           <span className="text-[0.78rem] text-gray-500">
                             {formatRelativeTimeOrDash(comment.createdAt)}
                           </span>
                         </div>
+                        {comment.authorEmail ? (
+                          <p className="text-[0.76rem] text-[#7b8492]">{comment.authorEmail}</p>
+                        ) : null}
 
                         {editingCommentId === comment.id ? (
                           <div className="mt-2 flex items-end gap-2">
@@ -558,14 +613,17 @@ export default function CommentsPage() {
                               autoFocus
                             />
                             <div className="flex flex-col gap-1.5 min-w-[80px]">
-                              <button
+                              <LoadingButton
                                 type="button"
                                 onClick={() => saveEdit(comment.id)}
+                                pending={isPending(COMMENT_PENDING_KEY.update(comment.id))}
+                                pendingLabel="Saving…"
+                                spinnerSize="xs"
                                 className="flex items-center justify-center gap-1.5 rounded-xl bg-[#0f1116] px-3 py-2 text-[0.78rem] font-medium text-white hover:opacity-90 transition-opacity"
                               >
                                 <MdCheck size={14} />
                                 Save
-                              </button>
+                              </LoadingButton>
                               <button
                                 type="button"
                                 onClick={() => {
@@ -643,24 +701,30 @@ export default function CommentsPage() {
                                 </div>
                               ) : null}
                               {activeReply.status !== 'APPROVED' && (
-                                <button
+                                <LoadingButton
                                   type="button"
                                   onClick={() => approveComment(activeReply.id)}
+                                  pending={isPending(COMMENT_PENDING_KEY.approve(activeReply.id))}
+                                  pendingLabel="Approving…"
+                                  spinnerSize="xs"
                                   className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[0.72rem] font-medium text-green-700 hover:bg-green-100 transition-colors"
                                 >
                                   <MdCheck size={13} />
                                   Approve reply
-                                </button>
+                                </LoadingButton>
                               )}
                               {activeReply.status !== 'TRASH' && (
-                                <button
+                                <LoadingButton
                                   type="button"
                                   onClick={() => trashComment(activeReply.id)}
+                                  pending={isPending(COMMENT_PENDING_KEY.trash(activeReply.id))}
+                                  pendingLabel="Trashing…"
+                                  spinnerSize="xs"
                                   className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-[0.72rem] font-medium text-red-700 hover:bg-red-100 transition-colors"
                                 >
                                   <MdDeleteOutline size={13} />
                                   Trash reply
-                                </button>
+                                </LoadingButton>
                               )}
                             </div>
                           </div>
@@ -678,14 +742,17 @@ export default function CommentsPage() {
                               autoFocus
                             />
                             <div className="flex flex-col gap-1.5">
-                              <button
+                              <LoadingButton
                                 type="button"
                                 onClick={() => sendReply(comment.id)}
+                                pending={isPending(COMMENT_PENDING_KEY.reply(comment.id))}
+                                pendingLabel="Sending…"
+                                spinnerSize="xs"
                                 className="flex items-center gap-1.5 rounded-xl bg-[#0f1116] px-3 py-2 text-[0.78rem] font-medium text-white hover:opacity-90 transition-opacity"
                               >
                                 <MdSend size={14} />
                                 Send
-                              </button>
+                              </LoadingButton>
                               <button
                                 type="button"
                                 onClick={() => {
@@ -713,14 +780,17 @@ export default function CommentsPage() {
                       </span>
                       <div className="flex items-center gap-2 text-[0.8rem]">
                         {comment.status !== 'APPROVED' && (
-                          <button
+                          <LoadingButton
                             type="button"
                             onClick={() => approveComment(comment.id)}
+                            pending={isPending(COMMENT_PENDING_KEY.approve(comment.id))}
+                            pendingLabel="Approving…"
+                            spinnerSize="xs"
                             className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1.5 text-[0.78rem] font-medium text-green-700 hover:bg-green-100 transition-colors"
                           >
                             <MdCheck size={14} />
                             Approve
-                          </button>
+                          </LoadingButton>
                         )}
                         <button
                           type="button"
@@ -751,14 +821,17 @@ export default function CommentsPage() {
                           Edit
                         </button>
                         {comment.status !== 'TRASH' && (
-                          <button
+                          <LoadingButton
                             type="button"
                             onClick={() => trashComment(comment.id)}
+                            pending={isPending(COMMENT_PENDING_KEY.trash(comment.id))}
+                            pendingLabel="Trashing…"
+                            spinnerSize="xs"
                             className="inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-1.5 text-[0.78rem] font-medium text-red-700 hover:bg-red-100 transition-colors"
                           >
                             <MdDeleteOutline size={14} />
                             Trash
-                          </button>
+                          </LoadingButton>
                         )}
                       </div>
                     </div>

@@ -24,6 +24,7 @@ import { GoogleExchangeDto } from './dto/google-exchange.dto';
 import { RegisterDto } from './dto/register.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import type { AuthUser } from './types/auth-user.type';
+import { MediaStorageService } from '../media-storage/media-storage.service';
 import { signJwt, verifyJwt } from './utils/jwt.util';
 import { hashPassword, verifyPassword } from './utils/password.util';
 import { isProtectedSuperadminEmail } from './utils/superadmin.util';
@@ -201,10 +202,12 @@ export class AuthService {
   private readonly refreshTokenTtlDays: number;
   private readonly googleClientId: string;
   private readonly isProduction: boolean;
+  private readonly mediaRefPrefix = 'media:';
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService<Env, true>,
+    private readonly mediaStorageService: MediaStorageService,
   ) {
     this.jwtSecret = this.configService.getOrThrow('JWT_SECRET', { infer: true });
     this.jwtAccessTtlSeconds = this.configService.getOrThrow('JWT_ACCESS_TTL_SECONDS', {
@@ -555,6 +558,10 @@ export class AuthService {
     const normalizedTags =
       dto.focusTags?.map((tag) => tag.trim()).filter((tag) => tag.length > 0) ?? undefined;
     const normalizedAvatar = this.normalizeAvatarUrl(dto.avatarUrl);
+    const hostedAvatar = await this.mediaStorageService.maybeUploadImageDataUrl(
+      normalizedAvatar,
+      'avatars',
+    );
     let nextHandle: string | undefined;
 
     if (dto.handle !== undefined) {
@@ -586,11 +593,12 @@ export class AuthService {
         profileTitle: normalizedTitle,
         bio: normalizedBio,
         focusTags: normalizedTags,
-        avatarUrl: normalizedAvatar,
-        avatarUpdatedAt: normalizedAvatar ? new Date() : null,
+        avatarUrl: hostedAvatar ?? null,
+        avatarUpdatedAt: hostedAvatar ? new Date() : null,
       },
       select: this.publicUserSelect,
     });
+    await this.syncUserAvatarMediaUsage(updatedUser.id, updatedUser.avatarUrl);
 
     const publicUser = await this.ensureProtectedSuperadminRole(this.toPublicUser(updatedUser));
     this.assertNotSuspended(updatedUser.suspendedAt);
@@ -1246,6 +1254,52 @@ export class AuthService {
     return trimmed;
   }
 
+  private extractMediaRef(value?: string | null): string | null {
+    if (!value) return null;
+    if (!value.startsWith(this.mediaRefPrefix)) return null;
+    const id = value.slice(this.mediaRefPrefix.length).trim();
+    return id || null;
+  }
+
+  private async syncUserAvatarMediaUsage(
+    userId: string,
+    avatarUrl?: string | null,
+    client: PrismaClientLike = this.prisma,
+  ) {
+    const normalized = avatarUrl?.trim();
+    const refId = this.extractMediaRef(normalized ?? null);
+    const assetId =
+      refId ??
+      (normalized
+        ? (
+            await client.mediaAsset.findFirst({
+              where: { url: normalized },
+              select: { id: true },
+            })
+          )?.id
+        : null);
+
+    await client.mediaUsage.deleteMany({
+      where: {
+        targetType: 'USER',
+        targetId: userId,
+      },
+    });
+
+    if (!assetId) {
+      return;
+    }
+
+    await client.mediaUsage.create({
+      data: {
+        assetId,
+        targetType: 'USER',
+        targetId: userId,
+        field: 'avatarUrl',
+      },
+    });
+  }
+
   private normalizeHandle(value: string | undefined | null): string | null {
     const raw = value?.trim();
     if (!raw) return null;
@@ -1573,6 +1627,7 @@ export class AuthService {
       data: updateData,
       select: this.publicUserSelect,
     });
+    await this.syncUserAvatarMediaUsage(updatedUser.id, updatedUser.avatarUrl, tx);
     return this.toPublicUser(updatedUser);
   }
 }

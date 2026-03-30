@@ -5,10 +5,8 @@ import {
   getPromptCategoryName,
   type PublicPrompt,
 } from '../../lib/public-content';
+import { resolvePromptImage } from '../../lib/content-image-fallbacks';
 import { PromptCardInteractions } from './prompt-card-interactions';
-
-const FALLBACK_PROMPT_IMAGE =
-  'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1200';
 
 type PromptCardServerProps = {
   prompt: PublicPrompt;
@@ -39,10 +37,11 @@ export function PromptCardServer({ prompt, showReadTime = true }: PromptCardServ
         className="relative aspect-[4/3] w-full overflow-hidden rounded-[24px]"
       >
         <Image
-          src={prompt.image || FALLBACK_PROMPT_IMAGE}
+          src={resolvePromptImage(prompt.image, prompt.slug || prompt.id)}
           alt={prompt.title}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          unoptimized
           className="object-cover"
         />
         <Link

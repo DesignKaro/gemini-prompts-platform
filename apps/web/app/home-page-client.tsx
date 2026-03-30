@@ -5,27 +5,6 @@ import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import ctaRobo from '../Assets/Page/cta-robo.png';
-import communityImage1 from '../Assets/Community/1.webp';
-import communityImage2 from '../Assets/Community/2.webp';
-import communityImage3 from '../Assets/Community/3.webp';
-import communityImage4 from '../Assets/Community/4.webp';
-import communityImage5 from '../Assets/Community/5.webp';
-import communityImage6 from '../Assets/Community/6.webp';
-import communityImage7 from '../Assets/Community/7.webp';
-import communityImage8 from '../Assets/Community/8.webp';
-import communityImage9 from '../Assets/Community/9.webp';
-import communityImage10 from '../Assets/Community/10.webp';
-import communityImage11 from '../Assets/Community/11.webp';
-import communityImage12 from '../Assets/Community/12.webp';
-import communityImage13 from '../Assets/Community/13.webp';
-import communityImage14 from '../Assets/Community/14.webp';
-import communityImage15 from '../Assets/Community/15.webp';
-import communityImage16 from '../Assets/Community/16.webp';
-import communityImage17 from '../Assets/Community/17.webp';
-import communityImage18 from '../Assets/Community/18.webp';
-import communityImage19 from '../Assets/Community/19.webp';
-import communityImage20 from '../Assets/Community/20.webp';
 import { AuthorAvatar } from './components/author-avatar';
 import { HeroSearchDropdown } from './components/hero-search-dropdown';
 import { PostCardUI } from './components/post-card';
@@ -51,6 +30,12 @@ import {
   type PublicAuthor,
   type PublicPrompt,
 } from '../lib/public-content';
+import {
+  resolveCategoryImage,
+  resolvePostImage,
+  resolvePromptImage,
+} from '../lib/content-image-fallbacks';
+import { COMMUNITY_IMAGE_URLS, CTA_ROBO_URL } from '../lib/site-assets';
 import { refreshSession } from '../lib/utils/session';
 
 const SESSION_FALLBACK = {
@@ -158,8 +143,6 @@ const watchReadListenInitialTake = 8;
 const watchReadListenLoadMoreTake = 4;
 const watchReadListenSkeletonCount = 4;
 const recentPostsSkeletonCount = 4;
-const watchReadListenImageFallback =
-  'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1200';
 
 function toSlug(value: string) {
   return value
@@ -233,42 +216,42 @@ const testimonials = [
       'I used to test 20+ prompts to get one usable image. Now I get strong portrait options in a few tries, especially for lighting and mood.',
     name: 'Kyle Weznick',
     role: 'Wedding Photographer, Austin',
-    avatar: `url(${communityImage3.src})`,
+    avatar: `url(${COMMUNITY_IMAGE_URLS[2]})`,
   },
   {
     quote:
       'The prompts are easy to copy and tweak. I get better skin tones, cleaner outfits, and backgrounds that actually match my concept.',
     name: 'Nina Alvarez',
     role: 'Reels Creator, Mumbai',
-    avatar: `url(${communityImage6.src})`,
+    avatar: `url(${COMMUNITY_IMAGE_URLS[5]})`,
   },
   {
     quote:
       'We use these prompts for product mockups and social posts. The image quality stays consistent, so our review cycle is much faster.',
     name: 'Rohan Mehta',
     role: 'Product Designer, Pixel Forge',
-    avatar: `url(${communityImage9.src})`,
+    avatar: `url(${COMMUNITY_IMAGE_URLS[8]})`,
   },
   {
     quote:
       'I am not a technical person, but this made AI image creation simple. I can turn rough ideas into polished visuals in minutes.',
     name: 'Elena Brooks',
     role: 'Content Manager, Buildlane',
-    avatar: `url(${communityImage12.src})`,
+    avatar: `url(${COMMUNITY_IMAGE_URLS[11]})`,
   },
   {
     quote:
       'For ads and thumbnails, these prompt packs save a lot of time. We test more visual angles without rewriting everything from scratch.',
     name: 'Marcus Lee',
     role: 'Growth Marketer, Brightbit',
-    avatar: `url(${communityImage15.src})`,
+    avatar: `url(${COMMUNITY_IMAGE_URLS[14]})`,
   },
   {
     quote:
       'What I like most is the friendly style. The prompts feel practical, and my feed now looks more cohesive across different themes.',
     name: 'Priya Nair',
     role: 'Lifestyle Creator, Orbit Atelier',
-    avatar: `url(${communityImage18.src})`,
+    avatar: `url(${COMMUNITY_IMAGE_URLS[17]})`,
   },
 ];
 
@@ -276,86 +259,86 @@ const communityCardSize = 'h-[80px] w-[80px] sm:h-[96px] sm:w-[96px]';
 
 const communityTopCards = [
   {
-    src: communityImage1.src,
+    src: COMMUNITY_IMAGE_URLS[0],
     alt: 'Community member portrait 1',
   },
   {
-    src: communityImage2.src,
+    src: COMMUNITY_IMAGE_URLS[1],
     alt: 'Community member portrait 2',
   },
   {
-    src: communityImage3.src,
+    src: COMMUNITY_IMAGE_URLS[2],
     alt: 'Community member portrait 3',
   },
   {
-    src: communityImage4.src,
+    src: COMMUNITY_IMAGE_URLS[3],
     alt: 'Community member portrait 4',
   },
   {
-    src: communityImage5.src,
+    src: COMMUNITY_IMAGE_URLS[4],
     alt: 'Community member portrait 5',
   },
   {
-    src: communityImage6.src,
+    src: COMMUNITY_IMAGE_URLS[5],
     alt: 'Community member portrait 6',
   },
   {
-    src: communityImage7.src,
+    src: COMMUNITY_IMAGE_URLS[6],
     alt: 'Community member portrait 7',
   },
   {
-    src: communityImage8.src,
+    src: COMMUNITY_IMAGE_URLS[7],
     alt: 'Community member portrait 8',
   },
   {
-    src: communityImage9.src,
+    src: COMMUNITY_IMAGE_URLS[8],
     alt: 'Community member portrait 9',
   },
   {
-    src: communityImage10.src,
+    src: COMMUNITY_IMAGE_URLS[9],
     alt: 'Community member portrait 10',
   },
 ];
 
 const communityBottomCards = [
   {
-    src: communityImage11.src,
+    src: COMMUNITY_IMAGE_URLS[10],
     alt: 'Community member portrait 11',
   },
   {
-    src: communityImage12.src,
+    src: COMMUNITY_IMAGE_URLS[11],
     alt: 'Community member portrait 12',
   },
   {
-    src: communityImage13.src,
+    src: COMMUNITY_IMAGE_URLS[12],
     alt: 'Community member portrait 13',
   },
   {
-    src: communityImage14.src,
+    src: COMMUNITY_IMAGE_URLS[13],
     alt: 'Community member portrait 14',
   },
   {
-    src: communityImage15.src,
+    src: COMMUNITY_IMAGE_URLS[14],
     alt: 'Community member portrait 15',
   },
   {
-    src: communityImage16.src,
+    src: COMMUNITY_IMAGE_URLS[15],
     alt: 'Community member portrait 16',
   },
   {
-    src: communityImage17.src,
+    src: COMMUNITY_IMAGE_URLS[16],
     alt: 'Community member portrait 17',
   },
   {
-    src: communityImage18.src,
+    src: COMMUNITY_IMAGE_URLS[17],
     alt: 'Community member portrait 18',
   },
   {
-    src: communityImage19.src,
+    src: COMMUNITY_IMAGE_URLS[18],
     alt: 'Community member portrait 19',
   },
   {
-    src: communityImage20.src,
+    src: COMMUNITY_IMAGE_URLS[19],
     alt: 'Community member portrait 20',
   },
 ];
@@ -799,7 +782,7 @@ function toWatchReadListenCard(prompt: PublicPrompt): WatchReadListenCardViewMod
     title: prompt.title,
     author: prompt.author.name,
     date: formatDisplayDate(prompt.publishedAt || prompt.updatedAt),
-    image: prompt.image || watchReadListenImageFallback,
+    image: resolvePromptImage(prompt.image, prompt.slug || prompt.id),
     tags: resolvedTags,
     likes: prompt.likeCount,
     comments: prompt.commentCount,
@@ -1038,9 +1021,7 @@ export default function HomePageClient({
       slug: category.slug,
       title: category.name,
       articles: category.totalCount,
-      image:
-        category.imageUrl ||
-        'https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=900',
+      image: resolveCategoryImage(category.imageUrl, category.slug || category.id),
     })) ?? [];
   const displayTrendingPrompts = homeContent?.trendingPrompts ?? [];
   const displayTrendingAuthors = trendingAuthors.map((author) => ({
@@ -1054,9 +1035,7 @@ export default function HomePageClient({
   const displayRecentPosts =
     homeContent?.latestPosts?.map((post) => ({
       title: post.title,
-      image:
-        post.image ||
-        'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1100',
+      image: resolvePostImage(post.image, post.slug || post.id),
       readTime: estimateReadTime(post.excerpt || post.content),
       slug: post.slug,
     })) ?? [];
@@ -1067,18 +1046,16 @@ export default function HomePageClient({
       { slug: string; title: string; articles: number; image: string }
     >();
 
-    const fallbackCategoryImage =
-      'https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=900';
-
     const addCategory = (slug?: string | null, name?: string | null, image?: string | null) => {
       if (!slug || !name) return;
+      const resolvedImage = resolveCategoryImage(image, slug);
 
       const existing = bySlug.get(slug);
       if (existing) {
         bySlug.set(slug, {
           ...existing,
           articles: existing.articles + 1,
-          image: existing.image || image || fallbackCategoryImage,
+          image: existing.image || resolvedImage,
         });
         return;
       }
@@ -1087,7 +1064,7 @@ export default function HomePageClient({
         slug,
         title: name,
         articles: 1,
-        image: image || fallbackCategoryImage,
+        image: resolvedImage,
       });
     };
 
@@ -2054,6 +2031,7 @@ export default function HomePageClient({
                         fill
                         sizes="46px"
                         loading="lazy"
+                        unoptimized
                         className="object-cover"
                       />
                     </div>
@@ -2789,7 +2767,7 @@ export default function HomePageClient({
             <div
               className="absolute inset-x-[10%] bottom-0 top-[2%] z-10 rounded-[28px] bg-contain bg-center bg-no-repeat sm:inset-x-[12%] lg:inset-x-[16%]"
               style={{
-                backgroundImage: `url(${ctaRobo.src})`,
+                backgroundImage: `url(${CTA_ROBO_URL})`,
               }}
             />
           </div>

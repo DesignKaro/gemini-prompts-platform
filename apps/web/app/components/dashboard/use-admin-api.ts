@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { refreshSession } from '../../../lib/utils/session';
 import type { Session } from 'next-auth';
@@ -12,6 +12,8 @@ type RequestOptions = Omit<RequestInit, 'headers'> & {
   timeoutMs?: number;
   retryCount?: number;
   preventDuplicate?: boolean;
+  pendingKey?: string;
+  skipProcessingTracking?: boolean;
 };
 
 type ExtendedSession = Session & { authError?: string; authErrorMessage?: string };
@@ -31,7 +33,53 @@ type RequestExecutionContext = {
 };
 
 const DEFAULT_TIMEOUT_MS = 15_000;
+const MEDIA_UPLOAD_TIMEOUT_MS = 90_000;
 const DASHBOARD_ACTION_HEADER = 'x-dashboard-action';
+
+type PendingListener = () => void;
+
+const pendingCountsByKey = new Map<string, number>();
+const pendingListeners = new Set<PendingListener>();
+
+function normalizePendingKey(value?: string | null) {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
+}
+
+function notifyPendingListeners() {
+  pendingListeners.forEach((listener) => listener());
+}
+
+function incrementPendingCount(key: string) {
+  const current = pendingCountsByKey.get(key) ?? 0;
+  pendingCountsByKey.set(key, current + 1);
+  notifyPendingListeners();
+}
+
+function decrementPendingCount(key: string) {
+  const current = pendingCountsByKey.get(key) ?? 0;
+  if (current <= 1) {
+    pendingCountsByKey.delete(key);
+  } else {
+    pendingCountsByKey.set(key, current - 1);
+  }
+  notifyPendingListeners();
+}
+
+function subscribePending(listener: PendingListener) {
+  pendingListeners.add(listener);
+  return () => {
+    pendingListeners.delete(listener);
+  };
+}
+
+function hasAnyPending() {
+  return pendingCountsByKey.size > 0;
+}
+
+function hasPendingKey(key: string) {
+  return (pendingCountsByKey.get(key) ?? 0) > 0;
+}
 
 function isDashboardApiPath(path: string) {
   const normalizedPath = path.split('?')[0] ?? path;
@@ -66,6 +114,14 @@ function defaultActionName(method: string, path: string) {
   return `${method.toLowerCase()} ${cleanPath}`;
 }
 
+function defaultTimeoutForPath(path: string) {
+  const normalizedPath = path.split('?')[0] ?? path;
+  if (normalizedPath === '/api/admin/media/upload') {
+    return MEDIA_UPLOAD_TIMEOUT_MS;
+  }
+  return DEFAULT_TIMEOUT_MS;
+}
+
 export class DashboardApiError extends Error {
   readonly actionName: string;
   readonly path: string;
@@ -98,6 +154,15 @@ export function useAdminApi() {
   const authError = authSession?.authError;
   const authErrorMessage = authSession?.authErrorMessage;
   const inFlightRequestsRef = useRef(new Map<string, Promise<unknown>>());
+  const [pendingVersion, setPendingVersion] = useState(0);
+
+  useEffect(
+    () =>
+      subscribePending(() => {
+        setPendingVersion((current) => (current + 1) % 1_000_000);
+      }),
+    [],
+  );
 
   const apiBaseUrl = useMemo(() => {
     return process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:4000';
@@ -201,7 +266,7 @@ export function useAdminApi() {
         headers['content-type'] = 'application/json';
       }
 
-      const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+      const timeoutMs = options.timeoutMs ?? defaultTimeoutForPath(path);
       const timeoutController = new AbortController();
       const timeoutRef = window.setTimeout(() => timeoutController.abort(), timeoutMs);
 
@@ -349,6 +414,9 @@ export function useAdminApi() {
       const shouldPreventDuplicate = options.preventDuplicate ?? true;
       const isMutation = method !== 'GET' && method !== 'HEAD';
       const retryCount = Math.max(0, Math.min(options.retryCount ?? 1, 1));
+      const trackedPendingKey = !options.skipProcessingTracking
+        ? (normalizePendingKey(options.pendingKey) ?? (isMutation ? actionName : null))
+        : null;
 
       if (shouldPreventDuplicate) {
         const inFlight = inFlightRequestsRef.current.get(dedupeKey);
@@ -397,9 +465,16 @@ export function useAdminApi() {
         });
       };
 
+      if (trackedPendingKey) {
+        incrementPendingCount(trackedPendingKey);
+      }
+
       const operation = execute().finally(() => {
         if (shouldPreventDuplicate) {
           inFlightRequestsRef.current.delete(dedupeKey);
+        }
+        if (trackedPendingKey) {
+          decrementPendingCount(trackedPendingKey);
         }
       });
 
@@ -415,6 +490,16 @@ export function useAdminApi() {
   return {
     apiBaseUrl,
     request,
+    isPending: (key: string) => {
+      void pendingVersion;
+      const normalizedKey = normalizePendingKey(key);
+      if (!normalizedKey) return false;
+      return hasPendingKey(normalizedKey);
+    },
+    isAnyPending: (() => {
+      void pendingVersion;
+      return hasAnyPending();
+    })(),
     status,
     session,
   };

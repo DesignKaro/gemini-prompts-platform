@@ -22,6 +22,8 @@ import {
 } from '../../../lib/utils/permissions';
 import { Skeleton } from '../../components/ui/skeleton';
 import { useConfirmDialog } from '../../components/ui/confirm-dialog';
+import { InlineSpinner } from '../../components/ui/inline-spinner';
+import { LoadingButton } from '../../components/ui/loading-button';
 
 const SYSTEM_ROLE_OPTIONS = ['SUPERADMIN', 'ADMIN', 'EDITOR', 'MODERATOR', 'USER'] as const;
 
@@ -86,6 +88,16 @@ const DELETE_IMPACT_ITEMS: Array<{
   { key: 'subscriptions', label: 'Subscriptions' },
 ];
 
+const USER_PENDING_KEY = {
+  updateRole: (id: string) => `dashboard.users.update-role:${id}`,
+  updateCustomRoles: (id: string) => `dashboard.users.update-custom-roles:${id}`,
+  suspend: (id: string) => `dashboard.users.suspend:${id}`,
+  activate: (id: string) => `dashboard.users.activate:${id}`,
+  deleteImpact: (id: string) => `dashboard.users.delete-impact:${id}`,
+  delete: (id: string) => `dashboard.users.delete:${id}`,
+  create: 'dashboard.users.create',
+};
+
 function mapUser(user: ApiUser): UserItem {
   const roles = (user.roles ?? [])
     .map((assignment) => {
@@ -114,15 +126,13 @@ function mapUser(user: ApiUser): UserItem {
 }
 
 export default function UsersPage() {
-  const { request, status } = useAdminApi();
+  const { request, status, isPending } = useAdminApi();
   const { data: session } = useSession();
   const [users, setUsers] = useState<UserItem[]>([]);
   const [roles, setRoles] = useState<RoleSummary[]>([]);
   const [search, setSearch] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const [actionId, setActionId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState({
     name: '',
@@ -131,13 +141,11 @@ export default function UsersPage() {
     roleSelection: 'system:USER',
   });
   const [createError, setCreateError] = useState<string | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<UserItem | null>(null);
   const [deleteImpact, setDeleteImpact] = useState<DeleteImpact | null>(null);
   const [deleteTransferToUserId, setDeleteTransferToUserId] = useState('');
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleteImpactLoading, setIsDeleteImpactLoading] = useState(false);
-  const [isDeletingUser, setIsDeletingUser] = useState(false);
   const { confirm, dialog } = useConfirmDialog();
   const deleteImpactRequestRef = useRef(0);
 
@@ -227,6 +235,7 @@ export default function UsersPage() {
     const updated = await request<ApiUser>(`/api/admin/users/${id}`, {
       method: 'PATCH',
       actionName: 'dashboard.users.update',
+      pendingKey: USER_PENDING_KEY.updateRole(id),
       body: JSON.stringify({ role }),
     });
     return mapUser(updated);
@@ -236,6 +245,7 @@ export default function UsersPage() {
     const updated = await request<ApiUser>(`/api/admin/users/${id}/roles`, {
       method: 'PATCH',
       actionName: 'dashboard.users.roles.update',
+      pendingKey: USER_PENDING_KEY.updateCustomRoles(id),
       body: JSON.stringify({ roleIds }),
     });
     return mapUser(updated);
@@ -247,7 +257,12 @@ export default function UsersPage() {
       setLoadError(`Only ${PROTECTED_SUPERADMIN_EMAIL} can be assigned SUPERADMIN.`);
       return;
     }
-    setSavingId(user.id);
+    if (
+      isPending(USER_PENDING_KEY.updateRole(user.id)) ||
+      isPending(USER_PENDING_KEY.updateCustomRoles(user.id))
+    ) {
+      return;
+    }
     setLoadError(null);
     try {
       let updatedUser = user;
@@ -270,8 +285,6 @@ export default function UsersPage() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : (err as { message?: string }).message;
       setLoadError(message || 'Unable to update role.');
-    } finally {
-      setSavingId(null);
     }
   };
 
@@ -292,19 +305,20 @@ export default function UsersPage() {
       tone: 'default',
     });
     if (!ok) return;
-    setActionId(user.id);
     setLoadError(null);
     try {
+      const pendingKey =
+        nextAction === 'suspend' ? USER_PENDING_KEY.suspend(user.id) : USER_PENDING_KEY.activate(user.id);
+      if (isPending(pendingKey)) return;
       const updated = await request<ApiUser>(`/api/admin/users/${user.id}/${nextAction}`, {
         method: 'PATCH',
         actionName: nextAction === 'suspend' ? 'dashboard.users.suspend' : 'dashboard.users.activate',
+        pendingKey,
       });
       setUsers((prev) => prev.map((item) => (item.id === user.id ? mapUser(updated) : item)));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : (err as { message?: string }).message;
       setLoadError(message || 'Unable to update user status.');
-    } finally {
-      setActionId(null);
     }
   };
 
@@ -315,7 +329,6 @@ export default function UsersPage() {
     setDeleteTransferToUserId('');
     setDeleteError(null);
     setIsDeleteImpactLoading(false);
-    setIsDeletingUser(false);
   };
 
   const openDeleteModal = async (user: UserItem) => {
@@ -324,18 +337,20 @@ export default function UsersPage() {
       setLoadError('You cannot delete your own account.');
       return;
     }
+    const pendingKey = USER_PENDING_KEY.deleteImpact(user.id);
+    if (isPending(pendingKey)) return;
 
     setDeleteTarget(user);
     setDeleteImpact(null);
     setDeleteTransferToUserId('');
     setDeleteError(null);
     setIsDeleteImpactLoading(true);
-    setActionId(user.id);
     const requestId = ++deleteImpactRequestRef.current;
 
     try {
       const impact = await request<DeleteImpact>(`/api/admin/users/${user.id}/delete-impact`, {
         actionName: 'dashboard.users.delete-impact',
+        pendingKey,
       });
       if (deleteImpactRequestRef.current !== requestId) return;
       setDeleteImpact(impact);
@@ -346,7 +361,6 @@ export default function UsersPage() {
     } finally {
       if (deleteImpactRequestRef.current === requestId) {
         setIsDeleteImpactLoading(false);
-        setActionId(null);
       }
     }
   };
@@ -360,14 +374,15 @@ export default function UsersPage() {
     }
 
     setDeleteError(null);
-    setIsDeletingUser(true);
-    setActionId(deleteTarget.id);
+    const pendingKey = USER_PENDING_KEY.delete(deleteTarget.id);
+    if (isPending(pendingKey)) return;
     setLoadError(null);
 
     try {
       await request(`/api/admin/users/${deleteTarget.id}`, {
         method: 'DELETE',
         actionName: 'dashboard.users.delete',
+        pendingKey,
         body: JSON.stringify(
           deleteTransferToUserId ? { transferToUserId: deleteTransferToUserId } : {},
         ),
@@ -381,9 +396,6 @@ export default function UsersPage() {
         const message = err instanceof Error ? err.message : (err as { message?: string }).message;
         setDeleteError(message || 'Unable to delete user.');
       }
-    } finally {
-      setIsDeletingUser(false);
-      setActionId(null);
     }
   };
 
@@ -401,7 +413,6 @@ export default function UsersPage() {
   const closeCreateModal = () => {
     setIsCreateOpen(false);
     setCreateError(null);
-    setIsCreating(false);
   };
 
   const createUser = async () => {
@@ -418,12 +429,13 @@ export default function UsersPage() {
     const isCustom = selected.startsWith('custom:');
     const roleIds = isCustom ? [selected.replace('custom:', '')] : [];
     const role = isCustom ? 'USER' : (selected.replace('system:', '') as UserRole);
-    setIsCreating(true);
+    if (isPending(USER_PENDING_KEY.create)) return;
     setCreateError(null);
     try {
       const payload = await request<ApiUser>('/api/admin/users', {
         method: 'POST',
         actionName: 'dashboard.users.create',
+        pendingKey: USER_PENDING_KEY.create,
         body: JSON.stringify({
           name: createForm.name.trim() || null,
           email,
@@ -438,8 +450,6 @@ export default function UsersPage() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : (err as { message?: string }).message;
       setCreateError(message || 'Unable to create user.');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -613,7 +623,15 @@ export default function UsersPage() {
                           <select
                             className="w-full rounded-xl border border-[#e1e5ee] bg-white px-3 py-2 text-[0.85rem] text-[#0f1116]"
                             value={currentSelection}
-                            disabled={savingId === user.id}
+                            disabled={
+                              isPending(USER_PENDING_KEY.updateRole(user.id)) ||
+                              isPending(USER_PENDING_KEY.updateCustomRoles(user.id))
+                            }
+                            aria-busy={
+                              isPending(USER_PENDING_KEY.updateRole(user.id)) ||
+                              isPending(USER_PENDING_KEY.updateCustomRoles(user.id)) ||
+                              undefined
+                            }
                             onChange={(e) => applyRoleSelection(user, e.target.value)}
                           >
                             {combinedRoleOptions.map((option) => {
@@ -666,7 +684,19 @@ export default function UsersPage() {
                           <button
                             type="button"
                             onClick={() => toggleSuspend(user)}
-                            disabled={actionId === user.id || !canManageUsers || isLocked}
+                            disabled={
+                              isPending(USER_PENDING_KEY.suspend(user.id)) ||
+                              isPending(USER_PENDING_KEY.activate(user.id)) ||
+                              isPending(USER_PENDING_KEY.deleteImpact(user.id)) ||
+                              isPending(USER_PENDING_KEY.delete(user.id)) ||
+                              !canManageUsers ||
+                              isLocked
+                            }
+                            aria-busy={
+                              isPending(USER_PENDING_KEY.suspend(user.id)) ||
+                              isPending(USER_PENDING_KEY.activate(user.id)) ||
+                              undefined
+                            }
                             className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e1e5ee] text-[#0f1116] transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
                             aria-label={isSuspended ? 'Activate user' : 'Suspend user'}
                             title={
@@ -677,7 +707,10 @@ export default function UsersPage() {
                                   : 'Suspend'
                             }
                           >
-                            {isSuspended ? (
+                            {isPending(USER_PENDING_KEY.suspend(user.id)) ||
+                            isPending(USER_PENDING_KEY.activate(user.id)) ? (
+                              <InlineSpinner size="xs" className="text-[#0f1116]" />
+                            ) : isSuspended ? (
                               <MdPlayCircleOutline size={18} />
                             ) : (
                               <MdPauseCircleOutline size={18} />
@@ -686,12 +719,29 @@ export default function UsersPage() {
                           <button
                             type="button"
                             onClick={() => openDeleteModal(user)}
-                            disabled={actionId === user.id || !canManageUsers || isLocked}
+                            disabled={
+                              isPending(USER_PENDING_KEY.suspend(user.id)) ||
+                              isPending(USER_PENDING_KEY.activate(user.id)) ||
+                              isPending(USER_PENDING_KEY.deleteImpact(user.id)) ||
+                              isPending(USER_PENDING_KEY.delete(user.id)) ||
+                              !canManageUsers ||
+                              isLocked
+                            }
+                            aria-busy={
+                              isPending(USER_PENDING_KEY.deleteImpact(user.id)) ||
+                              isPending(USER_PENDING_KEY.delete(user.id)) ||
+                              undefined
+                            }
                             className="flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                             aria-label="Delete user"
                             title={isProtectedUser ? 'Protected superadmin account' : 'Delete'}
                           >
-                            <MdDeleteOutline size={18} />
+                            {isPending(USER_PENDING_KEY.deleteImpact(user.id)) ||
+                            isPending(USER_PENDING_KEY.delete(user.id)) ? (
+                              <InlineSpinner size="xs" className="text-red-600" />
+                            ) : (
+                              <MdDeleteOutline size={18} />
+                            )}
                           </button>
                         </div>
                       </td>
@@ -797,7 +847,11 @@ export default function UsersPage() {
                             value={deleteTransferToUserId}
                             onChange={(event) => setDeleteTransferToUserId(event.target.value)}
                             className="w-full rounded-xl border border-[#e1e5ee] bg-white px-3 py-2 text-[0.9rem] text-[#0f1116]"
-                            disabled={isDeletingUser || transferCandidates.length === 0}
+                            disabled={
+                              (deleteTarget
+                                ? isPending(USER_PENDING_KEY.delete(deleteTarget.id))
+                                : false) || transferCandidates.length === 0
+                            }
                           >
                             <option value="">Select a user</option>
                             {transferCandidates.map((candidate) => (
@@ -835,26 +889,25 @@ export default function UsersPage() {
                   >
                     Cancel
                   </button>
-                  <button
+                  <LoadingButton
                     type="button"
                     onClick={submitDeleteUser}
+                    pending={deleteTarget ? isPending(USER_PENDING_KEY.delete(deleteTarget.id)) : false}
+                    pendingLabel={
+                      deleteImpact?.requiresTransfer ? 'Transferring...' : 'Deleting...'
+                    }
+                    spinnerSize="xs"
+                    spinnerClassName="text-white"
                     disabled={
                       isDeleteImpactLoading ||
-                      isDeletingUser ||
                       !deleteImpact ||
                       (deleteImpact.requiresTransfer &&
                         (!deleteTransferToUserId || transferCandidates.length === 0))
                     }
                     className="rounded-xl bg-[#b42318] px-4 py-2 text-[0.85rem] font-medium text-white transition hover:bg-[#9b1c16] disabled:cursor-not-allowed disabled:bg-[#d9a7a3]"
                   >
-                    {isDeletingUser
-                      ? deleteImpact?.requiresTransfer
-                        ? 'Transferring...'
-                        : 'Deleting...'
-                      : deleteImpact?.requiresTransfer
-                        ? 'Transfer & Delete'
-                        : 'Delete user'}
-                  </button>
+                    {deleteImpact?.requiresTransfer ? 'Transfer & Delete' : 'Delete user'}
+                  </LoadingButton>
                 </div>
               </div>
             </div>,
@@ -973,14 +1026,17 @@ export default function UsersPage() {
                   >
                     Cancel
                   </button>
-                  <button
+                  <LoadingButton
                     type="button"
                     onClick={createUser}
-                    disabled={isCreating}
+                    pending={isPending(USER_PENDING_KEY.create)}
+                    pendingLabel="Creating..."
+                    spinnerSize="xs"
+                    spinnerClassName="text-white"
                     className="rounded-xl bg-[#0f1116] px-4 py-2 text-[0.85rem] font-medium text-white transition hover:bg-black disabled:cursor-not-allowed disabled:bg-[#2f3340]"
                   >
-                    {isCreating ? 'Creating...' : 'Create user'}
-                  </button>
+                    Create user
+                  </LoadingButton>
                 </div>
               </div>
             </div>,

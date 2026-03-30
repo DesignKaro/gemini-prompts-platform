@@ -10,6 +10,7 @@ import {
 } from '../../lib/author-follow';
 import { redirectToSignInModal } from '../../lib/utils/auth-redirect';
 import { refreshSession } from '../../lib/utils/session';
+import { LoadingButton } from './ui/loading-button';
 
 type AuthorFollowButtonProps = {
   authorId: string;
@@ -168,12 +169,15 @@ export function AuthorFollowButton({ authorId, initialFollowerCount }: AuthorFol
       <span className="rounded-full bg-[#f2f4f8] px-4 py-2 text-[0.82rem] text-[#606874]">
         {followerCount} follower{followerCount === 1 ? '' : 's'}
       </span>
-      <button
+      <LoadingButton
         type="button"
         onClick={() => {
           void toggleFollow();
         }}
-        disabled={pending || isOwnProfile}
+        pending={pending && !isOwnProfile}
+        pendingLabel={following ? 'Following...' : 'Follow...'}
+        spinnerSize="xs"
+        disabled={isOwnProfile}
         className={`rounded-full px-5 py-2 text-[0.86rem] font-medium transition-colors ${
           isOwnProfile
             ? 'cursor-default bg-[#eef2f6] text-[#8b93a3]'
@@ -184,14 +188,10 @@ export function AuthorFollowButton({ authorId, initialFollowerCount }: AuthorFol
       >
         {isOwnProfile
           ? 'Your profile'
-          : pending
-            ? following
-              ? 'Following...'
-              : 'Follow...'
-            : statusReady && following
+          : statusReady && following
               ? 'Following'
               : 'Follow'}
-      </button>
+      </LoadingButton>
     </div>
   );
 }

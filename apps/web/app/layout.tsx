@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
-import Script from 'next/script';
 import { Poppins } from 'next/font/google';
+import Script from 'next/script';
 import { headers } from 'next/headers';
 import { Providers } from './components/providers';
 import { ConditionalShell, ConditionalHeader } from './components/conditional-shell';
@@ -23,10 +23,10 @@ import {
 import './globals.css';
 
 const poppins = Poppins({
-  weight: ['200', '300', '400', '500', '600', '700'],
   subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-poppins',
   display: 'swap',
-  preload: true,
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -242,7 +242,7 @@ async function GlobalSchemaScripts() {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning className={poppins.className}>
+      <body className={poppins.variable} suppressHydrationWarning>
         <GlobalSchemaScripts />
         <GlobalIntegrationScripts />
         <Providers>

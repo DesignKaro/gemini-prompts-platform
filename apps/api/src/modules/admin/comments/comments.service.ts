@@ -59,7 +59,16 @@ export class CommentsService {
         take,
         orderBy: { createdAt: 'desc' },
         include: {
-          author: { select: { id: true, name: true, email: true } },
+          author: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              handle: true,
+              avatarUrl: true,
+              avatarUpdatedAt: true,
+            },
+          },
         },
       }),
       this.prisma.comment.count({ where }),
@@ -105,7 +114,18 @@ export class CommentsService {
   async findOne(id: string) {
     const comment = await this.prisma.comment.findUnique({
       where: { id },
-      include: { author: { select: { id: true, name: true, email: true } } },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            handle: true,
+            avatarUrl: true,
+            avatarUpdatedAt: true,
+          },
+        },
+      },
     });
     if (!comment || comment.deletedAt) {
       throw new NotFoundException('Comment not found');
@@ -179,6 +199,18 @@ export class CommentsService {
         parentId,
         content: normalizedContent,
         status: 'APPROVED',
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            handle: true,
+            avatarUrl: true,
+            avatarUpdatedAt: true,
+          },
+        },
       },
     });
 

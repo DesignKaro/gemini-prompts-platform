@@ -14,6 +14,8 @@ import {
 import { useAdminApi } from '../../../components/dashboard/use-admin-api';
 import { ActionError } from '../../../components/dashboard/action-error';
 import { bulkActionMessage, runBulkAction } from '../../../components/dashboard/bulk-action';
+import { InlineSpinner } from '../../../components/ui/inline-spinner';
+import { LoadingButton } from '../../../components/ui/loading-button';
 import { formatRelativeTimeOrDash, titleCase } from '../../../../lib/utils/format';
 
 type ApiPostStatus = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED';
@@ -68,7 +70,7 @@ function getStatusLabel(status: ApiPostStatus, visibility: ApiVisibility) {
 }
 
 export default function PostsManagementPage() {
-  const { request, status: authStatus } = useAdminApi();
+  const { request, status: authStatus, isPending } = useAdminApi();
   const [posts, setPosts] = useState<Post[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -81,6 +83,9 @@ export default function PostsManagementPage() {
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [sortFilter, setSortFilter] = useState<'recent' | 'views' | 'az'>('recent');
   const requestIdRef = useRef(0);
+  const isBulkStatusPending = isPending('dashboard.posts.bulk.status.update');
+  const isBulkDeletePending = isPending('dashboard.posts.bulk.delete');
+  const isAnyBulkPending = isBulkStatusPending || isBulkDeletePending;
 
   useEffect(() => {
     if (authStatus !== 'authenticated') return;
@@ -145,10 +150,12 @@ export default function PostsManagementPage() {
   }, [activeTab, authStatus, request, search, sortFilter]);
 
   const trashPost = async (id: string) => {
+    if (isPending(`dashboard.posts.delete:${id}`)) return;
     try {
       await request(`/api/admin/posts/${id}`, {
         method: 'DELETE',
         actionName: 'dashboard.posts.delete',
+        pendingKey: `dashboard.posts.delete:${id}`,
       });
       setPosts((prev) => prev.filter((p) => p.id !== id));
       setSelectedIds((prev) => prev.filter((item) => item !== id));
@@ -165,6 +172,7 @@ export default function PostsManagementPage() {
   };
 
   const handleBulkStatusChange = async (nextStatus: 'Published' | 'Draft' | 'Scheduled') => {
+    if (isBulkStatusPending) return;
     const mappedStatus =
       nextStatus === 'Published' ? 'PUBLISHED' : nextStatus === 'Draft' ? 'DRAFT' : 'SCHEDULED';
     try {
@@ -175,6 +183,7 @@ export default function PostsManagementPage() {
           request(`/api/admin/posts/${id}`, {
             method: 'PATCH',
             actionName: 'dashboard.posts.status.update',
+            pendingKey: 'dashboard.posts.bulk.status.update',
             body: JSON.stringify({ status: mappedStatus }),
           }).then(() => undefined),
       });
@@ -199,6 +208,7 @@ export default function PostsManagementPage() {
   };
 
   const handleBulkDelete = async () => {
+    if (isBulkDeletePending) return;
     try {
       const result = await runBulkAction({
         ids: selectedIds,
@@ -207,6 +217,7 @@ export default function PostsManagementPage() {
           request(`/api/admin/posts/${id}`, {
             method: 'DELETE',
             actionName: 'dashboard.posts.delete',
+            pendingKey: 'dashboard.posts.bulk.delete',
           }).then(() => undefined),
       });
       const failedIds = new Set(result.failures.map((entry) => entry.id));
@@ -302,14 +313,17 @@ export default function PostsManagementPage() {
                 Cancel
               </button>
               <div className="relative">
-                <button
+                <LoadingButton
                   type="button"
                   onClick={() => setIsBulkOpen((v) => !v)}
+                  pending={isAnyBulkPending}
+                  pendingLabel="Processing…"
+                  spinnerSize="xs"
                   disabled={selectedIds.length === 0}
                   className="inline-flex items-center gap-2 rounded-xl bg-[#0f1116] px-4 py-2 text-[0.85rem] font-medium text-white shadow-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Bulk actions {selectedIds.length > 0 && `(${selectedIds.length})`}
-                </button>
+                </LoadingButton>
                 {isBulkOpen && selectedIds.length > 0 && (
                   <div className="absolute right-0 top-[calc(100%+6px)] z-20 w-52 rounded-[14px] border border-[#e2e6ee] bg-white p-1.5 shadow-xl">
                     {STATUS_TABS.filter((t) => t !== 'All').map((opt) => (
@@ -319,6 +333,7 @@ export default function PostsManagementPage() {
                         onClick={() =>
                           handleBulkStatusChange(opt as 'Published' | 'Draft' | 'Scheduled')
                         }
+                        disabled={isAnyBulkPending}
                         className="flex w-full items-center rounded-[10px] px-3 py-2 text-[0.82rem] hover:bg-gray-50 transition-colors text-left text-[#0f1116]"
                       >
                         Set {opt}
@@ -328,6 +343,7 @@ export default function PostsManagementPage() {
                     <button
                       type="button"
                       onClick={handleBulkDelete}
+                      disabled={isAnyBulkPending}
                       className="flex w-full items-center rounded-[10px] px-3 py-2 text-[0.82rem] hover:bg-red-50 transition-colors text-left text-[#b94a4a]"
                     >
                       Delete permanently
@@ -488,10 +504,16 @@ export default function PostsManagementPage() {
                         <button
                           type="button"
                           onClick={() => trashPost(post.id)}
+                          disabled={isPending(`dashboard.posts.delete:${post.id}`)}
+                          aria-busy={isPending(`dashboard.posts.delete:${post.id}`) || undefined}
                           className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-red-50 text-gray-500 hover:text-[#b91c1c] transition-colors"
                           title="Move to trash"
                         >
-                          <MdDeleteOutline size={16} />
+                          {isPending(`dashboard.posts.delete:${post.id}`) ? (
+                            <InlineSpinner size="xs" className="text-[#b91c1c]" />
+                          ) : (
+                            <MdDeleteOutline size={16} />
+                          )}
                         </button>
                       </div>
                     </td>

@@ -18,6 +18,8 @@ import { ActionError } from '../../components/dashboard/action-error';
 import { hasPermission } from '../../../lib/utils/permissions';
 import { Skeleton } from '../../components/ui/skeleton';
 import { useConfirmDialog } from '../../components/ui/confirm-dialog';
+import { InlineSpinner } from '../../components/ui/inline-spinner';
+import { LoadingButton } from '../../components/ui/loading-button';
 
 type Permission = {
   id: string;
@@ -45,8 +47,14 @@ const SYSTEM_TONES = [
   'bg-[#f3f4f6] text-[#4b5563]',
 ];
 
+const ROLE_PENDING_KEY = {
+  create: 'dashboard.roles.create',
+  update: (id: string) => `dashboard.roles.update:${id}`,
+  delete: (id: string) => `dashboard.roles.delete:${id}`,
+};
+
 export default function RolesPage() {
-  const { request, status } = useAdminApi();
+  const { request, status, isPending } = useAdminApi();
   const { data: session } = useSession();
   const [roles, setRoles] = useState<RoleItem[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -61,7 +69,6 @@ export default function RolesPage() {
     description: '',
     permissionCodes: [] as string[],
   });
-  const [isSaving, setIsSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const { confirm, dialog } = useConfirmDialog();
 
@@ -172,7 +179,6 @@ export default function RolesPage() {
     setIsModalOpen(false);
     setEditingRole(null);
     setFormError(null);
-    setIsSaving(false);
   };
 
   const closePermissionsModal = () => {
@@ -190,7 +196,6 @@ export default function RolesPage() {
 
   const saveRole = async () => {
     if (!canManageRoles) return;
-    setIsSaving(true);
     setFormError(null);
     try {
       const payload = {
@@ -200,16 +205,21 @@ export default function RolesPage() {
       };
 
       if (editingRole) {
+        const pendingKey = ROLE_PENDING_KEY.update(editingRole.id);
+        if (isPending(pendingKey)) return;
         const updated = await request<RoleItem>(`/api/admin/roles/${editingRole.id}`, {
           method: 'PATCH',
           actionName: 'dashboard.roles.update',
+          pendingKey,
           body: JSON.stringify(payload),
         });
         setRoles((prev) => prev.map((role) => (role.id === updated.id ? updated : role)));
       } else {
+        if (isPending(ROLE_PENDING_KEY.create)) return;
         const created = await request<RoleItem>('/api/admin/roles', {
           method: 'POST',
           actionName: 'dashboard.roles.create',
+          pendingKey: ROLE_PENDING_KEY.create,
           body: JSON.stringify(payload),
         });
         setRoles((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
@@ -219,13 +229,13 @@ export default function RolesPage() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : (err as { message?: string }).message;
       setFormError(message || 'Unable to save role.');
-    } finally {
-      setIsSaving(false);
     }
   };
 
   const deleteRole = async (role: RoleItem) => {
     if (!canManageRoles || role.isSystem) return;
+    const pendingKey = ROLE_PENDING_KEY.delete(role.id);
+    if (isPending(pendingKey)) return;
     const ok = await confirm({
       title: 'Delete role',
       description: `Delete ${role.name}? This cannot be undone.`,
@@ -237,6 +247,7 @@ export default function RolesPage() {
       await request(`/api/admin/roles/${role.id}`, {
         method: 'DELETE',
         actionName: 'dashboard.roles.delete',
+        pendingKey,
       });
       setRoles((prev) => prev.filter((item) => item.id !== role.id));
     } catch (err: unknown) {
@@ -424,6 +435,7 @@ export default function RolesPage() {
                           <button
                             type="button"
                             onClick={() => openEdit(role)}
+                            disabled={isPending(ROLE_PENDING_KEY.delete(role.id))}
                             className="rounded-lg border border-[#e1e5ee] bg-white p-2 text-[#0f1116] shadow-sm transition hover:bg-gray-50"
                             aria-label="Edit role"
                           >
@@ -432,11 +444,16 @@ export default function RolesPage() {
                           <button
                             type="button"
                             onClick={() => deleteRole(role)}
-                            disabled={role.isSystem}
+                            disabled={role.isSystem || isPending(ROLE_PENDING_KEY.delete(role.id))}
+                            aria-busy={isPending(ROLE_PENDING_KEY.delete(role.id)) || undefined}
                             className="rounded-lg border border-[#e1e5ee] bg-white p-2 text-[#0f1116] shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-300"
                             aria-label="Delete role"
                           >
-                            <MdDeleteOutline size={16} />
+                            {isPending(ROLE_PENDING_KEY.delete(role.id)) ? (
+                              <InlineSpinner size="xs" className="text-[#0f1116]" />
+                            ) : (
+                              <MdDeleteOutline size={16} />
+                            )}
                           </button>
                         </div>
                       )}
@@ -579,14 +596,22 @@ export default function RolesPage() {
                   >
                     Cancel
                   </button>
-                  <button
+                  <LoadingButton
                     type="button"
                     onClick={saveRole}
-                    disabled={isSaving || !canManageRoles}
+                    pending={
+                      editingRole
+                        ? isPending(ROLE_PENDING_KEY.update(editingRole.id))
+                        : isPending(ROLE_PENDING_KEY.create)
+                    }
+                    pendingLabel="Saving..."
+                    disabled={!canManageRoles}
+                    spinnerSize="xs"
+                    spinnerClassName="text-white"
                     className="rounded-xl bg-[#0f1116] px-4 py-2 text-[0.85rem] font-medium text-white transition hover:bg-black disabled:cursor-not-allowed disabled:bg-[#2f3340]"
                   >
-                    {isSaving ? 'Saving...' : 'Save role'}
-                  </button>
+                    Save role
+                  </LoadingButton>
                 </div>
               </div>
             </div>,

@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { FaBookmark, FaHeart, FaRegBookmark, FaRegHeart, FaReply } from 'react-icons/fa6';
 import { LuCheck, LuCopy, LuLink } from 'react-icons/lu';
 import { AuthorAvatar } from '../../components/author-avatar';
+import { InlineSpinner } from '../../components/ui/inline-spinner';
+import { LoadingButton } from '../../components/ui/loading-button';
 import { SocialShareMenu } from '../../components/social-share-menu';
 import { usePromptInteractions } from '../../components/prompt-interactions/use-prompt-interactions';
 import {
@@ -92,7 +94,9 @@ export function PromptPrimaryActions({
           aria-pressed={likedByIp}
           title={likedByIp ? 'Liked' : 'Like prompt'}
         >
-          {likedByIp ? (
+          {likePending ? (
+            <InlineSpinner size="xs" className={likedByIp ? 'text-[#e11d48]' : 'text-[#2d333e]'} />
+          ) : likedByIp ? (
             <FaHeart className="h-4 w-4 text-[#e11d48]" />
           ) : (
             <FaRegHeart className="h-4 w-4" />
@@ -131,7 +135,9 @@ export function PromptPrimaryActions({
           aria-pressed={savedByUser}
           title={savedByUser ? 'Saved' : 'Save'}
         >
-          {savedByUser ? (
+          {savePending ? (
+            <InlineSpinner size="xs" className="text-[#2d333e]" />
+          ) : savedByUser ? (
             <FaBookmark className="h-4 w-4 text-[#2d333e]" />
           ) : (
             <FaRegBookmark className="h-4 w-4" />
@@ -546,16 +552,18 @@ export function PromptCommentsSection({
               <p className="text-[0.84rem] text-[#6b7280]">
                 New comments are submitted for moderation first.
               </p>
-              <button
+              <LoadingButton
                 type="button"
                 onClick={() => {
                   void submitComment();
                 }}
-                disabled={submitting}
+                pending={submitting}
+                pendingLabel="Submitting…"
+                spinnerSize="xs"
                 className="inline-flex h-10 items-center justify-center rounded-full bg-[#111111] px-5 text-[0.92rem] text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {submitting ? 'Submitting…' : 'Submit comment'}
-              </button>
+                Submit comment
+              </LoadingButton>
             </div>
           </div>
         ) : (
@@ -659,6 +667,7 @@ export function PromptCommentsSection({
                           void likeComment(comment.id);
                         }}
                         disabled={Boolean(likePendingByCommentId[comment.id])}
+                        aria-busy={Boolean(likePendingByCommentId[comment.id]) || undefined}
                         aria-pressed={comment.likedByViewer}
                         className={`inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
                           comment.likedByViewer
@@ -666,7 +675,12 @@ export function PromptCommentsSection({
                             : 'bg-[#eef1f5] text-[#6b7280] hover:text-[#111827]'
                         }`}
                       >
-                        {comment.likedByViewer ? (
+                        {likePendingByCommentId[comment.id] ? (
+                          <InlineSpinner
+                            size="xs"
+                            className={comment.likedByViewer ? 'text-[#dc4b74]' : 'text-[#6b7280]'}
+                          />
+                        ) : comment.likedByViewer ? (
                           <FaHeart className="h-4 w-4" />
                         ) : (
                           <FaRegHeart className="h-4 w-4" />
@@ -707,16 +721,18 @@ export function PromptCommentsSection({
                     >
                       Cancel
                     </button>
-                    <button
+                    <LoadingButton
                       type="button"
                       onClick={() => {
                         void submitReply(comment.id);
                       }}
-                      disabled={replySubmittingFor === comment.id}
+                      pending={replySubmittingFor === comment.id}
+                      pendingLabel="Submitting…"
+                      spinnerSize="xs"
                       className="inline-flex h-9 items-center justify-center rounded-full bg-[#111111] px-4 text-[0.85rem] text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-70"
                     >
-                      {replySubmittingFor === comment.id ? 'Submitting…' : 'Submit reply'}
-                    </button>
+                      Submit reply
+                    </LoadingButton>
                   </div>
                 </div>
               ) : null}
@@ -775,25 +791,31 @@ export function PromptCommentsSection({
                               </span>
                             ) : (
                               <>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    void likeComment(reply.id);
-                                  }}
-                                  disabled={Boolean(likePendingByCommentId[reply.id])}
-                                  aria-pressed={reply.likedByViewer}
-                                  className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
-                                    reply.likedByViewer
-                                      ? 'bg-[#fce8ed] text-[#dc4b74]'
-                                      : 'bg-[#eef1f5] text-[#6b7280] hover:text-[#111827]'
-                                  }`}
-                                >
-                                  {reply.likedByViewer ? (
-                                    <FaHeart className="h-3.5 w-3.5" />
-                                  ) : (
-                                    <FaRegHeart className="h-3.5 w-3.5" />
-                                  )}
-                                </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  void likeComment(reply.id);
+                                }}
+                                disabled={Boolean(likePendingByCommentId[reply.id])}
+                                aria-busy={Boolean(likePendingByCommentId[reply.id]) || undefined}
+                                aria-pressed={reply.likedByViewer}
+                                className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
+                                  reply.likedByViewer
+                                    ? 'bg-[#fce8ed] text-[#dc4b74]'
+                                    : 'bg-[#eef1f5] text-[#6b7280] hover:text-[#111827]'
+                                }`}
+                              >
+                                {likePendingByCommentId[reply.id] ? (
+                                  <InlineSpinner
+                                    size="xs"
+                                    className={reply.likedByViewer ? 'text-[#dc4b74]' : 'text-[#6b7280]'}
+                                  />
+                                ) : reply.likedByViewer ? (
+                                  <FaHeart className="h-3.5 w-3.5" />
+                                ) : (
+                                  <FaRegHeart className="h-3.5 w-3.5" />
+                                )}
+                              </button>
                                 <span className="text-[#111827]">{reply.likeCount}</span>
                               </>
                             )

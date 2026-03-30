@@ -7,6 +7,7 @@ import { useAdminApi } from '../../../../components/dashboard/use-admin-api';
 import { ActionError } from '../../../../components/dashboard/action-error';
 import { bulkActionMessage, runBulkAction } from '../../../../components/dashboard/bulk-action';
 import { formatRelativeTimeOrDash, titleCase } from '../../../../../lib/utils/format';
+import { LoadingButton } from '../../../../components/ui/loading-button';
 
 type TrashedPost = {
   id: string;
@@ -29,8 +30,15 @@ type PostResponse = {
   total: number;
 };
 
+const POST_TRASH_PENDING_KEY = {
+  restore: (id: string) => `dashboard.posts.trash.restore:${id}`,
+  delete: (id: string) => `dashboard.posts.trash.delete:${id}`,
+  bulkRestore: 'dashboard.posts.trash.bulk.restore',
+  bulkDelete: 'dashboard.posts.trash.bulk.delete',
+};
+
 export default function PostsTrashPage() {
-  const { request, status: authStatus } = useAdminApi();
+  const { request, status: authStatus, isPending } = useAdminApi();
   const [items, setItems] = useState<TrashedPost[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -87,10 +95,13 @@ export default function PostsTrashPage() {
   };
 
   const restore = async (id: string) => {
+    const pendingKey = POST_TRASH_PENDING_KEY.restore(id);
+    if (isPending(pendingKey)) return;
     try {
       await request(`/api/admin/posts/${id}/restore`, {
         method: 'PATCH',
         actionName: 'dashboard.posts.restore',
+        pendingKey,
       });
       setItems((p) => p.filter((i) => i.id !== id));
     } catch (err) {
@@ -105,10 +116,13 @@ export default function PostsTrashPage() {
     }
   };
   const deletePerm = async (id: string) => {
+    const pendingKey = POST_TRASH_PENDING_KEY.delete(id);
+    if (isPending(pendingKey)) return;
     try {
       await request(`/api/admin/posts/${id}`, {
         method: 'DELETE',
         actionName: 'dashboard.posts.delete-permanent',
+        pendingKey,
       });
       setItems((p) => p.filter((i) => i.id !== id));
     } catch (err) {
@@ -124,6 +138,7 @@ export default function PostsTrashPage() {
     }
   };
   const restoreSelected = async () => {
+    if (isPending(POST_TRASH_PENDING_KEY.bulkRestore)) return;
     try {
       const selectedIds = Array.from(selected);
       const result = await runBulkAction({
@@ -133,6 +148,7 @@ export default function PostsTrashPage() {
           request(`/api/admin/posts/${id}/restore`, {
             method: 'PATCH',
             actionName: 'dashboard.posts.restore',
+            pendingKey: POST_TRASH_PENDING_KEY.bulkRestore,
           }).then(() => undefined),
       });
       const failedIds = new Set(result.failures.map((entry) => entry.id));
@@ -148,6 +164,7 @@ export default function PostsTrashPage() {
     }
   };
   const deleteSelected = async () => {
+    if (isPending(POST_TRASH_PENDING_KEY.bulkDelete)) return;
     try {
       const selectedIds = Array.from(selected);
       const result = await runBulkAction({
@@ -157,6 +174,7 @@ export default function PostsTrashPage() {
           request(`/api/admin/posts/${id}`, {
             method: 'DELETE',
             actionName: 'dashboard.posts.delete-permanent',
+            pendingKey: POST_TRASH_PENDING_KEY.bulkDelete,
           }).then(() => undefined),
       });
       const failedIds = new Set(result.failures.map((entry) => entry.id));
@@ -229,22 +247,29 @@ export default function PostsTrashPage() {
             Select all
           </label>
           <div className="flex gap-2">
-            <button
+            <LoadingButton
               type="button"
               onClick={restoreSelected}
+              pending={isPending(POST_TRASH_PENDING_KEY.bulkRestore)}
+              pendingLabel="Restoring..."
+              spinnerSize="xs"
               disabled={selected.size === 0}
               className="flex items-center gap-1.5 rounded-xl border border-[#e1e5ee] px-3 py-2 text-[0.8rem] text-gray-700 hover:bg-gray-50 disabled:opacity-40"
             >
               <MdRestoreFromTrash size={15} /> Restore selected
-            </button>
-            <button
+            </LoadingButton>
+            <LoadingButton
               type="button"
               onClick={deleteSelected}
+              pending={isPending(POST_TRASH_PENDING_KEY.bulkDelete)}
+              pendingLabel="Deleting..."
+              spinnerSize="xs"
+              spinnerClassName="text-white"
               disabled={selected.size === 0}
               className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-2 text-[0.8rem] text-white hover:bg-red-700 disabled:opacity-40"
             >
               <MdDeleteOutline size={15} /> Delete selected
-            </button>
+            </LoadingButton>
           </div>
         </div>
       )}
@@ -289,25 +314,34 @@ export default function PostsTrashPage() {
                   <td className="px-5 py-4 text-[0.82rem] text-gray-400">{item.trashedAt}</td>
                   <td className="px-5 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button
+                      <LoadingButton
                         type="button"
                         onClick={() => restore(item.id)}
+                        pending={isPending(POST_TRASH_PENDING_KEY.restore(item.id))}
+                        pendingLabel="Restoring..."
+                        spinnerSize="xs"
+                        spinnerClassName="text-white"
                         className="flex items-center gap-1 rounded-xl bg-[#0f1116] px-3 py-1.5 text-[0.78rem] font-medium text-white hover:opacity-90"
                       >
                         <MdRestoreFromTrash size={14} /> Restore
-                      </button>
+                      </LoadingButton>
                       {confirmId === item.id ? (
                         <>
-                          <button
+                          <LoadingButton
                             type="button"
                             onClick={() => deletePerm(item.id)}
+                            pending={isPending(POST_TRASH_PENDING_KEY.delete(item.id))}
+                            pendingLabel="Deleting..."
+                            spinnerSize="xs"
+                            spinnerClassName="text-white"
                             className="rounded-xl bg-red-600 px-3 py-1.5 text-[0.78rem] text-white hover:bg-red-700"
                           >
                             Confirm
-                          </button>
+                          </LoadingButton>
                           <button
                             type="button"
                             onClick={() => setConfirmId(null)}
+                            disabled={isPending(POST_TRASH_PENDING_KEY.delete(item.id))}
                             className="rounded-xl border px-3 py-1.5 text-[0.78rem] text-gray-500 hover:bg-gray-50"
                           >
                             Cancel
@@ -317,6 +351,10 @@ export default function PostsTrashPage() {
                         <button
                           type="button"
                           onClick={() => setConfirmId(item.id)}
+                          disabled={
+                            isPending(POST_TRASH_PENDING_KEY.restore(item.id)) ||
+                            isPending(POST_TRASH_PENDING_KEY.delete(item.id))
+                          }
                           className="flex items-center gap-1 rounded-xl border border-red-100 px-3 py-1.5 text-[0.78rem] text-red-600 hover:bg-red-50"
                         >
                           <MdDeleteOutline size={14} /> Delete

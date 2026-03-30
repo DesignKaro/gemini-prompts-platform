@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { normalizePagination } from '../../../common/utils/pagination';
 import { Prisma, PostFormat, PostType, PromptStatus, PromptVisibility } from '@prisma/client';
+import { MediaStorageService } from '../../media-storage/media-storage.service';
 
 export type PostCreateInput = {
   title: string;
@@ -34,6 +35,7 @@ export class PostsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly mediaStorageService: MediaStorageService,
   ) {}
 
   private readonly mediaRefPrefix = 'media:';
@@ -43,6 +45,58 @@ export class PostsService {
     if (!value.startsWith(this.mediaRefPrefix)) return null;
     const id = value.slice(this.mediaRefPrefix.length).trim();
     return id || null;
+  }
+
+  private async buildPostMediaUsageRows(
+    targetId: string,
+    featuredImageUrl?: string | null,
+  ): Promise<Prisma.MediaUsageCreateManyInput[]> {
+    const normalized = featuredImageUrl?.trim();
+    if (!normalized) {
+      return [];
+    }
+
+    const refId = this.extractMediaRef(normalized);
+    const assetId =
+      refId ??
+      (
+        await this.prisma.mediaAsset.findFirst({
+          where: { url: normalized },
+          select: { id: true },
+        })
+      )?.id;
+
+    if (!assetId) {
+      return [];
+    }
+
+    return [
+      {
+        assetId,
+        targetType: 'POST',
+        targetId,
+        field: 'featuredImageUrl',
+      },
+    ];
+  }
+
+  private async syncPostMediaUsage(targetId: string, featuredImageUrl?: string | null) {
+    const rows = await this.buildPostMediaUsageRows(targetId, featuredImageUrl);
+
+    await this.prisma.mediaUsage.deleteMany({
+      where: {
+        targetType: 'POST',
+        targetId,
+      },
+    });
+
+    if (rows.length === 0) {
+      return;
+    }
+
+    await this.prisma.mediaUsage.createMany({
+      data: rows,
+    });
   }
 
   private async hydrateFeaturedImages<T extends { featuredImageUrl?: string | null }>(
@@ -387,17 +441,25 @@ export class PostsService {
       scheduledAt: data.scheduledAt,
     });
 
+    const hostedFeaturedImage = await this.mediaStorageService.maybeUploadImageDataUrl(
+      data.featuredImageUrl,
+      'posts',
+    );
+    const normalizedContent = (
+      await this.mediaStorageService.replaceInlineImageDataUrls(data.content, 'editor')
+    ).html;
+
     const createData: Prisma.PostCreateInput = {
         author: { connect: { id: authorId } },
         title,
         slug,
         excerpt: data.excerpt ?? null,
-        content: data.content,
+        content: normalizedContent,
         status: publicationState.status,
         visibility: data.visibility ?? 'FREE',
         postType: this.normalizePostType(data.postType) ?? 'POST',
         postFormat: this.normalizePostFormat(data.postFormat) ?? 'STANDARD',
-        featuredImageUrl: data.featuredImageUrl ?? null,
+        featuredImageUrl: hostedFeaturedImage ?? null,
         metaTitle: data.metaTitle ?? null,
         metaDescription: data.metaDescription ?? null,
         seoTitle: data.seoTitle ?? null,
@@ -419,6 +481,7 @@ export class PostsService {
     const created = await this.prisma.post.create({
       data: createData,
     });
+    await this.syncPostMediaUsage(created.id, created.featuredImageUrl);
 
     await this.auditService.log({
       actorId: authorId,
@@ -474,16 +537,25 @@ export class PostsService {
       scheduledAt: data.scheduledAt,
     });
 
+    const hostedFeaturedImage =
+      data.featuredImageUrl === undefined
+        ? undefined
+        : await this.mediaStorageService.maybeUploadImageDataUrl(data.featuredImageUrl, 'posts');
+    const normalizedContent =
+      data.content === undefined
+        ? undefined
+        : (await this.mediaStorageService.replaceInlineImageDataUrls(data.content, 'editor')).html;
+
     const updateData: Prisma.PostUpdateInput = {
         title: data.title?.trim(),
         slug: data.slug?.trim(),
         excerpt: data.excerpt,
-        content: data.content,
+        content: normalizedContent,
         status: publicationState.status,
         visibility: data.visibility,
         postType: this.normalizePostType(data.postType),
         postFormat: this.normalizePostFormat(data.postFormat),
-        featuredImageUrl: data.featuredImageUrl,
+        featuredImageUrl: hostedFeaturedImage,
         metaTitle: data.metaTitle,
         metaDescription: data.metaDescription,
         seoTitle: data.seoTitle,
@@ -509,6 +581,7 @@ export class PostsService {
       where: { id },
       data: updateData,
     });
+    await this.syncPostMediaUsage(updated.id, updated.featuredImageUrl);
 
     await this.auditService.log({
       actorId,

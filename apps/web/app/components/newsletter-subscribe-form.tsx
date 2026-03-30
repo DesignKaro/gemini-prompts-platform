@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { LoadingButton } from './ui/loading-button';
 
 type NewsletterSubscribeFormProps = {
   source: string;
@@ -142,17 +143,18 @@ export function NewsletterSubscribeForm({
           disabled={isSubmitting}
           required
         />
-        <button
+        <LoadingButton
           type="submit"
+          pending={isSubmitting}
+          pendingLabel={pendingLabel}
+          spinnerSize="xs"
           className={
             buttonClassName ??
             'inline-flex h-11 items-center justify-center rounded-full bg-[#d5ea52] px-5 text-[0.9rem] font-medium text-[#111111] transition-colors hover:bg-[#c5db42]'
           }
-          disabled={isSubmitting}
-          aria-busy={isSubmitting}
         >
-          {isSubmitting ? pendingLabel : buttonLabel}
-        </button>
+          {buttonLabel}
+        </LoadingButton>
       </div>
 
       {submitState === 'success' ? (

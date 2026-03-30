@@ -3,6 +3,7 @@ import { MediaStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { normalizePagination } from '../../../common/utils/pagination';
+import { MediaStorageService } from '../../media-storage/media-storage.service';
 
 export type MediaCreateInput = {
   title?: string | null;
@@ -17,12 +18,17 @@ export type MediaCreateInput = {
 };
 
 export type MediaUpdateInput = Partial<MediaCreateInput>;
+export type MediaUploadInput = {
+  title?: string | null;
+  altText?: string | null;
+};
 
 @Injectable()
 export class MediaService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly mediaStorageService: MediaStorageService,
   ) {}
 
   async findAll(options: {
@@ -77,7 +83,27 @@ export class MediaService {
   }
 
   async create(actorId: string, data: MediaCreateInput) {
-    const url = data.url?.trim();
+    const urlInput = data.url?.trim();
+    let url = urlInput ?? null;
+    let storageKey = data.storageKey ?? null;
+    let mime = data.mime ?? null;
+    let size = data.size ?? null;
+    let width = data.width ?? null;
+    let height = data.height ?? null;
+
+    if (url && this.mediaStorageService.isInlineImageDataUrl(url) && this.mediaStorageService.isEnabled()) {
+      const stored = await this.mediaStorageService.uploadImageDataUrl({
+        dataUrl: url,
+        scope: 'media',
+      });
+      url = stored.publicUrl;
+      storageKey = stored.storageKey;
+      mime = stored.mime;
+      size = stored.size;
+      width = stored.width ?? null;
+      height = stored.height ?? null;
+    }
+
     if (!url) {
       throw new BadRequestException('Media URL is required.');
     }
@@ -86,11 +112,11 @@ export class MediaService {
       data: {
         title: data.title ?? null,
         url,
-        storageKey: data.storageKey ?? null,
-        mime: data.mime ?? null,
-        size: data.size ?? null,
-        width: data.width ?? null,
-        height: data.height ?? null,
+        storageKey,
+        mime,
+        size,
+        width,
+        height,
         altText: data.altText ?? null,
         status: data.status ?? 'ACTIVE',
         uploadedById: actorId,
@@ -121,16 +147,40 @@ export class MediaService {
       throw new BadRequestException('Media URL cannot be empty.');
     }
 
+    let normalizedUrl = data.url === undefined ? undefined : data.url.trim();
+    let normalizedStorageKey = data.storageKey;
+    let normalizedMime = data.mime;
+    let normalizedSize = data.size;
+    let normalizedWidth = data.width;
+    let normalizedHeight = data.height;
+
+    if (
+      typeof normalizedUrl === 'string' &&
+      this.mediaStorageService.isInlineImageDataUrl(normalizedUrl) &&
+      this.mediaStorageService.isEnabled()
+    ) {
+      const stored = await this.mediaStorageService.uploadImageDataUrl({
+        dataUrl: normalizedUrl,
+        scope: 'media',
+      });
+      normalizedUrl = stored.publicUrl;
+      normalizedStorageKey = stored.storageKey;
+      normalizedMime = stored.mime;
+      normalizedSize = stored.size;
+      normalizedWidth = stored.width ?? null;
+      normalizedHeight = stored.height ?? null;
+    }
+
     const updated = await this.prisma.mediaAsset.update({
       where: { id },
       data: {
         title: data.title,
-        url: data.url?.trim(),
-        storageKey: data.storageKey,
-        mime: data.mime,
-        size: data.size,
-        width: data.width,
-        height: data.height,
+        url: normalizedUrl,
+        storageKey: normalizedStorageKey,
+        mime: normalizedMime,
+        size: normalizedSize,
+        width: normalizedWidth,
+        height: normalizedHeight,
         altText: data.altText,
         status: data.status,
       },
@@ -144,6 +194,51 @@ export class MediaService {
     });
 
     return updated;
+  }
+
+  async uploadFile(
+    actorId: string,
+    file: { buffer: Buffer; mimetype: string; originalname: string },
+    input: MediaUploadInput,
+  ) {
+    if (!file || !Buffer.isBuffer(file.buffer) || file.buffer.length === 0) {
+      throw new BadRequestException('A media file is required.');
+    }
+
+    if (!file.mimetype?.startsWith('image/')) {
+      throw new BadRequestException('Only image uploads are currently supported.');
+    }
+
+    const stored = await this.mediaStorageService.uploadBuffer({
+      buffer: file.buffer,
+      mime: file.mimetype,
+      scope: 'media',
+    });
+
+    const created = await this.prisma.mediaAsset.create({
+      data: {
+        title: input.title?.trim() || file.originalname || null,
+        url: stored.publicUrl,
+        storageKey: stored.storageKey,
+        mime: stored.mime,
+        size: stored.size,
+        width: stored.width ?? null,
+        height: stored.height ?? null,
+        altText: input.altText?.trim() || null,
+        status: 'ACTIVE',
+        uploadedById: actorId,
+      },
+    });
+
+    await this.auditService.log({
+      actorId,
+      action: 'CREATE',
+      targetType: 'MEDIA',
+      targetId: created.id,
+      metadata: { url: created.url, storageKey: created.storageKey ?? null },
+    });
+
+    return created;
   }
 
   async remove(actorId: string, id: string) {

@@ -1,14 +1,13 @@
 import type { ElementType } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-
-const FALLBACK_POST_IMAGE =
-  'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1400';
+import { resolvePostImage } from '../../lib/content-image-fallbacks';
 
 type PostCardUIProps = {
   title: string;
   href: string;
   imageUrl?: string | null;
+  imageFallbackKey?: string;
   readTime: string;
   className?: string;
   titleTag?: 'h2' | 'h3';
@@ -18,6 +17,7 @@ export function PostCardUI({
   title,
   href,
   imageUrl,
+  imageFallbackKey,
   readTime,
   className,
   titleTag = 'h3',
@@ -39,10 +39,11 @@ export function PostCardUI({
           className="relative aspect-[16/9] w-full overflow-hidden rounded-[20px]"
         >
           <Image
-            src={imageUrl || FALLBACK_POST_IMAGE}
+            src={resolvePostImage(imageUrl, imageFallbackKey || href || title)}
             alt={title}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            unoptimized
             className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/12 via-transparent to-transparent transition-opacity duration-300 group-hover:opacity-70" />
