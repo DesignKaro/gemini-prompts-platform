@@ -63,7 +63,8 @@ export function PromptCardUI({ prompt, showReadTime = true }: PromptCardProps) {
           alt={prompt.title}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          unoptimized
+          loading="lazy"
+          decoding="async"
           className="object-cover"
         />
         <Link

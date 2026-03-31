@@ -43,7 +43,8 @@ export function PostCardUI({
             alt={title}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            unoptimized
+            loading="lazy"
+            decoding="async"
             className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/12 via-transparent to-transparent transition-opacity duration-300 group-hover:opacity-70" />

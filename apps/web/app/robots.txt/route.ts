@@ -2,6 +2,14 @@ import { AI_BOT_USER_AGENTS, getBaseUrl, getSeoSettings } from '../../lib/seo';
 
 const ROBOTS_CONTENT_TYPE = 'text/plain; charset=utf-8';
 const ROBOTS_CACHE_CONTROL = 'public, max-age=0, s-maxage=300, stale-while-revalidate=600';
+const VALID_ROBOTS_DIRECTIVES = new Set([
+  'user-agent',
+  'allow',
+  'disallow',
+  'sitemap',
+  'host',
+  'crawl-delay',
+]);
 
 function getHostValue(baseUrl: string) {
   try {
@@ -12,6 +20,18 @@ function getHostValue(baseUrl: string) {
 }
 
 export const revalidate = 300;
+
+function sanitizeAdditionalRobotsRules(rules: string[]) {
+  return rules.filter((rawRule) => {
+    const rule = rawRule.trim();
+    if (!rule) return false;
+    if (rule.startsWith('#')) return true;
+    const separatorIndex = rule.indexOf(':');
+    if (separatorIndex <= 0) return false;
+    const directive = rule.slice(0, separatorIndex).trim().toLowerCase();
+    return VALID_ROBOTS_DIRECTIVES.has(directive);
+  });
+}
 
 export async function GET() {
   try {
@@ -34,8 +54,9 @@ export async function GET() {
       }
     }
 
-    if (settings.robotsAdditionalRules.length > 0) {
-      lines.push('', ...settings.robotsAdditionalRules);
+    const safeAdditionalRules = sanitizeAdditionalRobotsRules(settings.robotsAdditionalRules);
+    if (safeAdditionalRules.length > 0) {
+      lines.push('', ...safeAdditionalRules);
     }
 
     lines.push('', `Sitemap: ${baseUrl}/sitemap.xml`, `Host: ${getHostValue(baseUrl)}`);
