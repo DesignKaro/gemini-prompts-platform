@@ -22,15 +22,20 @@ function getHostValue(baseUrl: string) {
 export const revalidate = 300;
 
 function sanitizeAdditionalRobotsRules(rules: string[]) {
-  return rules.filter((rawRule) => {
-    const rule = rawRule.trim();
-    if (!rule) return false;
-    if (rule.startsWith('#')) return true;
-    const separatorIndex = rule.indexOf(':');
-    if (separatorIndex <= 0) return false;
-    const directive = rule.slice(0, separatorIndex).trim().toLowerCase();
-    return VALID_ROBOTS_DIRECTIVES.has(directive);
-  });
+  return rules
+    .flatMap((rawRule) =>
+      rawRule
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean),
+    )
+    .filter((rule) => {
+      if (rule.startsWith('#')) return true;
+      const separatorIndex = rule.indexOf(':');
+      if (separatorIndex <= 0) return false;
+      const directive = rule.slice(0, separatorIndex).trim().toLowerCase();
+      return VALID_ROBOTS_DIRECTIVES.has(directive);
+    });
 }
 
 export async function GET() {
