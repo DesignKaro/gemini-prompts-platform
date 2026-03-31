@@ -41,6 +41,37 @@ const AI_BOT_USER_AGENTS = [
   'Bytespider',
   'anthropic-ai',
 ];
+const ROBOTS_PREVIEW_BASE_URL = 'https://geminiprompts.io';
+
+function normalizeRobotsPreviewBaseUrl(value?: string | null) {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return ROBOTS_PREVIEW_BASE_URL;
+  }
+
+  try {
+    const normalized = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+      ? trimmed
+      : `https://${trimmed}`;
+    return new URL(normalized).origin;
+  } catch {
+    return ROBOTS_PREVIEW_BASE_URL;
+  }
+}
+
+function getRobotsPreviewHost(baseUrl: string) {
+  try {
+    return new URL(baseUrl).host;
+  } catch {
+    return new URL(ROBOTS_PREVIEW_BASE_URL).host;
+  }
+}
+
+function hasRobotsDirective(rule: string, directive: string) {
+  const separatorIndex = rule.indexOf(':');
+  if (separatorIndex <= 0) return false;
+  return rule.slice(0, separatorIndex).trim().toLowerCase() === directive;
+}
 
 function formatUpdatedAt(value?: string) {
   if (!value) return 'Not saved yet';
@@ -60,6 +91,7 @@ function buildRobotsPreview(
   robotsDisallowPaths: string[],
   robotsAdditionalRules: string[],
 ) {
+  const baseUrl = normalizeRobotsPreviewBaseUrl(settings.canonicalBaseUrl);
   const rules = [
     'User-agent: *',
     ...(settings.robotsSiteIndex ? ['Allow: /'] : []),
@@ -74,6 +106,18 @@ function buildRobotsPreview(
 
   if (robotsAdditionalRules.length > 0) {
     rules.push('', ...robotsAdditionalRules);
+  }
+
+  const hasCustomSitemap = robotsAdditionalRules.some((rule) => hasRobotsDirective(rule, 'sitemap'));
+  const hasCustomHost = robotsAdditionalRules.some((rule) => hasRobotsDirective(rule, 'host'));
+  if (!hasCustomSitemap || !hasCustomHost) {
+    rules.push('');
+    if (!hasCustomSitemap) {
+      rules.push(`Sitemap: ${baseUrl}/sitemap.xml`);
+    }
+    if (!hasCustomHost) {
+      rules.push(`Host: ${getRobotsPreviewHost(baseUrl)}`);
+    }
   }
 
   return rules.join('\n');
@@ -750,7 +794,8 @@ export function SeoScreen({ section }: { section: SeoSection }) {
                 />
               </Field>
               <p className="mt-2 text-[0.78rem] text-gray-500">
-                Optional custom directives (one rule per line), for example `Crawl-delay: 5`.
+                Optional directives (one line each): `User-agent`, `Allow`, `Disallow`, `Sitemap`, `Host`, `Crawl-delay`.
+                Add `Sitemap: https://your-domain/sitemap.xml` here to override the default sitemap line.
               </p>
             </div>
           </div>

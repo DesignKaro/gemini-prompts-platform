@@ -38,6 +38,12 @@ function sanitizeAdditionalRobotsRules(rules: string[]) {
     });
 }
 
+function hasDirective(rule: string, directive: string) {
+  const separatorIndex = rule.indexOf(':');
+  if (separatorIndex <= 0) return false;
+  return rule.slice(0, separatorIndex).trim().toLowerCase() === directive;
+}
+
 export async function GET() {
   try {
     const settings = await getSeoSettings();
@@ -60,11 +66,22 @@ export async function GET() {
     }
 
     const safeAdditionalRules = sanitizeAdditionalRobotsRules(settings.robotsAdditionalRules);
+    const hasCustomSitemap = safeAdditionalRules.some((rule) => hasDirective(rule, 'sitemap'));
+    const hasCustomHost = safeAdditionalRules.some((rule) => hasDirective(rule, 'host'));
     if (safeAdditionalRules.length > 0) {
       lines.push('', ...safeAdditionalRules);
     }
 
-    lines.push('', `Sitemap: ${baseUrl}/sitemap.xml`, `Host: ${getHostValue(baseUrl)}`);
+    const generatedFooter: string[] = [];
+    if (!hasCustomSitemap) {
+      generatedFooter.push(`Sitemap: ${baseUrl}/sitemap.xml`);
+    }
+    if (!hasCustomHost) {
+      generatedFooter.push(`Host: ${getHostValue(baseUrl)}`);
+    }
+    if (generatedFooter.length > 0) {
+      lines.push('', ...generatedFooter);
+    }
 
     return new Response(lines.join('\n'), {
       headers: {
