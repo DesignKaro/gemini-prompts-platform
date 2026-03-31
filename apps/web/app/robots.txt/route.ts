@@ -2,6 +2,7 @@ import { AI_BOT_USER_AGENTS, getBaseUrl, getSeoSettings } from '../../lib/seo';
 
 const ROBOTS_CONTENT_TYPE = 'text/plain; charset=utf-8';
 const ROBOTS_CACHE_CONTROL = 'public, max-age=0, s-maxage=300, stale-while-revalidate=600';
+const ROBOTS_GENERATOR_HEADER = 'next-app-route-2026-03-31';
 const VALID_ROBOTS_DIRECTIVES = new Set([
   'user-agent',
   'allow',
@@ -36,6 +37,18 @@ function sanitizeAdditionalRobotsRules(rules: string[]) {
       const directive = rule.slice(0, separatorIndex).trim().toLowerCase();
       return VALID_ROBOTS_DIRECTIVES.has(directive);
     });
+}
+
+function sanitizeRenderedRobotsLines(lines: string[]) {
+  return lines.filter((line) => {
+    const trimmed = line.trim();
+    if (trimmed.length === 0) return true;
+    if (trimmed.startsWith('#')) return true;
+    const separatorIndex = trimmed.indexOf(':');
+    if (separatorIndex <= 0) return false;
+    const directive = trimmed.slice(0, separatorIndex).trim().toLowerCase();
+    return VALID_ROBOTS_DIRECTIVES.has(directive);
+  });
 }
 
 function hasDirective(rule: string, directive: string) {
@@ -83,10 +96,13 @@ export async function GET() {
       lines.push('', ...generatedFooter);
     }
 
-    return new Response(lines.join('\n'), {
+    const safeRenderedLines = sanitizeRenderedRobotsLines(lines);
+
+    return new Response(safeRenderedLines.join('\n'), {
       headers: {
         'Content-Type': ROBOTS_CONTENT_TYPE,
         'Cache-Control': ROBOTS_CACHE_CONTROL,
+        'X-GP-Robots-Generator': ROBOTS_GENERATOR_HEADER,
       },
     });
   } catch (error) {
@@ -95,6 +111,7 @@ export async function GET() {
       headers: {
         'Content-Type': ROBOTS_CONTENT_TYPE,
         'Cache-Control': ROBOTS_CACHE_CONTROL,
+        'X-GP-Robots-Generator': ROBOTS_GENERATOR_HEADER,
       },
     });
   }
