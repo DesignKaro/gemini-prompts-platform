@@ -115,11 +115,25 @@ export async function generateMetadata(): Promise<Metadata> {
 async function GlobalIntegrationScripts() {
   const settings = await getSeoSettings();
   const bundle = buildSeoIntegrationScriptBundle(settings.integrations);
+  const fallbackGaMeasurementId = 'G-K188R14HR6';
+  const shouldInjectFallbackGa = !bundle.gtagLoaderSrc && !bundle.gtagInitScript;
+  const fallbackGaInitScript = [
+    'window.dataLayer = window.dataLayer || [];',
+    'function gtag(){dataLayer.push(arguments);}',
+    "gtag('js', new Date());",
+    `gtag('config', '${fallbackGaMeasurementId}');`,
+  ].join('\n');
 
   return (
     <>
       {bundle.gtagLoaderSrc ? (
         <Script id="gp-gtag-loader" src={bundle.gtagLoaderSrc} strategy="afterInteractive" />
+      ) : shouldInjectFallbackGa ? (
+        <Script
+          id="gp-gtag-loader-fallback"
+          src={`https://www.googletagmanager.com/gtag/js?id=${fallbackGaMeasurementId}`}
+          strategy="afterInteractive"
+        />
       ) : null}
       {bundle.gtagInitScript ? (
         <Script
@@ -127,6 +141,13 @@ async function GlobalIntegrationScripts() {
           strategy="afterInteractive"
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: bundle.gtagInitScript }}
+        />
+      ) : shouldInjectFallbackGa ? (
+        <Script
+          id="gp-gtag-init-fallback"
+          strategy="afterInteractive"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: fallbackGaInitScript }}
         />
       ) : null}
       {bundle.adsenseLoaderSrc ? (
