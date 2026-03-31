@@ -117,12 +117,21 @@ async function GlobalIntegrationScripts() {
   const bundle = buildSeoIntegrationScriptBundle(settings.integrations);
   const fallbackGaMeasurementId = 'G-K188R14HR6';
   const shouldInjectFallbackGa = !bundle.gtagLoaderSrc && !bundle.gtagInitScript;
+  const fallbackClarityProjectId = 'w45opfylyv';
+  const shouldInjectFallbackClarity = !bundle.clarityInitScript;
   const fallbackGaInitScript = [
     'window.dataLayer = window.dataLayer || [];',
     'function gtag(){dataLayer.push(arguments);}',
     "gtag('js', new Date());",
     `gtag('config', '${fallbackGaMeasurementId}');`,
   ].join('\n');
+  const fallbackClarityInitScript = [
+    '(function(c,l,a,r,i,t,y){',
+    'c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};',
+    't=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;',
+    'y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);',
+    `})(window, document, 'clarity', 'script', '${fallbackClarityProjectId}');`,
+  ].join('');
 
   return (
     <>
@@ -164,6 +173,13 @@ async function GlobalIntegrationScripts() {
           strategy="afterInteractive"
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: bundle.clarityInitScript }}
+        />
+      ) : shouldInjectFallbackClarity ? (
+        <Script
+          id="gp-clarity-init-fallback"
+          strategy="afterInteractive"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: fallbackClarityInitScript }}
         />
       ) : null}
       {bundle.customHeadScriptUrls.map((src, index) => (

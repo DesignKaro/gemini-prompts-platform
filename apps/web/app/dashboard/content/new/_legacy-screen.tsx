@@ -1049,13 +1049,13 @@ export default function CreateContentPage() {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px] pb-32 lg:pb-28">
+    <div className="mx-auto w-full min-w-0 max-w-[1200px] overflow-x-hidden pb-32 lg:pb-28">
       {/* Page header */}
-      <div className="mb-6 flex flex-col gap-1">
-        <h1 className="text-[1.8rem] font-medium tracking-tight text-[#0f1116]">
+      <div className="mb-5 flex flex-col gap-1 sm:mb-6">
+        <h1 className="text-[1.45rem] font-medium tracking-tight text-[#0f1116] sm:text-[1.8rem]">
           Create New Content
         </h1>
-        <p className="text-[0.95rem] text-gray-500">
+        <p className="text-[0.9rem] text-gray-500 sm:text-[0.95rem]">
           Draft a new prompt, post, or guide for the marketplace.
         </p>
       </div>
@@ -1109,9 +1109,9 @@ export default function CreateContentPage() {
         </div>
       )}
 
-      <div className="mt-2 grid gap-8 lg:grid-cols-[0.65fr_0.35fr] lg:items-start">
+      <div className="mt-2 grid min-w-0 gap-6 lg:grid-cols-[0.65fr_0.35fr] lg:items-start lg:gap-8">
         {/* —— LEFT COLUMN —— */}
-        <div className="space-y-8">
+        <div className="min-w-0 space-y-6 sm:space-y-8">
           {/* Featured image */}
           <div>
             <p className="text-[0.9rem] text-[#2f3440]">Featured image</p>
@@ -1137,14 +1137,15 @@ export default function CreateContentPage() {
               <button
                 type="button"
                 onClick={() => openMediaModal('featured')}
-                className="mt-3 flex min-h-[180px] w-full cursor-pointer flex-col items-center justify-center rounded-[20px] border border-dashed border-[#d9dde6] bg-white px-6 py-10 text-center transition-colors hover:border-[#0f1116] hover:bg-[#f7f8fb]"
+                className="mt-3 flex min-h-[150px] w-full cursor-pointer flex-col items-center justify-center rounded-[18px] border border-dashed border-[#d9dde6] bg-white px-4 py-7 text-center transition-colors hover:border-[#0f1116] hover:bg-[#f7f8fb] sm:min-h-[180px] sm:rounded-[20px] sm:px-6 sm:py-10"
               >
                 <div className="space-y-2">
                   <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-[#d9dde6] text-[#7a8292]">
                     <FaCloudArrowUp className="h-4 w-4" />
                   </div>
-                  <p className="text-[0.9rem] text-[#2f3440]">
-                    <span className="text-[#1e4fd2]">Choose image</span> (Upload, Library, or URL)
+                  <p className="text-[0.86rem] text-[#2f3440] sm:text-[0.9rem]">
+                    <span className="text-[#1e4fd2]">Choose image</span>
+                    <span className="block sm:inline"> (Upload, Library, or URL)</span>
                   </p>
                   <p className="text-[0.78rem] text-[#9aa1ae]">PNG, JPG, GIF up to 5 MB</p>
                 </div>
@@ -1208,7 +1209,7 @@ export default function CreateContentPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Write a title..."
-              className={`w-full border-none bg-transparent text-[2rem] font-medium text-[#0f1116] outline-none placeholder:text-[#b5bac6] sm:text-[2.4rem] ${
+              className={`w-full border-none bg-transparent text-[1.6rem] font-medium text-[#0f1116] outline-none placeholder:text-[#b5bac6] sm:text-[2.4rem] ${
                 validationError && !title.trim() ? 'placeholder:text-red-300' : ''
               }`}
             />
@@ -1256,7 +1257,7 @@ export default function CreateContentPage() {
         </div>
 
         {/* —— RIGHT COLUMN / SIDEBAR —— */}
-        <aside className="rounded-[24px] border border-[#e2e6ee] bg-white p-5 sm:p-6 lg:sticky lg:top-6">
+        <aside className="min-w-0 rounded-[20px] border border-[#e2e6ee] bg-white p-4 sm:rounded-[24px] sm:p-6 lg:sticky lg:top-6">
           <div>
             <h3 className="text-[1.1rem] text-[#0f1116]">Post options</h3>
             <p className="mt-1 text-[0.82rem] text-[#7a8292]">
@@ -1330,7 +1331,7 @@ export default function CreateContentPage() {
 
               <div className="grid gap-3">
                 <p className="text-[0.82rem] text-[#2f3440]">Status</p>
-                <div className="flex flex-wrap gap-3 text-[0.85rem] text-[#2f3440]">
+                <div className="flex flex-wrap gap-2 sm:gap-3 text-[0.85rem] text-[#2f3440]">
                   {optionStatusItems.map((option) => (
                     <label key={option} className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -1362,7 +1363,7 @@ export default function CreateContentPage() {
 
               <div className="grid gap-3">
                 <p className="text-[0.82rem] text-[#2f3440]">Visibility</p>
-                <div className="flex flex-wrap gap-3 text-[0.85rem] text-[#2f3440]">
+                <div className="flex flex-wrap gap-2 sm:gap-3 text-[0.85rem] text-[#2f3440]">
                   {(
                     [
                       { label: 'Free', value: 'FREE' as const },
@@ -1622,7 +1623,7 @@ export default function CreateContentPage() {
               <p className="text-[0.78rem] text-[#7a8292]">Multiple categories allowed. Max 15.</p>
             </div>
 
-            <div className="grid gap-4 rounded-[16px] border border-[#e4e9f2] bg-[#fafbfd] p-4">
+            <div className="grid gap-4 min-w-0 rounded-[16px] border border-[#e4e9f2] bg-[#fafbfd] p-4">
               <p className="text-[0.85rem] text-[#2f3440]">Content type</p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="grid gap-2">
@@ -1708,7 +1709,7 @@ export default function CreateContentPage() {
                     ) : null}
                   </div>
 
-                  <div className="ml-auto flex items-center gap-2 sm:gap-3">
+                  <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap sm:gap-3">
                     {/* Preview */}
                     <button
                       type="button"
@@ -1727,7 +1728,7 @@ export default function CreateContentPage() {
                       spinnerSize="xs"
                       spinnerClassName="text-[#0f1116]"
                       disabled={isSaving && savingTarget !== 'Draft'}
-                      className="flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] shadow-sm transition-colors hover:bg-gray-50 disabled:opacity-60"
+                      className="flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-3.5 py-2 text-[0.8rem] font-medium text-[#0f1116] shadow-sm transition-colors hover:bg-gray-50 disabled:opacity-60 sm:px-4 sm:text-[0.85rem]"
                     >
                       <span className="hidden sm:block">Save Draft</span>
                       <span className="sm:hidden">Draft</span>
@@ -1747,7 +1748,7 @@ export default function CreateContentPage() {
                       spinnerSize="xs"
                       spinnerClassName="text-[#0f1116]"
                       disabled={isSaving && savingTarget === 'Draft'}
-                      className="flex items-center gap-2 rounded-xl bg-[#d5ea52] px-5 py-2 text-[0.85rem] font-medium text-[#0f1116] shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60"
+                      className="flex items-center gap-2 rounded-xl bg-[#d5ea52] px-4 py-2 text-[0.8rem] font-medium text-[#0f1116] shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60 sm:px-5 sm:text-[0.85rem]"
                     >
                       <>{status === 'Scheduled' ? 'Schedule' : 'Publish'}</>
                     </LoadingButton>
