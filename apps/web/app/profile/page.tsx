@@ -1107,14 +1107,14 @@ function ProfilePageContent() {
 
       {isEditOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-[2px]"
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-4 backdrop-blur-[2px] sm:items-center sm:py-6"
           onClick={closeEditModal}
           role="dialog"
           aria-modal="true"
           aria-labelledby="edit-profile-title"
         >
           <div
-            className="w-full max-w-[520px] rounded-[24px] border border-[#e2e6ee] bg-white p-5 sm:p-6"
+            className="no-scrollbar w-full max-w-[520px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#e2e6ee] bg-white p-5 sm:p-6"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between gap-4">
