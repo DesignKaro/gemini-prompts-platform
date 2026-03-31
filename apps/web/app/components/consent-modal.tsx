@@ -38,33 +38,44 @@ type PreferenceRowProps = {
   description: string;
   checked: boolean;
   disabled?: boolean;
+  optional?: boolean;
   onToggle?: () => void;
 };
 
-function PreferenceRow({ label, description, checked, disabled = false, onToggle }: PreferenceRowProps) {
+function PreferenceRow({
+  label,
+  description,
+  checked,
+  disabled = false,
+  optional = false,
+  onToggle,
+}: PreferenceRowProps) {
   const toggleClasses = checked
     ? 'border-transparent bg-[#d5ea52] text-[#0f1116]'
     : 'border-white/40 bg-transparent text-white';
 
   return (
-    <div className="rounded-[16px] border border-white/12 bg-white/[0.03] px-3.5 py-3">
+    <div className="py-2.5">
       <button
         type="button"
         role="switch"
         aria-checked={checked}
         disabled={disabled}
         onClick={onToggle}
-        className={`flex w-full items-start gap-3 text-left ${disabled ? 'cursor-not-allowed opacity-80' : ''}`}
+        className={`flex w-full items-start gap-2.5 text-left ${disabled ? 'cursor-not-allowed opacity-80' : ''}`}
       >
         <span
-          className={`mt-[1px] inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[0.9rem] transition-colors ${toggleClasses}`}
+          className={`mt-[1px] inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[0.82rem] transition-colors ${toggleClasses}`}
           aria-hidden="true"
         >
           {checked ? '✓' : ''}
         </span>
         <span className="min-w-0">
-          <span className="block text-[0.93rem] font-medium tracking-[0.01em] text-white">{label}</span>
-          <span className="mt-0.5 block text-[0.79rem] leading-[1.5] text-white/70">{description}</span>
+          <span className="block text-[0.92rem] font-medium tracking-[0.01em] text-white">
+            {label}
+            {optional ? <span className="ml-2 text-[0.74rem] font-normal text-white/55">Optional</span> : null}
+          </span>
+          <span className="mt-0.5 block text-[0.78rem] leading-[1.45] text-white/70">{description}</span>
         </span>
       </button>
     </div>
@@ -194,7 +205,7 @@ export function ConsentModal() {
           .
         </p>
 
-        <div className="mt-4 space-y-2.5">
+        <div className="mt-4 divide-y divide-white/12 rounded-[16px] border border-white/12 bg-white/[0.03] px-3.5 py-1.5">
           <PreferenceRow
             label="Essential"
             description="Required for login, security, and core site functionality."
@@ -205,16 +216,18 @@ export function ConsentModal() {
             label="Functional"
             description="Remembers settings and improves usability."
             checked={functional}
+            optional
             onToggle={() => setFunctional((value) => !value)}
           />
           <PreferenceRow
             label="Marketing"
             description="Helps us measure campaigns and optimize growth."
             checked={marketing}
+            optional
             onToggle={() => setMarketing((value) => !value)}
           />
 
-          <div className="rounded-[16px] border border-white/12 bg-white/[0.03] px-3.5 py-3">
+          <div className="py-2.5">
             <label className="flex items-start gap-3">
               <input
                 type="checkbox"
@@ -223,8 +236,8 @@ export function ConsentModal() {
                 className="mt-1 h-4 w-4 rounded border-white/40 bg-transparent text-[#d5ea52] accent-[#d5ea52]"
               />
               <span>
-                <span className="block text-[0.93rem] font-medium text-white">Legal acceptance</span>
-                <span className="mt-0.5 block text-[0.79rem] leading-[1.5] text-white/70">
+                <span className="block text-[0.92rem] font-medium text-white">Legal acceptance</span>
+                <span className="mt-0.5 block text-[0.78rem] leading-[1.45] text-white/70">
                   Required to continue using the site and access prompt content.
                 </span>
               </span>
