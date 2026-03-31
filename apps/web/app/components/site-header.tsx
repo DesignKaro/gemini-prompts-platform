@@ -326,7 +326,7 @@ export function SiteHeader() {
                   height={28}
                   className="h-[1.55rem] w-[1.55rem] object-contain sm:h-[2.25rem] sm:w-[2.25rem]"
                   priority
-                  unoptimized
+                  decoding="async"
                   aria-hidden="true"
                 />
                 <span className="text-[0.82rem] font-normal uppercase leading-none tracking-[0.025em] text-[#0e1015] sm:text-[1.15rem]">

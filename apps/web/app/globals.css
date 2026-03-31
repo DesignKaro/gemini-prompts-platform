@@ -209,6 +209,28 @@ input[type='search']::-webkit-search-cancel-button {
   transform: scale(1.04);
 }
 
+@media (max-width: 767px) {
+  .hero-copy,
+  .hero-badge,
+  .hero-carousel-track,
+  .community-track {
+    animation: none !important;
+  }
+
+  .hero-carousel-item,
+  .hero-carousel-item:hover,
+  .hero-carousel-item:hover .hero-stack-card {
+    transform: none !important;
+  }
+
+  .reveal-section {
+    opacity: 1;
+    filter: none;
+    transform: none;
+    transition: none;
+  }
+}
+
 .footer-link-underline {
   position: relative;
   width: fit-content;

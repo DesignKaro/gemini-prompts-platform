@@ -136,25 +136,25 @@ async function GlobalIntegrationScripts() {
   return (
     <>
       {bundle.gtagLoaderSrc ? (
-        <Script id="gp-gtag-loader" src={bundle.gtagLoaderSrc} strategy="afterInteractive" />
+        <Script id="gp-gtag-loader" src={bundle.gtagLoaderSrc} strategy="lazyOnload" />
       ) : shouldInjectFallbackGa ? (
         <Script
           id="gp-gtag-loader-fallback"
           src={`https://www.googletagmanager.com/gtag/js?id=${fallbackGaMeasurementId}`}
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
       ) : null}
       {bundle.gtagInitScript ? (
         <Script
           id="gp-gtag-init"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: bundle.gtagInitScript }}
         />
       ) : shouldInjectFallbackGa ? (
         <Script
           id="gp-gtag-init-fallback"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: fallbackGaInitScript }}
         />
@@ -163,21 +163,21 @@ async function GlobalIntegrationScripts() {
         <Script
           id="gp-adsense-loader"
           src={bundle.adsenseLoaderSrc}
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           crossOrigin="anonymous"
         />
       ) : null}
       {bundle.clarityInitScript ? (
         <Script
           id="gp-clarity-init"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: bundle.clarityInitScript }}
         />
       ) : shouldInjectFallbackClarity ? (
         <Script
           id="gp-clarity-init-fallback"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: fallbackClarityInitScript }}
         />
@@ -187,13 +187,13 @@ async function GlobalIntegrationScripts() {
           key={`gp-custom-head-src-${src}-${index}`}
           id={`gp-custom-head-src-${index}`}
           src={src}
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
       ))}
       {bundle.customHeadInlineScript ? (
         <Script
           id="gp-custom-head-inline"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: bundle.customHeadInlineScript }}
         />
@@ -201,7 +201,7 @@ async function GlobalIntegrationScripts() {
       {bundle.customBodyStartInlineScript ? (
         <Script
           id="gp-custom-body-start-inline"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: bundle.customBodyStartInlineScript }}
         />
@@ -218,7 +218,7 @@ async function GlobalIntegrationBodyEndScript() {
   return (
     <Script
       id="gp-custom-body-end-inline"
-      strategy="afterInteractive"
+      strategy="lazyOnload"
       // eslint-disable-next-line react/no-danger
       dangerouslySetInnerHTML={{ __html: bundle.customBodyEndInlineScript }}
     />
