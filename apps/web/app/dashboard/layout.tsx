@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -61,7 +61,13 @@ function DashboardLink({
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!isDashboard) return;
     e.preventDefault();
-    if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+    const canUseViewTransition =
+      typeof document !== 'undefined' &&
+      'startViewTransition' in document &&
+      typeof window !== 'undefined' &&
+      window.matchMedia('(min-width: 1024px)').matches;
+
+    if (canUseViewTransition) {
       (
         document as Document & { startViewTransition: (cb: () => void) => void }
       ).startViewTransition(() => {
@@ -400,6 +406,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.replace(defaultDashboardHref);
     }
   }, [canAccessCurrentRoute, defaultDashboardHref, hasDashboardAccess, router, sessionStatus]);
+
+  useLayoutEffect(() => {
+    setIsSidebarOpen(false);
+  }, [pathname]);
 
   const displayName =
     profileSnapshot?.name?.trim() ||

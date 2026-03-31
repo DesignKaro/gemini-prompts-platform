@@ -59,12 +59,12 @@ export function ProfileSettingsModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-4 py-6">
-      <div className="w-full max-w-[560px] rounded-[24px] bg-white p-6 shadow-2xl">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/45 px-2 py-2 sm:px-4 sm:py-6">
+      <div className="w-full max-w-[560px] max-h-[calc(100vh-1rem)] overflow-y-auto rounded-[18px] bg-white p-4 shadow-2xl sm:max-h-[calc(100vh-3rem)] sm:rounded-[24px] sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[0.8rem] text-[#7a8292]">Profile</p>
-            <h2 className="text-[1.4rem] font-medium text-[#0f1116]">Edit profile</h2>
+            <h2 className="text-[1.25rem] font-medium text-[#0f1116] sm:text-[1.4rem]">Edit profile</h2>
           </div>
           <button
             type="button"
@@ -84,14 +84,14 @@ export function ProfileSettingsModal({
           </button>
         </div>
 
-        <form className="mt-5 space-y-4" onSubmit={onSubmit}>
+        <form className="mt-4 space-y-3 sm:mt-5 sm:space-y-4" onSubmit={onSubmit}>
           {profileLoadError ? <ActionError error={profileLoadError} onRetry={onRetryLoad} /> : null}
           {profileSaveError ? <ActionError error={profileSaveError} /> : null}
 
           <div className="grid gap-4 sm:grid-cols-[170px_1fr] sm:items-start">
             <div>
               <span className="text-[0.8rem] text-[#7a8292]">Profile photo</span>
-              <div className="mt-2 flex flex-col gap-3">
+              <div className="mt-2 flex items-start gap-3 sm:flex-col sm:gap-3">
                 <div className="h-16 w-16 overflow-hidden rounded-full bg-[#f0f2f7]">
                   {avatarPreview || profileForm.avatarUrl ? (
                     <img
@@ -105,22 +105,24 @@ export function ProfileSettingsModal({
                     </div>
                   )}
                 </div>
-                <label className="cursor-pointer text-[0.8rem] text-[#1e4fd2]">
-                  Upload photo
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={onAvatarChange}
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={onRemoveAvatar}
-                  className="text-left text-[0.75rem] text-[#7a8292]"
-                >
-                  Remove photo
-                </button>
+                <div className="flex flex-col gap-1.5 sm:gap-2">
+                  <label className="cursor-pointer text-[0.8rem] text-[#1e4fd2]">
+                    Upload photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={onAvatarChange}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={onRemoveAvatar}
+                    className="text-left text-[0.75rem] text-[#7a8292]"
+                  >
+                    Remove photo
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -131,7 +133,7 @@ export function ProfileSettingsModal({
                   type="text"
                   value={profileForm.name}
                   onChange={(event) => onNameChange(event.target.value)}
-                  className="mt-2 w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
+                  className="mt-1.5 w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116] sm:mt-2"
                 />
               </div>
               <div>
@@ -140,7 +142,7 @@ export function ProfileSettingsModal({
                   type="text"
                   value={profileForm.profileTitle}
                   onChange={(event) => onProfileTitleChange(event.target.value)}
-                  className="mt-2 w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
+                  className="mt-1.5 w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116] sm:mt-2"
                 />
               </div>
             </div>
@@ -153,7 +155,7 @@ export function ProfileSettingsModal({
                 type="text"
                 value={profileForm.handle}
                 onChange={(event) => onHandleChange(event.target.value)}
-                className="mt-2 w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
+                className="mt-1.5 w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116] sm:mt-2"
               />
             </div>
             <div>
@@ -163,7 +165,7 @@ export function ProfileSettingsModal({
                 value={focusTagsInput}
                 onChange={(event) => onFocusTagsInputChange(event.target.value)}
                 placeholder="design, ai, writing"
-                className="mt-2 w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
+                className="mt-1.5 w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116] sm:mt-2"
               />
               <p className="mt-1 text-[0.72rem] text-[#9aa3b2]">Separate tags with commas.</p>
             </div>
@@ -174,12 +176,12 @@ export function ProfileSettingsModal({
             <textarea
               value={profileForm.bio}
               onChange={(event) => onBioChange(event.target.value)}
-              rows={3}
-              className="mt-2 w-full resize-none rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116]"
+              rows={2}
+              className="mt-1.5 w-full resize-none rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116] sm:mt-2 sm:rows-3"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-2">
+          <div className="flex items-center justify-end gap-2 border-t border-[#eef1f6] pt-3">
             <button
               type="button"
               onClick={onClose}

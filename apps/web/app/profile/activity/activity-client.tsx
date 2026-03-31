@@ -219,7 +219,7 @@ export function ProfileActivityClient() {
     <section className="page-shell-tight bg-white">
       <div className="page-container-wide max-w-[1300px]">
         <div className="rounded-[24px] bg-white p-5 sm:p-6">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="text-[1.55rem] leading-[1.08] tracking-[-0.04em] text-[#0f1116] sm:text-[1.85rem]">
               All activity
             </h1>
@@ -297,66 +297,111 @@ export function ProfileActivityClient() {
                   {hasActiveFilters ? 'No activity matches the current filters.' : 'No activity yet.'}
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-[16px] border border-[#e8ecf4]">
-                  <table className="w-full min-w-[900px] text-left">
-                    <thead className="bg-[#f8fafd] text-[0.72rem] uppercase tracking-[0.08em] text-[#7a8292]">
-                      <tr>
-                        <th className="px-4 py-3 font-semibold">Time</th>
-                        <th className="px-4 py-3 font-semibold">Activity</th>
-                        <th className="px-4 py-3 font-semibold">Image</th>
-                        <th className="px-4 py-3 font-semibold">Prompt</th>
-                        <th className="px-4 py-3 font-semibold">Source</th>
-                        <th className="px-4 py-3 font-semibold">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white">
-                      {displayedItems.map((item) => (
-                        <tr key={item.id} className="border-t border-[#eef1f6] align-middle">
-                          <td className="px-4 py-3">
-                            <span
-                              className={`inline-flex rounded-full px-2.5 py-0.5 text-[0.75rem] ${toActivityTone(item.type)}`}
+                <>
+                  <div className="space-y-2.5 md:hidden">
+                    {displayedItems.map((item) => (
+                      <article
+                        key={`${item.id}-mobile`}
+                        className="rounded-[16px] border border-[#e8ecf4] bg-white p-3.5"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <span
+                            className={`inline-flex rounded-full px-2 py-0.5 text-[0.72rem] ${toActivityTone(item.type)}`}
+                          >
+                            {formatRelativeTime(item.createdAt)}
+                          </span>
+                          {item.promptSlug ? (
+                            <Link
+                              href={`/prompt/${item.promptSlug}`}
+                              className="inline-flex rounded-full border border-[#d4d9e2] px-2.5 py-1 text-[0.72rem] text-[#10141c] transition-colors hover:border-[#10141c] hover:bg-[#10141c] hover:text-white"
                             >
-                              {formatRelativeTime(item.createdAt)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-[0.9rem] font-medium text-[#10141c]">
-                            {toActivityLabel(item.type)}
-                          </td>
-                          <td className="px-4 py-3">
-                            <PromptThumb
-                              image={item.promptImage}
-                              title={item.promptTitle ?? 'Prompt image'}
-                              fallbackKey={item.promptSlug ?? item.id}
-                              className="h-11 w-20 rounded-[10px] border border-[#e3e7ef]"
-                            />
-                          </td>
-                          <td className="px-4 py-3 text-[0.86rem] text-[#667080]">
-                            {item.promptTitle ? `“${item.promptTitle}”` : 'Your recent prompt activity.'}
-                          </td>
-                          <td className="px-4 py-3 text-[0.82rem] text-[#9aa1ae]">Gemini Prompts</td>
-                          <td className="px-4 py-3">
-                            {item.promptSlug ? (
-                              <Link
-                                href={`/prompt/${item.promptSlug}`}
-                                className="inline-flex rounded-full border border-[#d4d9e2] px-3 py-1 text-[0.74rem] text-[#10141c] transition-colors hover:border-[#10141c] hover:bg-[#10141c] hover:text-white"
-                              >
-                                Open
-                              </Link>
-                            ) : (
-                              <span className="text-[0.78rem] text-[#a0a8b6]">—</span>
-                            )}
-                          </td>
+                              Open
+                            </Link>
+                          ) : (
+                            <span className="text-[0.76rem] text-[#a0a8b6]">—</span>
+                          )}
+                        </div>
+                        <div className="mt-2.5 flex gap-3">
+                          <PromptThumb
+                            image={item.promptImage}
+                            title={item.promptTitle ?? 'Prompt image'}
+                            fallbackKey={item.promptSlug ?? item.id}
+                            className="h-14 w-20 shrink-0 rounded-[10px] border border-[#e3e7ef]"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-[0.88rem] font-medium text-[#10141c]">
+                              {toActivityLabel(item.type)}
+                            </p>
+                            <p className="mt-1 text-[0.8rem] text-[#667080]">
+                              {item.promptTitle ? `“${item.promptTitle}”` : 'Your recent prompt activity.'}
+                            </p>
+                            <p className="mt-1 text-[0.76rem] text-[#9aa1ae]">Gemini Prompts</p>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                  <div className="hidden overflow-x-auto rounded-[16px] border border-[#e8ecf4] md:block">
+                    <table className="w-full min-w-[900px] text-left">
+                      <thead className="bg-[#f8fafd] text-[0.72rem] uppercase tracking-[0.08em] text-[#7a8292]">
+                        <tr>
+                          <th className="px-4 py-3 font-semibold">Time</th>
+                          <th className="px-4 py-3 font-semibold">Activity</th>
+                          <th className="px-4 py-3 font-semibold">Image</th>
+                          <th className="px-4 py-3 font-semibold">Prompt</th>
+                          <th className="px-4 py-3 font-semibold">Source</th>
+                          <th className="px-4 py-3 font-semibold">Action</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="bg-white">
+                        {displayedItems.map((item) => (
+                          <tr key={item.id} className="border-t border-[#eef1f6] align-middle">
+                            <td className="px-4 py-3">
+                              <span
+                                className={`inline-flex rounded-full px-2.5 py-0.5 text-[0.75rem] ${toActivityTone(item.type)}`}
+                              >
+                                {formatRelativeTime(item.createdAt)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-[0.9rem] font-medium text-[#10141c]">
+                              {toActivityLabel(item.type)}
+                            </td>
+                            <td className="px-4 py-3">
+                              <PromptThumb
+                                image={item.promptImage}
+                                title={item.promptTitle ?? 'Prompt image'}
+                                fallbackKey={item.promptSlug ?? item.id}
+                                className="h-11 w-20 rounded-[10px] border border-[#e3e7ef]"
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-[0.86rem] text-[#667080]">
+                              {item.promptTitle ? `“${item.promptTitle}”` : 'Your recent prompt activity.'}
+                            </td>
+                            <td className="px-4 py-3 text-[0.82rem] text-[#9aa1ae]">Gemini Prompts</td>
+                            <td className="px-4 py-3">
+                              {item.promptSlug ? (
+                                <Link
+                                  href={`/prompt/${item.promptSlug}`}
+                                  className="inline-flex rounded-full border border-[#d4d9e2] px-3 py-1 text-[0.74rem] text-[#10141c] transition-colors hover:border-[#10141c] hover:bg-[#10141c] hover:text-white"
+                                >
+                                  Open
+                                </Link>
+                              ) : (
+                                <span className="text-[0.78rem] text-[#a0a8b6]">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           ) : null}
 
           {!loading && !error ? (
-            <div className="mt-4 flex items-center justify-between rounded-[14px] border border-[#e8ecf4] bg-[#f8fafd] p-3">
+            <div className="mt-4 flex flex-col gap-3 rounded-[14px] border border-[#e8ecf4] bg-[#f8fafd] p-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[0.8rem] text-[#6b7280]">
                 {total} total item{total === 1 ? '' : 's'} • Page {pageIndex + 1} of {totalPages} •
                 Showing {displayedItems.length}
