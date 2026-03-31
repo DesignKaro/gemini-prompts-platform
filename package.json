@@ -18,6 +18,10 @@
     "dashboard:lint-checks": "npm run dashboard:arch-check && npm run lint -w @gemini-prompts/web && npm run lint -w @gemini-prompts/api",
     "dashboard:smoke": "npm run smoke:dashboard -w @gemini-prompts/web",
     "dashboard:release-gate": "npm run typecheck -w @gemini-prompts/api && npm run typecheck -w @gemini-prompts/web && npm run dashboard:lint-checks && npm run db:check -w @gemini-prompts/api && npm run db:integrity:audit -w @gemini-prompts/api && npm run dashboard:smoke",
+    "perf:psi:check": "npm run perf:psi:check -w @gemini-prompts/web",
+    "perf:psi:baseline": "npm run perf:psi:baseline -w @gemini-prompts/web",
+    "perf:robots:check": "npm run perf:robots:check -w @gemini-prompts/web",
+    "rum:weekly": "npm run rum:weekly -w @gemini-prompts/web",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "test -d .git && npx --no-install husky || true"

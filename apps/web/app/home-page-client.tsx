@@ -2,11 +2,10 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { motion } from 'framer-motion';
 import { AuthorAvatar } from './components/author-avatar';
-import { HeroSearchDropdown } from './components/hero-search-dropdown';
 import { PostCardUI } from './components/post-card';
 import { PromptCardUI } from './components/prompt-listing';
 import { usePromptInteractions } from './components/prompt-interactions/use-prompt-interactions';
@@ -35,6 +34,7 @@ import {
   resolvePostImage,
   resolvePromptImage,
 } from '../lib/content-image-fallbacks';
+import { DEFAULT_BLUR_DATA_URL } from '../lib/image-placeholders';
 import { COMMUNITY_IMAGE_URLS, CTA_ROBO_URL } from '../lib/site-assets';
 import { refreshSession } from '../lib/utils/session';
 
@@ -43,6 +43,18 @@ const SESSION_FALLBACK = {
   status: 'unauthenticated' as const,
   update: (async () => null) as ReturnType<typeof useSession>['update'],
 };
+
+const HeroSearchDropdown = dynamic(
+  () => import('./components/hero-search-dropdown').then((module) => module.HeroSearchDropdown),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="mx-auto mt-5 w-full max-w-[28rem] sm:mt-6 sm:max-w-[40rem]">
+        <div className="h-11 w-full rounded-full border border-[#e1e5ec] bg-[#f8fafc] sm:h-12" />
+      </div>
+    ),
+  },
+);
 
 function useSafeSession() {
   try {
@@ -1824,8 +1836,10 @@ export default function HomePageClient({
                           alt={card.alt}
                           fill
                           sizes="(max-width: 1024px) 0px, 250px"
-                          priority={index === 3}
-                          loading={index === 3 ? 'eager' : 'lazy'}
+                          loading="lazy"
+                          decoding="async"
+                          placeholder="blur"
+                          blurDataURL={DEFAULT_BLUR_DATA_URL}
                           className="object-cover"
                         />
                       </div>
@@ -1849,9 +1863,11 @@ export default function HomePageClient({
                           src={card.src}
                           alt={card.alt}
                           fill
-                          sizes="168px"
-                          priority={index === 3}
-                          loading={index === 3 ? 'eager' : 'lazy'}
+                          sizes="146px"
+                          loading="lazy"
+                          decoding="async"
+                          placeholder="blur"
+                          blurDataURL={DEFAULT_BLUR_DATA_URL}
                           className="object-cover"
                         />
                       </div>
@@ -1885,12 +1901,7 @@ export default function HomePageClient({
           {/* Right: Counters */}
           <div className="flex w-full items-center pt-3 sm:pt-4 lg:justify-self-start lg:pt-0">
             <div className="grid w-full grid-cols-2 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-4 lg:gap-6">
-            <motion.div
-              whileInView={{ y: [30, 0], opacity: [0, 1] }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              viewport={{ once: true, amount: 0.4 }}
-              className="flex flex-col items-center text-center"
-            >
+            <div className="flex flex-col items-center text-center">
               <AnimatedCounter
                 value="5k+"
                 className="font-poppins text-[3rem] font-light leading-[0.92] tracking-[-0.06em] text-[#101010] sm:text-[5rem]"
@@ -1898,13 +1909,8 @@ export default function HomePageClient({
               <span className="mt-6 text-[1rem] font-normal leading-[1.2] tracking-[-0.03em] text-[#101010] sm:text-[1.05rem]">
                 Prompts
               </span>
-            </motion.div>
-            <motion.div
-              whileInView={{ y: [30, 0], opacity: [0, 1] }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-              viewport={{ once: true, amount: 0.4 }}
-              className="flex flex-col items-center text-center"
-            >
+            </div>
+            <div className="flex flex-col items-center text-center">
               <AnimatedCounter
                 value="100k+"
                 className="font-poppins text-[3rem] font-light leading-[0.92] tracking-[-0.06em] text-[#101010] sm:text-[5rem]"
@@ -1912,13 +1918,8 @@ export default function HomePageClient({
               <span className="mt-6 text-[1rem] font-normal leading-[1.2] tracking-[-0.03em] text-[#101010] sm:text-[1.05rem]">
                 All Users
               </span>
-            </motion.div>
-            <motion.div
-              whileInView={{ y: [30, 0], opacity: [0, 1] }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
-              viewport={{ once: true, amount: 0.4 }}
-              className="flex flex-col items-center text-center"
-            >
+            </div>
+            <div className="flex flex-col items-center text-center">
               <AnimatedCounter
                 value="49k+"
                 className="font-poppins text-[3rem] font-light leading-[0.92] tracking-[-0.06em] text-[#101010] sm:text-[5rem]"
@@ -1926,13 +1927,8 @@ export default function HomePageClient({
               <span className="mt-6 text-[1rem] font-normal leading-[1.2] tracking-[-0.03em] text-[#101010] sm:text-[1.05rem]">
                 Subscribers
               </span>
-            </motion.div>
-            <motion.div
-              whileInView={{ y: [30, 0], opacity: [0, 1] }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
-              viewport={{ once: true, amount: 0.4 }}
-              className="flex flex-col items-center text-center"
-            >
+            </div>
+            <div className="flex flex-col items-center text-center">
               <AnimatedCounter
                 value="100+"
                 className="font-poppins text-[3rem] font-light leading-[0.92] tracking-[-0.06em] text-[#101010] sm:text-[5rem]"
@@ -1940,7 +1936,7 @@ export default function HomePageClient({
               <span className="mt-6 text-[1rem] font-normal leading-[1.2] tracking-[-0.03em] text-[#101010] sm:text-[1.05rem]">
                 Posts
               </span>
-            </motion.div>
+            </div>
             </div>
           </div>
         </div>
@@ -2031,7 +2027,9 @@ export default function HomePageClient({
                         fill
                         sizes="46px"
                         loading="lazy"
-                        unoptimized
+                        decoding="async"
+                        placeholder="blur"
+                        blurDataURL={DEFAULT_BLUR_DATA_URL}
                         className="object-cover"
                       />
                     </div>

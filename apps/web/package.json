@@ -12,6 +12,10 @@
     "test:watch": "vitest --config vitest.config.ts",
     "dashboard:arch-check": "node scripts/check-dashboard-structure.mjs && node scripts/check-dashboard-fetch.mjs",
     "perf:budget": "node scripts/check-performance-budgets.mjs",
+    "perf:psi:check": "node scripts/pagespeed-guardrail.mjs",
+    "perf:psi:baseline": "node scripts/pagespeed-guardrail.mjs --write-baseline",
+    "perf:robots:check": "node scripts/validate-robots-output.mjs",
+    "rum:weekly": "node scripts/fetch-rum-weekly-report.mjs",
     "smoke:dashboard": "node scripts/dashboard-stability-smoke.mjs"
   },
   "dependencies": {

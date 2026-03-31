@@ -33,3 +33,20 @@ jobs:
 
       - name: Enforce performance budgets
         run: npm run perf:budget -w @gemini-prompts/web
+
+      - name: Enforce PageSpeed mobile guardrails
+        env:
+          PSI_BASE_URL: ${{ secrets.PSI_BASE_URL }}
+          PAGESPEED_API_KEY: ${{ secrets.PAGESPEED_API_KEY }}
+          PSI_STRATEGY: mobile
+          PSI_SCORE_MIN: '80'
+          PSI_LCP_MAX: '2500'
+          PSI_INP_MAX: '200'
+          PSI_CLS_MAX: '0.1'
+          PSI_TBT_MAX: '300'
+        run: npm run perf:psi:check -w @gemini-prompts/web
+
+      - name: Validate robots.txt directives
+        env:
+          PSI_BASE_URL: ${{ secrets.PSI_BASE_URL }}
+        run: npm run perf:robots:check -w @gemini-prompts/web

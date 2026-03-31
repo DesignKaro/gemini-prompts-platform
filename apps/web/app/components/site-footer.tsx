@@ -1,7 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { FaInstagram, FaWhatsapp } from 'react-icons/fa6';
-import { BRAND_LOGO_URL } from '../../lib/site-assets';
 
 type FooterLink = {
   href: string;
@@ -106,15 +105,22 @@ export function SiteFooter() {
         <div className="px-2 sm:px-0">
           <div className="grid grid-cols-2 gap-x-8 gap-y-10 lg:grid-cols-[1.2fr_repeat(4,minmax(0,0.72fr))] lg:gap-10">
             <div className="col-span-2 max-w-[21rem] lg:col-span-1">
-              <Link href="/" className="inline-flex items-center">
+              <Link href="/" className="inline-flex items-center gap-1.5">
+                <span className="text-[1.08rem] font-medium uppercase leading-none tracking-[0.02em] text-white">
+                  Gemini
+                </span>
                 <Image
-                  src={BRAND_LOGO_URL}
-                  alt="Gemini Prompts"
-                  width={248}
-                  height={44}
-                  className="h-auto w-[210px] object-contain brightness-0 invert"
-                  unoptimized
+                  src="/icon.svg"
+                  alt=""
+                  width={30}
+                  height={30}
+                  className="h-[1.65rem] w-[1.65rem] object-contain brightness-0 invert"
+                  decoding="async"
+                  aria-hidden="true"
                 />
+                <span className="text-[1.08rem] font-medium uppercase leading-none tracking-[0.02em] text-white">
+                  Prompts
+                </span>
               </Link>
 
               <p className="mt-5 text-[1.02rem] leading-[1.75] text-white/70">
