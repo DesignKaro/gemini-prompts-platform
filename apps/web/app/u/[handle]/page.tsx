@@ -87,7 +87,7 @@ function PublicProfilePageFallback() {
     <main className="page-shell bg-white font-normal">
       <div className="page-container space-y-12">
         <div className="rounded-[32px] border border-[#e2e6ee] bg-white p-6 sm:p-8">
-          <div className="flex flex-wrap items-center gap-5 sm:flex-nowrap sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-5">
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 animate-pulse rounded-[22px] bg-[#eef1f5]" />
               <div>
@@ -214,7 +214,7 @@ async function PublicProfilePageContent({ params, searchParams }: PageProps) {
 
       <div className="page-container space-y-12">
         <div className="rounded-[32px] border border-[#e2e6ee] bg-white p-6 sm:p-8">
-          <div className="flex flex-wrap items-center gap-5 sm:flex-nowrap sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-5">
             <div className="flex items-center gap-4">
               <AuthorAvatar
                 name={author.name}
@@ -237,8 +237,8 @@ async function PublicProfilePageContent({ params, searchParams }: PageProps) {
                 ) : null}
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-[#f2f4f8] px-4 py-2 text-[0.82rem] text-[#606874]">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">
+              <div className="whitespace-nowrap rounded-full bg-[#f2f4f8] px-3 py-1.5 text-[0.78rem] text-[#606874] sm:px-4 sm:py-2 sm:text-[0.82rem]">
                 {author.promptCount ?? 0} prompt{author.promptCount === 1 ? '' : 's'}
               </div>
               <AuthorFollowButton

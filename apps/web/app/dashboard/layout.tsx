@@ -938,7 +938,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
             <nav
               aria-label="Breadcrumb"
-              className="flex items-center gap-1.5 text-[0.9rem] text-[#0f1116]"
+              className="hidden items-center gap-1.5 text-[0.9rem] text-[#0f1116] sm:flex"
             >
               {breadcrumbs.map((item, i) => {
                 const isLast = i === breadcrumbs.length - 1;

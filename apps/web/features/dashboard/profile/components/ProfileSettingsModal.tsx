@@ -60,7 +60,7 @@ export function ProfileSettingsModal({
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/45 px-2 py-2 sm:px-4 sm:py-6">
-      <div className="w-full max-w-[560px] max-h-[calc(100vh-1rem)] overflow-y-auto rounded-[18px] bg-white p-4 shadow-2xl sm:max-h-[calc(100vh-3rem)] sm:rounded-[24px] sm:p-6">
+      <div className="no-scrollbar w-full max-w-[560px] max-h-[80vh] overflow-y-auto rounded-[18px] bg-white p-4 shadow-2xl sm:rounded-[24px] sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[0.8rem] text-[#7a8292]">Profile</p>

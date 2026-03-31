@@ -165,8 +165,8 @@ export function AuthorFollowButton({ authorId, initialFollowerCount }: AuthorFol
   ]);
 
   return (
-    <div className="flex items-center gap-3">
-      <span className="rounded-full bg-[#f2f4f8] px-4 py-2 text-[0.82rem] text-[#606874]">
+    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+      <span className="whitespace-nowrap rounded-full bg-[#f2f4f8] px-3 py-1.5 text-[0.78rem] text-[#606874] sm:px-4 sm:py-2 sm:text-[0.82rem]">
         {followerCount} follower{followerCount === 1 ? '' : 's'}
       </span>
       <LoadingButton
@@ -178,7 +178,7 @@ export function AuthorFollowButton({ authorId, initialFollowerCount }: AuthorFol
         pendingLabel={following ? 'Following...' : 'Follow...'}
         spinnerSize="xs"
         disabled={isOwnProfile}
-        className={`rounded-full px-5 py-2 text-[0.86rem] font-medium transition-colors ${
+        className={`whitespace-nowrap rounded-full px-4 py-1.5 text-[0.8rem] font-medium transition-colors sm:px-5 sm:py-2 sm:text-[0.86rem] ${
           isOwnProfile
             ? 'cursor-default bg-[#eef2f6] text-[#8b93a3]'
             : following
