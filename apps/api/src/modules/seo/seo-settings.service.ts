@@ -2,6 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 const GLOBAL_SEO_SETTINGS_ID = 'global';
+const VALID_ROBOTS_DIRECTIVES = new Set([
+  'user-agent',
+  'allow',
+  'disallow',
+  'sitemap',
+  'host',
+  'crawl-delay',
+]);
 
 export type SeoSettingsPayload = {
   siteTitle: string;
@@ -275,8 +283,18 @@ export class SeoSettingsService {
     }
 
     const normalized = value
-      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .flatMap((item) =>
+        typeof item === 'string' ? item.split(/\r?\n/) : [],
+      )
+      .map((item) => item.trim())
       .filter(Boolean)
+      .filter((line) => {
+        if (line.startsWith('#')) return true;
+        const separatorIndex = line.indexOf(':');
+        if (separatorIndex <= 0) return false;
+        const directive = line.slice(0, separatorIndex).trim().toLowerCase();
+        return VALID_ROBOTS_DIRECTIVES.has(directive);
+      })
       .slice(0, 100);
 
     return Array.from(new Set(normalized));

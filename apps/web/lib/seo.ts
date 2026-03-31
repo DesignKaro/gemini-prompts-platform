@@ -24,6 +24,14 @@ export const AI_BOT_USER_AGENTS = [
   'Bytespider',
   'anthropic-ai',
 ] as const;
+const VALID_ROBOTS_DIRECTIVES = new Set([
+  'user-agent',
+  'allow',
+  'disallow',
+  'sitemap',
+  'host',
+  'crawl-delay',
+]);
 
 export type SeoSettings = {
   siteTitle: string;
@@ -149,6 +157,27 @@ function normalizeSlashPaths(value: unknown): string[] {
   return Array.from(new Set(normalized));
 }
 
+function normalizeAdditionalRobotRules(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const normalized = value
+    .flatMap((item) => (typeof item === 'string' ? item.split(/\r?\n/) : []))
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .filter((line) => {
+      if (line.startsWith('#')) return true;
+      const separatorIndex = line.indexOf(':');
+      if (separatorIndex <= 0) return false;
+      const directive = line.slice(0, separatorIndex).trim().toLowerCase();
+      return VALID_ROBOTS_DIRECTIVES.has(directive);
+    })
+    .slice(0, 100);
+
+  return Array.from(new Set(normalized));
+}
+
 function normalizeSeoPayload(payload: Partial<SeoSettings> | null | undefined): SeoSettings {
   if (!payload || typeof payload !== 'object') {
     return DEFAULT_SEO_SETTINGS;
@@ -193,7 +222,7 @@ function normalizeSeoPayload(payload: Partial<SeoSettings> | null | undefined): 
       normalizedDisallowPaths.length > 0
         ? normalizedDisallowPaths
         : DEFAULT_SEO_SETTINGS.robotsDisallowPaths,
-    robotsAdditionalRules: normalizeStringArray(payload.robotsAdditionalRules),
+    robotsAdditionalRules: normalizeAdditionalRobotRules(payload.robotsAdditionalRules),
     organizationSameAs: normalizeStringArray(payload.organizationSameAs),
     canonicalBaseUrl: normalizeBaseUrlCandidate(payload.canonicalBaseUrl) ?? null,
     integrations: normalizeSeoIntegrationSettings(
