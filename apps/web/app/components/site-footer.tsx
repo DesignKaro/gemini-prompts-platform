@@ -2,7 +2,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FaInstagram, FaWhatsapp } from 'react-icons/fa6';
 import { BRAND_LOGO_URL } from '../../lib/site-assets';
-import { ConsentPreferencesButton } from './consent-preferences-button';
 
 type FooterLink = {
   href: string;
@@ -163,25 +162,22 @@ export function SiteFooter() {
       <div className="bg-[#161b24]">
         <div className="mx-auto flex w-full max-w-[1380px] flex-col gap-3 px-4 py-4 text-[0.94rem] text-white/58 sm:px-6 sm:flex-row sm:items-center sm:justify-between lg:px-8">
           <p>&copy; {currentYear} Copyright by Gemini Prompts</p>
-          <div className="inline-flex flex-wrap items-center gap-3 sm:gap-4">
-            <ConsentPreferencesButton className="footer-link-underline text-white/68 transition-colors hover:text-white" />
-            <p className="inline-flex items-center gap-2">
-              <span className="text-[#d5ea52]" aria-hidden="true">
-                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
-                  <path d="M12 20.2 4.8 13a4.9 4.9 0 0 1 6.9-6.9L12 6.4l.3-.3a4.9 4.9 0 0 1 6.9 6.9L12 20.2Z" />
-                </svg>
-              </span>
-              <span>Made with love by </span>
-              <a
-                href="https://argro.io"
-                target="_blank"
-                rel="noreferrer"
-                className="footer-link-underline text-white/76 transition-colors hover:text-white"
-              >
-                Argro Team
-              </a>
-            </p>
-          </div>
+          <p className="inline-flex items-center gap-2">
+            <span className="text-[#d5ea52]" aria-hidden="true">
+              <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+                <path d="M12 20.2 4.8 13a4.9 4.9 0 0 1 6.9-6.9L12 6.4l.3-.3a4.9 4.9 0 0 1 6.9 6.9L12 20.2Z" />
+              </svg>
+            </span>
+            <span>Made with love by </span>
+            <a
+              href="https://argro.io"
+              target="_blank"
+              rel="noreferrer"
+              className="footer-link-underline text-white/76 transition-colors hover:text-white"
+            >
+              Argro Team
+            </a>
+          </p>
         </div>
       </div>
     </footer>

@@ -8,7 +8,6 @@ import { SiteFooter } from './components/site-footer';
 import { WebVitalsReporter } from './components/web-vitals-reporter';
 import { NewsletterSubscribeForm } from './components/newsletter-subscribe-form';
 import { SeoSchemaScripts } from './components/seo-schema-script';
-import { ConsentModal } from './components/consent-modal';
 import { buildSeoIntegrationScriptBundle } from '../lib/seo-integrations';
 import {
   SCHEMA_REQUEST_PATHNAME_HEADER,
@@ -285,7 +284,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <GlobalIntegrationScripts />
         <Providers>
           <WebVitalsReporter />
-          <ConsentModal />
           <div id="top" />
           <ConditionalHeader />
           {children}
