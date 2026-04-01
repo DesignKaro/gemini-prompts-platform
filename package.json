@@ -11,9 +11,12 @@
     "dev": "concurrently \"npm run dev:web\" \"npm run dev:api\"",
     "dev:web": "npm run dev -w @gemini-prompts/web",
     "dev:api": "npm run start:dev -w @gemini-prompts/api",
+    "dev:mobile": "npm run dev -w @gemini-prompts/mobile",
     "build": "npm run build -ws --if-present",
+    "build:mobile": "npm run build -w @gemini-prompts/mobile",
     "lint": "npm run lint -ws --if-present",
     "typecheck": "npm run typecheck -ws --if-present",
+    "typecheck:mobile": "npm run typecheck -w @gemini-prompts/mobile",
     "dashboard:arch-check": "npm run dashboard:arch-check -w @gemini-prompts/web",
     "dashboard:lint-checks": "npm run dashboard:arch-check && npm run lint -w @gemini-prompts/web && npm run lint -w @gemini-prompts/api",
     "dashboard:smoke": "npm run smoke:dashboard -w @gemini-prompts/web",
@@ -51,5 +54,10 @@
   },
   "dependencies": {
     "framer-motion": "12.38.0"
+  },
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native-web": "0.21.0"
   }
 }

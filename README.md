@@ -41,10 +41,24 @@ Apply `db/migrations/0001_init.sql` to your remote MySQL database, run seed data
    - `npm install --include-workspace-root`
 2. Run both apps in development:
    - `npm run dev`
-3. Run quality checks:
+3. Run mobile app (Expo):
+   - `npm run dev:mobile`
+4. Run quality checks:
    - `npm run typecheck`
    - `npm run lint`
    - `npm run build`
+
+## Mobile App (Expo)
+
+- Workspace: `apps/mobile`
+- Architecture: Expo Router + React Native + TanStack Query + Zustand
+- Reuses API contracts from:
+  - `GET /api/public/*`
+  - `GET/POST /api/auth/*`
+- New helper scripts:
+  - `npm run dev:mobile`
+  - `npm run build:mobile`
+  - `npm run typecheck:mobile`
 
 ## Google Login Setup (Web)
 

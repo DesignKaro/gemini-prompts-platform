@@ -42,9 +42,9 @@ type PreparedUpload = {
   height?: number;
 };
 
-const MAX_COMPRESSED_IMAGE_BYTES = 200 * 1024;
-const WEBP_QUALITY_STEPS = [95, 90, 85, 80, 75, 70, 65, 60];
-const WEBP_SCALE_STEPS = [1, 0.9, 0.8, 0.7, 0.6, 0.5];
+const MAX_COMPRESSED_IMAGE_BYTES = 100 * 1024;
+const WEBP_QUALITY_STEPS = [95, 92, 89, 86, 83, 80, 76, 72, 68, 64, 60, 56, 52, 48, 44];
+const WEBP_SCALE_STEPS = [1, 0.95, 0.9, 0.85, 0.8, 0.72, 0.64, 0.56, 0.5, 0.44, 0.38, 0.33];
 
 @Injectable()
 export class MediaStorageService {
@@ -248,14 +248,20 @@ export class MediaStorageService {
     return extensionByMime[normalized] ?? 'bin';
   }
 
-  private shouldConvertToLosslessWebp(mime: string) {
-    return mime === 'image/jpeg' || mime === 'image/jpg' || mime === 'image/png';
+  private shouldConvertToWebp(mime: string) {
+    return (
+      mime === 'image/jpeg' ||
+      mime === 'image/jpg' ||
+      mime === 'image/png' ||
+      mime === 'image/webp' ||
+      mime === 'image/avif'
+    );
   }
 
   private async prepareUploadBuffer(input: UploadBufferInput): Promise<PreparedUpload> {
     const normalizedMime = input.mime.trim().toLowerCase();
 
-    if (!this.shouldConvertToLosslessWebp(normalizedMime)) {
+    if (!this.shouldConvertToWebp(normalizedMime)) {
       this.assertMaxCompressedSize(input.buffer.length);
       return {
         buffer: input.buffer,
@@ -330,7 +336,7 @@ export class MediaStorageService {
         }
       }
 
-      throw new BadRequestException('Image exceeds the 200KB limit after compression.');
+      throw new BadRequestException('Image exceeds the 100KB limit after compression.');
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
@@ -345,7 +351,7 @@ export class MediaStorageService {
     if (size <= MAX_COMPRESSED_IMAGE_BYTES) {
       return;
     }
-    throw new BadRequestException('Image exceeds the 200KB limit after compression.');
+    throw new BadRequestException('Image exceeds the 100KB limit after compression.');
   }
 
   private buildPublicUrl(storageKey: string) {

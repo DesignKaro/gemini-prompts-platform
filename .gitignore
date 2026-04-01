@@ -3,6 +3,7 @@
 
 # Node
 node_modules
+node_modules.bak.*
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
@@ -19,6 +20,8 @@ apps/web/.next.broken-*/
 apps/web/.next.rebuild-*/
 apps/web/.next.stale-*/
 apps/web/.next_stale_*/
+apps/mobile/.expo
+apps/mobile/.expo-shared
 *.tsbuildinfo
 dist
 coverage
