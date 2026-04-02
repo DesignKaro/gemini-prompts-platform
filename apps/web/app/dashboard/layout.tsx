@@ -3,7 +3,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import {
   MdDashboard,
@@ -92,7 +92,6 @@ function DashboardLink({
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
   const { request: adminRequest } = useAdminApi();
@@ -118,6 +117,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     avatarUpdatedAt: null as string | null,
   });
   const [focusTagsInput, setFocusTagsInput] = useState('');
+  const [dashboardSearch, setDashboardSearch] = useState('');
   const [profileSnapshot, setProfileSnapshot] = useState<{
     name: string | null;
     avatarUrl: string | null;
@@ -151,15 +151,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const canCreateContent = canManagePrompts || canManagePosts;
   const canClearPublicCache =
     canManagePrompts || canManagePosts || canManageCategories || canManageTags || canManageUsers;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const syncSearch = () => {
+      setDashboardSearch(window.location.search || '');
+    };
+    syncSearch();
+    window.addEventListener('popstate', syncSearch);
+    return () => {
+      window.removeEventListener('popstate', syncSearch);
+    };
+  }, []);
+
   const dashboardCallbackUrl = useMemo(() => {
-    const requested = searchParams?.get('callbackUrl')?.trim();
+    const query = new URLSearchParams(dashboardSearch);
+    const requested = query.get('callbackUrl')?.trim();
     const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
     const fallback = buildAuthCallbackFallbackFromPath(
       pathname || '/dashboard',
-      searchParams?.toString() ? `?${searchParams.toString()}` : '',
+      dashboardSearch,
     );
     return normalizeAuthCallbackPath(requested, { origin, fallback });
-  }, [pathname, searchParams]);
+  }, [dashboardSearch, pathname]);
 
   const handleClearPublicCache = async () => {
     if (isClearingPublicCache) return;
@@ -410,8 +424,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     if (sessionStatus === 'unauthenticated') {
-      const authIntent = searchParams?.get('auth');
-      const hasCallbackIntent = Boolean(searchParams?.get('callbackUrl'));
+      const query = new URLSearchParams(dashboardSearch);
+      const authIntent = query.get('auth');
+      const hasCallbackIntent = Boolean(query.get('callbackUrl'));
       if (authIntent === 'signin' || hasCallbackIntent) {
         setIsAuthOpen(true);
         return;
@@ -435,7 +450,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     defaultDashboardHref,
     hasDashboardAccess,
     router,
-    searchParams,
+    dashboardSearch,
     sessionStatus,
   ]);
 
