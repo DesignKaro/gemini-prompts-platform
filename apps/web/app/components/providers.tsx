@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { getSession, signOut, SessionProvider } from 'next-auth/react';
 import { buildAuthCallbackFallbackFromPath } from '../../lib/utils/auth-callback';
-import { redirectToLoginPage } from '../../lib/utils/auth-redirect';
+import { redirectToSignInModal } from '../../lib/utils/auth-redirect';
 
 type SessionWithAuthError = {
   authError?: string;
@@ -36,7 +36,7 @@ function SessionExpiryGuard() {
         void signOut({ redirect: false })
           .catch(() => null)
           .finally(() => {
-            redirectToLoginPage(callbackPath, { replace: true });
+            redirectToSignInModal(callbackPath, { replace: true });
           });
       } finally {
         checkInFlightRef.current = false;

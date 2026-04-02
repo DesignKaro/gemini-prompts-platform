@@ -228,13 +228,16 @@ export function SiteHeader() {
     if (status === 'loading' || status === 'authenticated') {
       return;
     }
+    if (pathname === '/login') {
+      return;
+    }
 
     const authIntent = searchParams?.get('auth');
     const hasCallbackIntent = Boolean(searchParams?.get('callbackUrl'));
     if (authIntent === 'signin' || hasCallbackIntent) {
       setIsAuthOpen(true);
     }
-  }, [searchParams, status]);
+  }, [pathname, searchParams, status]);
 
   useEffect(() => {
     if (!isProfileMenuOpen) return;

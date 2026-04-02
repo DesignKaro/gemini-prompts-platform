@@ -38,6 +38,41 @@ type CategoryOption = { id: string; name: string; slug: string };
 type TagOption = { id: string; name: string; slug: string; color?: string | null };
 type GallerySlotState = { previewUrl: string | null; persistedValue: string | null };
 type MediaAssetOption = { id: string; url: string; title?: string | null };
+type EditorDraft = {
+  version: 1;
+  updatedAt: string;
+  editId: string | null;
+  postType: (typeof optionPostTypes)[number];
+  postFormat: (typeof optionPostFormats)[number];
+  featuredImage: string | null;
+  featuredImageValue: string | null;
+  galleryImageSlots: GallerySlotState[];
+  title: string;
+  body: string;
+  tags: string[];
+  tagsInput: string;
+  slug: string;
+  slugManuallyEdited: boolean;
+  excerpt: string;
+  metaTitle: string;
+  metaDescription: string;
+  seoTitle: string;
+  seoDescription: string;
+  seoFocusKeyword: string;
+  seoCanonicalUrl: string;
+  seoNoIndex: boolean;
+  status: Status;
+  visibility: ApiVisibility;
+  scheduledAt: string;
+  isSeoPanelOpen: boolean;
+  categories: string[];
+  primaryCategory: string | null;
+  categoryInput: string;
+};
+type DraftRestoreState = {
+  key: string;
+  draft: EditorDraft;
+};
 
 type PromptPayload = {
   id: string;
@@ -139,6 +174,24 @@ function stripHtml(value: string) {
     .trim();
 }
 
+const DRAFT_STORAGE_PREFIX = 'gp:dashboard-content-draft:v1';
+
+function hasMeaningfulDraftContent(draft: EditorDraft) {
+  return Boolean(
+    draft.title.trim() ||
+      draft.body.trim() ||
+      draft.excerpt.trim() ||
+      draft.tags.length > 0 ||
+      draft.categories.length > 0 ||
+      draft.featuredImage ||
+      draft.featuredImageValue,
+  );
+}
+
+function isUncategorizedLabel(value: string | null | undefined) {
+  return (value ?? '').trim().toLowerCase() === 'uncategorized';
+}
+
 export default function CreateContentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -202,6 +255,12 @@ export default function CreateContentPage() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [savingTarget, setSavingTarget] = useState<Status | null>(null);
+  const [draftRestoreState, setDraftRestoreState] = useState<DraftRestoreState | null>(null);
+
+  const draftStorageKey = useMemo(
+    () => `${DRAFT_STORAGE_PREFIX}:${postType.toLowerCase()}:${editId ?? 'new'}`,
+    [editId, postType],
+  );
 
   useEffect(() => {
     setEditId(editParam);
@@ -434,6 +493,108 @@ export default function CreateContentPage() {
     };
   }, [authStatus, editId, request, typeParam]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const rawDraft = window.localStorage.getItem(draftStorageKey);
+      if (!rawDraft) {
+        setDraftRestoreState(null);
+        return;
+      }
+      const parsed = JSON.parse(rawDraft) as EditorDraft;
+      if (!parsed || parsed.version !== 1 || !hasMeaningfulDraftContent(parsed)) {
+        setDraftRestoreState(null);
+        return;
+      }
+      setDraftRestoreState({
+        key: draftStorageKey,
+        draft: parsed,
+      });
+    } catch {
+      setDraftRestoreState(null);
+    }
+  }, [draftStorageKey]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const persistHandle = window.setTimeout(() => {
+      const draft: EditorDraft = {
+        version: 1,
+        updatedAt: new Date().toISOString(),
+        editId,
+        postType,
+        postFormat,
+        featuredImage,
+        featuredImageValue,
+        galleryImageSlots,
+        title,
+        body,
+        tags,
+        tagsInput,
+        slug,
+        slugManuallyEdited,
+        excerpt,
+        metaTitle,
+        metaDescription,
+        seoTitle,
+        seoDescription,
+        seoFocusKeyword,
+        seoCanonicalUrl,
+        seoNoIndex,
+        status,
+        visibility,
+        scheduledAt,
+        isSeoPanelOpen,
+        categories,
+        primaryCategory,
+        categoryInput,
+      };
+
+      try {
+        if (!hasMeaningfulDraftContent(draft)) {
+          window.localStorage.removeItem(draftStorageKey);
+          return;
+        }
+        window.localStorage.setItem(draftStorageKey, JSON.stringify(draft));
+      } catch {
+        // Ignore storage failures so editing stays uninterrupted.
+      }
+    }, 800);
+
+    return () => {
+      window.clearTimeout(persistHandle);
+    };
+  }, [
+    body,
+    categories,
+    categoryInput,
+    draftStorageKey,
+    editId,
+    excerpt,
+    featuredImage,
+    featuredImageValue,
+    galleryImageSlots,
+    isSeoPanelOpen,
+    metaDescription,
+    metaTitle,
+    postFormat,
+    postType,
+    primaryCategory,
+    scheduledAt,
+    seoCanonicalUrl,
+    seoDescription,
+    seoFocusKeyword,
+    seoNoIndex,
+    seoTitle,
+    slug,
+    slugManuallyEdited,
+    status,
+    tags,
+    tagsInput,
+    title,
+    visibility,
+  ]);
+
   const remainingTags = MAX_TAGS - tags.length;
   const tagCountLabel = useMemo(() => `${tags.length} of ${MAX_TAGS} tags`, [tags.length]);
   const seoPreviewTitle = useMemo(() => {
@@ -549,7 +710,9 @@ export default function CreateContentPage() {
 
     if (!alreadySelected) {
       setCategories((prev) => [...prev, normalizedCategory]);
-      if (categories.length === 0) setPrimaryCategory(normalizedCategory);
+      if (categories.length === 0 || isUncategorizedLabel(primaryCategory)) {
+        setPrimaryCategory(normalizedCategory);
+      }
     }
 
     setAvailableCategories((prev) => {
@@ -758,8 +921,88 @@ export default function CreateContentPage() {
     return null;
   };
 
+  const clearDraftForKey = (key: string) => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      // Ignore storage failures.
+    }
+  };
+
+  const restoreDraft = (draft: EditorDraft) => {
+    setEditId(draft.editId);
+    setPostType(draft.postType);
+    setPostFormat(draft.postFormat);
+    setFeaturedImage(draft.featuredImage);
+    setFeaturedImageValue(draft.featuredImageValue);
+    setGalleryImageSlots(draft.galleryImageSlots);
+    setTitle(draft.title);
+    setBody(draft.body);
+    setTags(draft.tags);
+    setTagsInput(draft.tagsInput);
+    setSlug(draft.slug);
+    setSlugManuallyEdited(draft.slugManuallyEdited);
+    setExcerpt(draft.excerpt);
+    setMetaTitle(draft.metaTitle);
+    setMetaDescription(draft.metaDescription);
+    setSeoTitle(draft.seoTitle);
+    setSeoDescription(draft.seoDescription);
+    setSeoFocusKeyword(draft.seoFocusKeyword);
+    setSeoCanonicalUrl(draft.seoCanonicalUrl);
+    setSeoNoIndex(draft.seoNoIndex);
+    setStatus(draft.status);
+    setVisibility(draft.visibility);
+    setScheduledAt(draft.scheduledAt);
+    setIsSeoPanelOpen(draft.isSeoPanelOpen);
+    setCategories(draft.categories);
+    setPrimaryCategory(draft.primaryCategory);
+    setCategoryInput(draft.categoryInput);
+    setValidationError(null);
+    setPublishResult(null);
+    setDraftRestoreState(null);
+  };
+
   const handleSave = async (targetStatus: Status) => {
     if (isSaving) return;
+    const pendingCategory = categoryInput.trim();
+    const pendingTagTokens = dedupeCaseInsensitive(tagsInput.split(','));
+
+    let nextCategories = [...categories];
+    if (pendingCategory) {
+      const exists = nextCategories.some(
+        (existing) => existing.toLowerCase() === pendingCategory.toLowerCase(),
+      );
+      if (!exists && nextCategories.length < 15) {
+        nextCategories = [...nextCategories, pendingCategory];
+      }
+      setCategoryInput('');
+    }
+
+    let nextTags = [...tags];
+    if (pendingTagTokens.length > 0) {
+      nextTags = dedupeCaseInsensitive([...nextTags, ...pendingTagTokens]).slice(0, MAX_TAGS);
+      setTagsInput('');
+    }
+
+    const hasCurrentPrimary = primaryCategory
+      ? nextCategories.some((category) => category.toLowerCase() === primaryCategory.toLowerCase())
+      : false;
+    const effectivePrimaryCategory =
+      hasCurrentPrimary && primaryCategory
+        ? primaryCategory
+        : (nextCategories[0] ?? primaryCategory ?? null);
+
+    if (nextCategories.length > 0) {
+      setCategories(nextCategories);
+      if (effectivePrimaryCategory && (isUncategorizedLabel(primaryCategory) || !hasCurrentPrimary)) {
+        setPrimaryCategory(effectivePrimaryCategory);
+      }
+    }
+    if (pendingTagTokens.length > 0) {
+      setTags(nextTags);
+    }
+
     const err = validate(targetStatus);
     if (err) {
       setValidationError(err);
@@ -826,7 +1069,7 @@ export default function CreateContentPage() {
         })
         .filter(Boolean) as string[];
 
-      const primaryName = primaryCategory || trimmed[0] || null;
+      const primaryName = effectivePrimaryCategory || trimmed[0] || null;
       const primaryId = primaryName
         ? (updatedOptions.find(
             (cat) =>
@@ -908,8 +1151,8 @@ export default function CreateContentPage() {
     };
 
     try {
-      const { ids: categoryIds, primaryId } = await resolveCategoryIds(categories);
-      const tagIds = await resolveTagIds(tags);
+      const { ids: categoryIds, primaryId } = await resolveCategoryIds(nextCategories);
+      const tagIds = await resolveTagIds(nextTags);
       const normalizedGalleryValues = galleryImageSlots
         .map((slot) => slot.persistedValue?.trim() || '')
         .filter((entry) => entry.length > 0)
@@ -985,6 +1228,7 @@ export default function CreateContentPage() {
       }
 
       if (savedId && !editId) {
+        clearDraftForKey(draftStorageKey);
         setEditId(savedId);
         const nextType = postType === 'Prompt' ? 'prompt' : 'post';
         router.replace(`/dashboard/content/new?edit=${savedId}&type=${nextType}`);
@@ -1007,6 +1251,7 @@ export default function CreateContentPage() {
 
   const handleAddAnother = () => {
     const nextType = postType === 'Prompt' ? 'prompt' : 'post';
+    clearDraftForKey(draftStorageKey);
     setEditId(null);
     setFeaturedImage(null);
     setFeaturedImageValue(null);
@@ -1026,6 +1271,8 @@ export default function CreateContentPage() {
     setSlug('');
     setSlugManuallyEdited(false);
     setExcerpt('');
+    setMetaTitle('');
+    setMetaDescription('');
     setSeoTitle('');
     setSeoDescription('');
     setSeoFocusKeyword('');
@@ -1042,6 +1289,7 @@ export default function CreateContentPage() {
     setPostFormat('Standard');
     setValidationError(null);
     setPublishResult(null);
+    setDraftRestoreState(null);
     setLoadError(null);
     setIsPreviewOpen(false);
     router.replace(`/dashboard/content/new?type=${nextType}`);
@@ -1065,6 +1313,32 @@ export default function CreateContentPage() {
           <ActionError error={loadError} />
         </div>
       )}
+
+      {draftRestoreState ? (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-[14px] border border-amber-100 bg-amber-50 px-4 py-3 text-[0.86rem] text-amber-900">
+          <span className="font-medium">Unsaved draft found.</span>
+          <span className="text-amber-800">
+            Last saved {new Date(draftRestoreState.draft.updatedAt).toLocaleString()}.
+          </span>
+          <button
+            type="button"
+            onClick={() => restoreDraft(draftRestoreState.draft)}
+            className="ml-auto rounded-full border border-amber-300 bg-white px-3.5 py-1.5 text-[0.8rem] font-medium text-amber-900 transition-colors hover:bg-amber-100"
+          >
+            Restore draft
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              clearDraftForKey(draftRestoreState.key);
+              setDraftRestoreState(null);
+            }}
+            className="rounded-full border border-transparent px-3.5 py-1.5 text-[0.8rem] font-medium text-amber-900 transition-colors hover:bg-amber-100"
+          >
+            Discard
+          </button>
+        </div>
+      ) : null}
 
       {/* Validation error banner */}
       {validationError && (
@@ -1239,6 +1513,11 @@ export default function CreateContentPage() {
                   value={tagsInput}
                   onChange={(e) => handleTagInputChange(e.target.value)}
                   onKeyDown={handleTagKeyDown}
+                  onBlur={() => {
+                    if (!tagsInput.trim()) return;
+                    addTags(tagsInput);
+                    setTagsInput('');
+                  }}
                   placeholder={remainingTags > 0 ? 'Add a tag' : 'Tag limit reached'}
                   className="min-w-[140px] flex-1 border-none bg-transparent text-[0.85rem] text-[#0f1116] outline-none"
                   disabled={remainingTags <= 0}
@@ -1578,7 +1857,13 @@ export default function CreateContentPage() {
                     setIsCategoryDropdownOpen(true);
                   }}
                   onFocus={() => setIsCategoryDropdownOpen(true)}
-                  onBlur={() => setTimeout(() => setIsCategoryDropdownOpen(false), 200)}
+                  onBlur={() => {
+                    const pending = categoryInput.trim();
+                    if (pending) {
+                      addCategory(pending);
+                    }
+                    setTimeout(() => setIsCategoryDropdownOpen(false), 200);
+                  }}
                   onKeyDown={handleCategoryKeyDown}
                   placeholder={categories.length === 0 ? 'Select or add categories...' : ''}
                   className="flex-1 min-w-[120px] bg-transparent outline-none py-0.5 text-[0.85rem] placeholder:text-gray-400"

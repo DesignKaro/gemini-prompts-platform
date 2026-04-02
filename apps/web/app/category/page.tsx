@@ -59,7 +59,7 @@ function CategoriesArchiveSectionFallback() {
       <div className="mt-10">
         <Skeleton className="h-9 w-56 rounded-full" />
       </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 10 }).map((_, index) => (
           <article
             key={`category-trending-skeleton-${index}`}
@@ -192,7 +192,7 @@ async function CategoriesArchiveSection({
         <h2 className="text-[2rem] font-medium tracking-[-0.03em] text-[#1a1f2b]">Trending Categories</h2>
 
         {categoriesResponse.items.length > 0 ? (
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {categoriesResponse.items.map((category) => (
               <Link
                 key={category.id}

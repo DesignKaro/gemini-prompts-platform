@@ -29,12 +29,24 @@ export function buildLoginPageUrl(currentHref: string, callbackUrl?: string): st
   return loginUrl.toString();
 }
 
-export function redirectToSignInModal(callbackUrl?: string) {
+export function redirectToSignInModal(
+  callbackUrl?: string,
+  options: {
+    replace?: boolean;
+  } = {},
+) {
   if (typeof window === 'undefined') {
     return;
   }
 
-  window.location.assign(buildSignInModalUrl(window.location.href, callbackUrl));
+  const target = buildSignInModalUrl(window.location.href, callbackUrl);
+  if (options.replace) {
+    window.history.replaceState(null, '', target);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    return;
+  }
+  window.history.pushState(null, '', target);
+  window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
 export function redirectToLoginPage(

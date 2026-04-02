@@ -3,7 +3,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import {
   MdDashboard,
@@ -36,6 +36,12 @@ import {
 } from '../../lib/utils/permissions';
 import { useAdminApi } from '../components/dashboard/use-admin-api';
 import { ProfileSettingsModal } from '../../features/dashboard/profile';
+import { AuthModal } from '../components/auth-modal';
+import {
+  buildAuthCallbackFallbackFromPath,
+  normalizeAuthCallbackPath,
+} from '../../lib/utils/auth-callback';
+import { redirectToSignInModal } from '../../lib/utils/auth-redirect';
 
 type DashboardNavChild = {
   href: string;
@@ -86,6 +92,7 @@ function DashboardLink({
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
   const { request: adminRequest } = useAdminApi();
@@ -95,6 +102,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isProfileSaving, setIsProfileSaving] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isClearingPublicCache, setIsClearingPublicCache] = useState(false);
   const [cacheClearNotice, setCacheClearNotice] = useState<string | null>(null);
   const [profileLoadError, setProfileLoadError] = useState<string | null>(null);
@@ -143,6 +151,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const canCreateContent = canManagePrompts || canManagePosts;
   const canClearPublicCache =
     canManagePrompts || canManagePosts || canManageCategories || canManageTags || canManageUsers;
+  const dashboardCallbackUrl = useMemo(() => {
+    const requested = searchParams?.get('callbackUrl')?.trim();
+    const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
+    const fallback = buildAuthCallbackFallbackFromPath(
+      pathname || '/dashboard',
+      searchParams?.toString() ? `?${searchParams.toString()}` : '',
+    );
+    return normalizeAuthCallbackPath(requested, { origin, fallback });
+  }, [pathname, searchParams]);
 
   const handleClearPublicCache = async () => {
     if (isClearingPublicCache) return;
@@ -393,7 +410,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     if (sessionStatus === 'unauthenticated') {
-      router.replace('/');
+      const authIntent = searchParams?.get('auth');
+      const hasCallbackIntent = Boolean(searchParams?.get('callbackUrl'));
+      if (authIntent === 'signin' || hasCallbackIntent) {
+        setIsAuthOpen(true);
+        return;
+      }
+      redirectToSignInModal(dashboardCallbackUrl, { replace: true });
+      setIsAuthOpen(true);
       return;
     }
 
@@ -405,7 +429,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!canAccessCurrentRoute) {
       router.replace(defaultDashboardHref);
     }
-  }, [canAccessCurrentRoute, defaultDashboardHref, hasDashboardAccess, router, sessionStatus]);
+  }, [
+    canAccessCurrentRoute,
+    dashboardCallbackUrl,
+    defaultDashboardHref,
+    hasDashboardAccess,
+    router,
+    searchParams,
+    sessionStatus,
+  ]);
 
   useLayoutEffect(() => {
     setIsSidebarOpen(false);
@@ -718,8 +750,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return <div className="min-h-screen bg-[#f7f9fc]" />;
   }
 
-  if (sessionStatus === 'unauthenticated' || !hasDashboardAccess || !canAccessCurrentRoute) {
-    return null;
+  if (sessionStatus === 'unauthenticated') {
+    return (
+      <div className="min-h-screen bg-[#f7f9fc]">
+        <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} callbackUrl={dashboardCallbackUrl} />
+      </div>
+    );
+  }
+
+  if (!hasDashboardAccess || !canAccessCurrentRoute) {
+    return <div className="min-h-screen bg-[#f7f9fc]" />;
   }
 
   return (
