@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import dynamic from 'next/dynamic';
 import { FaCloudArrowUp } from 'react-icons/fa6';
@@ -192,6 +192,42 @@ function isUncategorizedLabel(value: string | null | undefined) {
   return (value ?? '').trim().toLowerCase() === 'uncategorized';
 }
 
+function isDefaultTagLabel(value: string | null | undefined) {
+  return (value ?? '').trim().toLowerCase() === 'default';
+}
+
+function normalizeCategorySelection(
+  names: string[],
+  primary: string | null,
+): { categories: string[]; primaryCategory: string | null } {
+  const uniqueNames = dedupeCaseInsensitive(names);
+  const customNames = uniqueNames.filter((name) => !isUncategorizedLabel(name));
+  const categories = customNames.length > 0 ? customNames : uniqueNames;
+
+  const normalizedPrimary = primary?.trim() ?? null;
+  const matchedPrimary = normalizedPrimary
+    ? (categories.find((name) => name.toLowerCase() === normalizedPrimary.toLowerCase()) ?? null)
+    : null;
+
+  if (customNames.length > 0) {
+    return {
+      categories,
+      primaryCategory: matchedPrimary ?? customNames[0] ?? null,
+    };
+  }
+
+  return {
+    categories,
+    primaryCategory: matchedPrimary ?? categories[0] ?? null,
+  };
+}
+
+function normalizeTagSelection(names: string[]) {
+  const uniqueNames = dedupeCaseInsensitive(names);
+  const customNames = uniqueNames.filter((name) => !isDefaultTagLabel(name));
+  return customNames.length > 0 ? customNames : uniqueNames;
+}
+
 export default function CreateContentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -246,6 +282,9 @@ export default function CreateContentPage() {
   const [hasSetTypeFromUrl, setHasSetTypeFromUrl] = useState(false);
   const [editId, setEditId] = useState<string | null>(editParam);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isEditHydrating, setIsEditHydrating] = useState(false);
+  const latestHydrationRequestRef = useRef(0);
+  const hydratedTargetRef = useRef<string | null>(null);
 
   // Preview
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -264,6 +303,13 @@ export default function CreateContentPage() {
 
   useEffect(() => {
     setEditId(editParam);
+  }, [editParam]);
+
+  useEffect(() => {
+    if (!editParam) {
+      hydratedTargetRef.current = null;
+      setIsEditHydrating(false);
+    }
   }, [editParam]);
 
   useEffect(() => {
@@ -317,11 +363,34 @@ export default function CreateContentPage() {
   }, [authStatus, request]);
 
   useEffect(() => {
-    if (!editId || authStatus !== 'authenticated') return;
+    if (!editId || authStatus !== 'authenticated') {
+      setIsEditHydrating(false);
+      return;
+    }
+
+    const hydrateTarget = `${typeParam ?? 'auto'}:${editId}`;
+    if (hydratedTargetRef.current === hydrateTarget) {
+      setIsEditHydrating(false);
+      return;
+    }
+
     let isActive = true;
+    const requestId = latestHydrationRequestRef.current + 1;
+    latestHydrationRequestRef.current = requestId;
     setLoadError(null);
+    setIsEditHydrating(true);
+
+    const isCurrentRequest = () =>
+      isActive && latestHydrationRequestRef.current === requestId;
+
+    const completeHydration = () => {
+      if (!isCurrentRequest()) return;
+      hydratedTargetRef.current = hydrateTarget;
+      setIsEditHydrating(false);
+    };
 
     const hydrateFromPrompt = (payload: PromptPayload) => {
+      if (!isCurrentRequest()) return;
       setPostType('Prompt');
       setTitle(payload.title || '');
       setSlug(payload.slug || '');
@@ -360,19 +429,25 @@ export default function CreateContentPage() {
         };
       }
       setGalleryImageSlots(nextGallerySlots);
-      const categoryNames = Array.from(
+      const rawCategoryNames = Array.from(
         new Set(
           [payload.primaryCategory?.name, ...(payload.categories?.map((c) => c.name) ?? [])].filter(
             Boolean,
           ) as string[],
         ),
       );
-      setCategories(categoryNames);
-      setPrimaryCategory(payload.primaryCategory?.name ?? categoryNames[0] ?? null);
-      if (categoryNames.length > 0) {
-        setAvailableCategories((prev) => Array.from(new Set([...prev, ...categoryNames])));
+      const normalizedCategories = normalizeCategorySelection(
+        rawCategoryNames,
+        payload.primaryCategory?.name ?? null,
+      );
+      setCategories(normalizedCategories.categories);
+      setPrimaryCategory(normalizedCategories.primaryCategory);
+      if (normalizedCategories.categories.length > 0) {
+        setAvailableCategories((prev) =>
+          Array.from(new Set([...prev, ...normalizedCategories.categories])),
+        );
       }
-      setTags(payload.tags?.map((t) => t.name) ?? []);
+      setTags(normalizeTagSelection(payload.tags?.map((t) => t.name) ?? []));
       const apiStatus = payload.status ?? 'DRAFT';
       const apiVisibility = payload.visibility ?? 'FREE';
       setVisibility(apiVisibility);
@@ -387,6 +462,7 @@ export default function CreateContentPage() {
     };
 
     const hydrateFromPost = (payload: PostPayload) => {
+      if (!isCurrentRequest()) return;
       setPostType(payload.postType === 'PROMPT' ? 'Prompt' : 'Post');
       if (payload.postFormat) {
         const normalized = payload.postFormat.toLowerCase();
@@ -420,19 +496,25 @@ export default function CreateContentPage() {
       setFeaturedImage(payload.featuredImageUrl ?? null);
       setFeaturedImageValue(payload.featuredImageUrl ?? null);
       setGalleryImageSlots(createEmptyGallerySlots());
-      const categoryNames = Array.from(
+      const rawCategoryNames = Array.from(
         new Set(
           [payload.primaryCategory?.name, ...(payload.categories?.map((c) => c.name) ?? [])].filter(
             Boolean,
           ) as string[],
         ),
       );
-      setCategories(categoryNames);
-      setPrimaryCategory(payload.primaryCategory?.name ?? categoryNames[0] ?? null);
-      if (categoryNames.length > 0) {
-        setAvailableCategories((prev) => Array.from(new Set([...prev, ...categoryNames])));
+      const normalizedCategories = normalizeCategorySelection(
+        rawCategoryNames,
+        payload.primaryCategory?.name ?? null,
+      );
+      setCategories(normalizedCategories.categories);
+      setPrimaryCategory(normalizedCategories.primaryCategory);
+      if (normalizedCategories.categories.length > 0) {
+        setAvailableCategories((prev) =>
+          Array.from(new Set([...prev, ...normalizedCategories.categories])),
+        );
       }
-      setTags(payload.tags?.map((t) => t.name) ?? []);
+      setTags(normalizeTagSelection(payload.tags?.map((t) => t.name) ?? []));
       const apiStatus = payload.status ?? 'DRAFT';
       const apiVisibility = payload.visibility ?? 'FREE';
       setVisibility(apiVisibility);
@@ -451,16 +533,16 @@ export default function CreateContentPage() {
         const payload = await request<PromptPayload>(`/api/admin/prompts/${editId}`, {
           actionName: 'dashboard.prompts.read',
         });
-        if (!isActive) return;
         hydrateFromPrompt(payload);
+        completeHydration();
         return;
       }
       if (typeParam === 'post') {
         const payload = await request<PostPayload>(`/api/admin/posts/${editId}`, {
           actionName: 'dashboard.posts.read',
         });
-        if (!isActive) return;
         hydrateFromPost(payload);
+        completeHydration();
         return;
       }
 
@@ -468,25 +550,22 @@ export default function CreateContentPage() {
         const payload = await request<PromptPayload>(`/api/admin/prompts/${editId}`, {
           actionName: 'dashboard.prompts.read',
         });
-        if (!isActive) return;
         hydrateFromPrompt(payload);
+        completeHydration();
       } catch {
         const payload = await request<PostPayload>(`/api/admin/posts/${editId}`, {
           actionName: 'dashboard.posts.read',
         });
-        if (!isActive) return;
         hydrateFromPost(payload);
+        completeHydration();
       }
     };
 
-    load()
-      .catch((err: Error) => {
-        if (!isActive) return;
-        setLoadError(err.message || 'Unable to load content.');
-      })
-      .finally(() => {
-        if (!isActive) return;
-      });
+    load().catch((err: Error) => {
+      if (!isCurrentRequest()) return;
+      setLoadError(err.message || 'Unable to load content.');
+      setIsEditHydrating(false);
+    });
 
     return () => {
       isActive = false;
@@ -964,7 +1043,7 @@ export default function CreateContentPage() {
   };
 
   const handleSave = async (targetStatus: Status) => {
-    if (isSaving) return;
+    if (isSaving || isEditHydrating) return;
     const pendingCategory = categoryInput.trim();
     const pendingTagTokens = dedupeCaseInsensitive(tagsInput.split(','));
 
@@ -985,23 +1064,14 @@ export default function CreateContentPage() {
       setTagsInput('');
     }
 
-    const hasCurrentPrimary = primaryCategory
-      ? nextCategories.some((category) => category.toLowerCase() === primaryCategory.toLowerCase())
-      : false;
-    const effectivePrimaryCategory =
-      hasCurrentPrimary && primaryCategory
-        ? primaryCategory
-        : (nextCategories[0] ?? primaryCategory ?? null);
+    const normalizedCategories = normalizeCategorySelection(nextCategories, primaryCategory);
+    nextCategories = normalizedCategories.categories;
+    const effectivePrimaryCategory = normalizedCategories.primaryCategory;
 
-    if (nextCategories.length > 0) {
-      setCategories(nextCategories);
-      if (effectivePrimaryCategory && (isUncategorizedLabel(primaryCategory) || !hasCurrentPrimary)) {
-        setPrimaryCategory(effectivePrimaryCategory);
-      }
-    }
-    if (pendingTagTokens.length > 0) {
-      setTags(nextTags);
-    }
+    nextTags = normalizeTagSelection(nextTags);
+    setCategories(nextCategories);
+    setPrimaryCategory(effectivePrimaryCategory);
+    setTags(nextTags);
 
     const err = validate(targetStatus);
     if (err) {
@@ -1034,6 +1104,7 @@ export default function CreateContentPage() {
       if (trimmed.length === 0) return { ids: [] as string[], primaryId: null as string | null };
       const updatedOptions = [...categoryOptions];
       const created: CategoryOption[] = [];
+      const discovered: CategoryOption[] = [];
       for (const name of trimmed) {
         const normalized = name.toLowerCase();
         const slugValue = generateSlug(name);
@@ -1041,16 +1112,33 @@ export default function CreateContentPage() {
           (cat) => cat.name.toLowerCase() === normalized || cat.slug === slugValue,
         );
         if (existing) continue;
-        const createdCategory = await request<CategoryOption>('/api/admin/categories', {
-          method: 'POST',
-          actionName: 'dashboard.categories.create',
-          body: JSON.stringify({
-            name,
-            slug: slugValue,
-          }),
-        });
-        created.push(createdCategory);
-        updatedOptions.push(createdCategory);
+        try {
+          const createdCategory = await request<CategoryOption>('/api/admin/categories', {
+            method: 'POST',
+            actionName: 'dashboard.categories.create',
+            body: JSON.stringify({
+              name,
+              slug: slugValue,
+            }),
+          });
+          created.push(createdCategory);
+          updatedOptions.push(createdCategory);
+        } catch (error) {
+          const fallback = await request<{ items: CategoryOption[] }>(
+            `/api/admin/categories?take=50&sort=name&search=${encodeURIComponent(name)}`,
+            {
+              actionName: 'dashboard.categories.list',
+            },
+          );
+          const existingCategory = (fallback.items ?? []).find(
+            (cat) => cat.name.toLowerCase() === normalized || cat.slug === slugValue,
+          );
+          if (!existingCategory) {
+            throw error;
+          }
+          updatedOptions.push(existingCategory);
+          discovered.push(existingCategory);
+        }
       }
       if (created.length > 0) {
         setCategoryOptions((prev) => [...prev, ...created]);
@@ -1058,25 +1146,53 @@ export default function CreateContentPage() {
           Array.from(new Set([...prev, ...created.map((item) => item.name)])),
         );
       }
+      if (discovered.length > 0) {
+        setCategoryOptions((prev) => {
+          const seen = new Set(prev.map((category) => category.id));
+          const merged = [...prev];
+          for (const item of discovered) {
+            if (seen.has(item.id)) continue;
+            seen.add(item.id);
+            merged.push(item);
+          }
+          return merged;
+        });
+      }
 
+      const unresolvedNames: string[] = [];
       const ids = trimmed
         .map((name) => {
           const normalized = name.toLowerCase();
           const slugValue = generateSlug(name);
-          return updatedOptions.find(
+          const resolvedId = updatedOptions.find(
             (cat) => cat.name.toLowerCase() === normalized || cat.slug === slugValue,
           )?.id;
+          if (!resolvedId) {
+            unresolvedNames.push(name);
+          }
+          return resolvedId;
         })
         .filter(Boolean) as string[];
 
+      if (unresolvedNames.length > 0 || (trimmed.length > 0 && ids.length === 0)) {
+        throw new Error(
+          `Unable to resolve category IDs for: ${
+            unresolvedNames.join(', ') || trimmed.join(', ')
+          }`,
+        );
+      }
+
       const primaryName = effectivePrimaryCategory || trimmed[0] || null;
-      const primaryId = primaryName
+      let primaryId = primaryName
         ? (updatedOptions.find(
             (cat) =>
               cat.name.toLowerCase() === primaryName.toLowerCase() ||
               cat.slug === generateSlug(primaryName),
           )?.id ?? null)
         : null;
+      if (!primaryId && ids.length > 0) {
+        primaryId = ids[0] ?? null;
+      }
 
       return { ids, primaryId };
     };
@@ -1139,15 +1255,28 @@ export default function CreateContentPage() {
         });
       }
 
-      return trimmed
+      const unresolvedNames: string[] = [];
+      const resolvedTagIds = trimmed
         .map((name) => {
           const normalized = name.toLowerCase();
           const slugValue = generateSlug(name);
-          return updatedOptions.find(
+          const resolvedId = updatedOptions.find(
             (tag) => tag.name.toLowerCase() === normalized || tag.slug === slugValue,
           )?.id;
+          if (!resolvedId) {
+            unresolvedNames.push(name);
+          }
+          return resolvedId;
         })
         .filter(Boolean) as string[];
+
+      if (unresolvedNames.length > 0 || (trimmed.length > 0 && resolvedTagIds.length === 0)) {
+        throw new Error(
+          `Unable to resolve tag IDs for: ${unresolvedNames.join(', ') || trimmed.join(', ')}`,
+        );
+      }
+
+      return resolvedTagIds;
     };
 
     try {
@@ -1314,6 +1443,12 @@ export default function CreateContentPage() {
         </div>
       )}
 
+      {isEditHydrating ? (
+        <div className="mb-4 rounded-[14px] border border-[#d9e2ff] bg-[#f3f6ff] px-4 py-3 text-[0.86rem] text-[#3d4f90]">
+          Loading content details...
+        </div>
+      ) : null}
+
       {draftRestoreState ? (
         <div className="mb-4 flex flex-wrap items-center gap-3 rounded-[14px] border border-amber-100 bg-amber-50 px-4 py-3 text-[0.86rem] text-amber-900">
           <span className="font-medium">Unsaved draft found.</span>
@@ -1383,9 +1518,10 @@ export default function CreateContentPage() {
         </div>
       )}
 
-      <div className="mt-2 grid min-w-0 gap-6 lg:grid-cols-[0.65fr_0.35fr] lg:items-start lg:gap-8">
-        {/* —— LEFT COLUMN —— */}
-        <div className="min-w-0 space-y-6 sm:space-y-8">
+      <fieldset disabled={isEditHydrating} className="m-0 min-w-0 border-0 p-0">
+        <div className="mt-2 grid min-w-0 gap-6 lg:grid-cols-[0.65fr_0.35fr] lg:items-start lg:gap-8">
+          {/* —— LEFT COLUMN —— */}
+          <div className="min-w-0 space-y-6 sm:space-y-8">
           {/* Featured image */}
           <div>
             <p className="text-[0.9rem] text-[#2f3440]">Featured image</p>
@@ -1535,8 +1671,8 @@ export default function CreateContentPage() {
           </div>
         </div>
 
-        {/* —— RIGHT COLUMN / SIDEBAR —— */}
-        <aside className="min-w-0 rounded-[20px] border border-[#e2e6ee] bg-white p-4 sm:rounded-[24px] sm:p-6 lg:sticky lg:top-6">
+          {/* —— RIGHT COLUMN / SIDEBAR —— */}
+          <aside className="min-w-0 rounded-[20px] border border-[#e2e6ee] bg-white p-4 sm:rounded-[24px] sm:p-6 lg:sticky lg:top-6">
           <div>
             <h3 className="text-[1.1rem] text-[#0f1116]">Post options</h3>
             <p className="mt-1 text-[0.82rem] text-[#7a8292]">
@@ -1942,8 +2078,9 @@ export default function CreateContentPage() {
               </div>
             </div>
           </div>
-        </aside>
-      </div>
+          </aside>
+        </div>
+      </fieldset>
 
       {/* ——————————————————————————————————————————————
           STICKY FOOTER ACTION BAR
@@ -1964,22 +2101,24 @@ export default function CreateContentPage() {
                       <button
                         type="button"
                         onClick={() => setVisibility('FREE')}
+                        disabled={isEditHydrating}
                         className={`rounded-full px-2.5 py-1 text-[0.72rem] font-medium transition-colors ${
                           visibility === 'FREE'
                             ? 'bg-[#e8ecf4] text-[#0f1116]'
                             : 'bg-transparent text-gray-400 hover:text-[#0f1116]'
-                        }`}
+                        } disabled:cursor-not-allowed disabled:opacity-50`}
                       >
                         Free
                       </button>
                       <button
                         type="button"
                         onClick={() => setVisibility('EXCLUSIVE')}
+                        disabled={isEditHydrating}
                         className={`rounded-full px-2.5 py-1 text-[0.72rem] font-medium transition-colors ${
                           visibility === 'EXCLUSIVE'
                             ? 'bg-[#d5ea52] text-black'
                             : 'bg-transparent text-gray-400 hover:text-[#0f1116]'
-                        }`}
+                        } disabled:cursor-not-allowed disabled:opacity-50`}
                       >
                         Exclusive
                       </button>
@@ -1999,6 +2138,7 @@ export default function CreateContentPage() {
                     <button
                       type="button"
                       onClick={() => setIsPreviewOpen(true)}
+                      disabled={isEditHydrating}
                       className="hidden items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#0f1116] shadow-sm transition-colors hover:bg-gray-50 sm:flex"
                     >
                       Preview
@@ -2012,7 +2152,7 @@ export default function CreateContentPage() {
                       pendingLabel="Saving draft..."
                       spinnerSize="xs"
                       spinnerClassName="text-[#0f1116]"
-                      disabled={isSaving && savingTarget !== 'Draft'}
+                      disabled={isEditHydrating || (isSaving && savingTarget !== 'Draft')}
                       className="flex items-center gap-2 rounded-xl border border-[#e1e5ee] bg-white px-3.5 py-2 text-[0.8rem] font-medium text-[#0f1116] shadow-sm transition-colors hover:bg-gray-50 disabled:opacity-60 sm:px-4 sm:text-[0.85rem]"
                     >
                       <span className="hidden sm:block">Save Draft</span>
@@ -2032,7 +2172,7 @@ export default function CreateContentPage() {
                       pendingLabel={status === 'Scheduled' ? 'Scheduling...' : 'Publishing...'}
                       spinnerSize="xs"
                       spinnerClassName="text-[#0f1116]"
-                      disabled={isSaving && savingTarget === 'Draft'}
+                      disabled={isEditHydrating || (isSaving && savingTarget === 'Draft')}
                       className="flex items-center gap-2 rounded-xl bg-[#d5ea52] px-4 py-2 text-[0.8rem] font-medium text-[#0f1116] shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60 sm:px-5 sm:text-[0.85rem]"
                     >
                       <>{status === 'Scheduled' ? 'Schedule' : 'Publish'}</>
