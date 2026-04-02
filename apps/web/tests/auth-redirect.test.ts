@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildSignInModalUrl } from '../lib/utils/auth-redirect';
+import { buildLoginPageUrl, buildSignInModalUrl } from '../lib/utils/auth-redirect';
 
 describe('buildSignInModalUrl', () => {
   it('preserves current path query in callback when not provided', () => {
@@ -35,5 +35,32 @@ describe('buildSignInModalUrl', () => {
     );
 
     expect(url.searchParams.get('callbackUrl')).toBe('/search?q=x');
+  });
+});
+
+describe('buildLoginPageUrl', () => {
+  it('redirects to /login with callback set to current page when callback is missing', () => {
+    const url = new URL(buildLoginPageUrl('https://geminiprompts.io/profile?tab=saved'));
+
+    expect(url.pathname).toBe('/login');
+    expect(url.searchParams.get('callbackUrl')).toBe('/profile?tab=saved');
+  });
+
+  it('normalizes provided same-origin absolute callback values', () => {
+    const url = new URL(
+      buildLoginPageUrl(
+        'https://geminiprompts.io/dashboard/content/posts',
+        'https://geminiprompts.io/membership/manage?from=pricing',
+      ),
+    );
+
+    expect(url.pathname).toBe('/login');
+    expect(url.searchParams.get('callbackUrl')).toBe('/membership/manage?from=pricing');
+  });
+
+  it('rejects unsafe callback values and falls back to current page', () => {
+    const url = new URL(buildLoginPageUrl('https://geminiprompts.io/profile', '//evil.com/phish'));
+
+    expect(url.searchParams.get('callbackUrl')).toBe('/profile');
   });
 });
