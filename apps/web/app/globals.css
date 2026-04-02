@@ -746,33 +746,53 @@ summary {
   transform: translateY(-2px);
 }
 
+/* Editor: inactive toggles are light grey; brand colors only when .is-active */
+button.prompt-widget-llm.is-inactive {
+  color: #c5cad3;
+  background: #ffffff;
+  opacity: 1;
+}
+button.prompt-widget-llm.is-inactive:hover,
+button.prompt-widget-llm.is-inactive:focus-visible {
+  color: #aeb6c4;
+  background: #fafbfc;
+}
+
 span.prompt-widget-llm-chatgpt,
-button.prompt-widget-llm-chatgpt {
+button.prompt-widget-llm.is-active.prompt-widget-llm-chatgpt {
   color: #10a37f;
 }
 span.prompt-widget-llm-gemini,
-button.prompt-widget-llm-gemini {
+button.prompt-widget-llm.is-active.prompt-widget-llm-gemini {
   color: #1b6ef3;
 }
 span.prompt-widget-llm-claude,
-button.prompt-widget-llm-claude {
+button.prompt-widget-llm.is-active.prompt-widget-llm-claude {
   color: #d97757;
 }
 span.prompt-widget-llm-perplexity,
-button.prompt-widget-llm-perplexity {
+button.prompt-widget-llm.is-active.prompt-widget-llm-perplexity {
   color: #22b8cd;
 }
 span.prompt-widget-llm-grok,
-button.prompt-widget-llm-grok {
+button.prompt-widget-llm.is-active.prompt-widget-llm-grok {
   color: #111111;
 }
-
-button.prompt-widget-llm.is-inactive {
-  opacity: 0.72;
-  background: #ffffff;
+span.prompt-widget-llm-replicate,
+button.prompt-widget-llm.is-active.prompt-widget-llm-replicate {
+  color: #111111;
 }
-button.prompt-widget-llm.is-inactive:hover {
-  opacity: 1;
+span.prompt-widget-llm-huggingface,
+button.prompt-widget-llm.is-active.prompt-widget-llm-huggingface {
+  color: #ffd21e;
+}
+span.prompt-widget-llm-gradio,
+button.prompt-widget-llm.is-active.prompt-widget-llm-gradio {
+  color: #ff6b35;
+}
+span.prompt-widget-llm-pixlr,
+button.prompt-widget-llm.is-active.prompt-widget-llm-pixlr {
+  color: #3faf6c;
 }
 
 .prompt-widget-copy-btn {

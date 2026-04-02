@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
+import { CategoryDescriptionPreview } from '../../components/category-description-preview';
 import { PostCardUI } from '../../components/post-card';
 import { PromptCardServer } from '../../components/prompt-card-server';
 import { SeoSchemaScripts } from '../../components/seo-schema-script';
@@ -73,13 +74,15 @@ function CategoryDetailPageFallback() {
                   </li>
                 </ol>
               </nav>
-              <Skeleton className="mt-4 h-14 w-[min(30rem,92%)] rounded-[14px]" />
+              <div className="mt-4 flex items-center justify-between gap-4">
+                <Skeleton className="h-14 min-w-0 flex-1 max-w-[min(30rem,75%)] rounded-[14px]" />
+                <div className="flex shrink-0 gap-2">
+                  <Skeleton className="h-9 w-24 rounded-full" />
+                  <Skeleton className="h-9 w-20 rounded-full" />
+                </div>
+              </div>
               <Skeleton className="mt-3 h-6 w-[min(38rem,95%)] rounded-full" />
               <Skeleton className="mt-2 h-6 w-[min(34rem,90%)] rounded-full" />
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Skeleton className="h-9 w-28 rounded-full" />
-              <Skeleton className="h-9 w-24 rounded-full" />
             </div>
           </div>
           <Skeleton className="aspect-[4/3] w-full rounded-[28px]" />
@@ -237,21 +240,25 @@ async function CategoryDetailPageContent({ params }: PageProps) {
                   <li className="font-medium text-[#101010]">{category.name}</li>
                 </ol>
               </nav>
-              <h1 className="section-heading-medium mt-4 text-[2.6rem] leading-[1.05] tracking-[-0.04em] text-[#111118] sm:text-[3.2rem]">
-                {category.name}
-              </h1>
-              <p className="mt-3 max-w-full whitespace-pre-line text-[1.05rem] leading-[1.7] text-[#5f6773]">
-                {category.description || 'Live prompts and posts curated from the dashboard.'}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 text-[0.9rem] text-[#4b525e]">
-              <span className="rounded-full bg-[#f1f4f8] px-4 py-2">
-                {category.promptCount} prompts
-              </span>
-              <span className="rounded-full bg-[#f1f4f8] px-4 py-2">
-                {category.postCount} posts
-              </span>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+                <h1 className="section-heading-medium min-w-0 text-[2.6rem] leading-[1.05] tracking-[-0.04em] text-[#111118] sm:flex-1 sm:text-[3.2rem]">
+                  {category.name}
+                </h1>
+                <div className="flex flex-wrap justify-end gap-2 self-end text-[0.9rem] text-[#4b525e] sm:shrink-0 sm:self-auto">
+                  <span className="rounded-full bg-[#f1f4f8] px-4 py-2 whitespace-nowrap">
+                    {category.promptCount} prompts
+                  </span>
+                  <span className="rounded-full bg-[#f1f4f8] px-4 py-2 whitespace-nowrap">
+                    {category.postCount} posts
+                  </span>
+                </div>
+              </div>
+              <CategoryDescriptionPreview
+                text={
+                  category.description || 'Live prompts and posts curated from the dashboard.'
+                }
+                categoryName={category.name}
+              />
             </div>
           </div>
 

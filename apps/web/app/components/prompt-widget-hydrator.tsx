@@ -2,7 +2,17 @@
 
 import { useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { SiOpenai, SiGooglegemini, SiClaude, SiPerplexity, SiX } from 'react-icons/si';
+import {
+  SiOpenai,
+  SiGooglegemini,
+  SiClaude,
+  SiPerplexity,
+  SiX,
+  SiReplicate,
+  SiHuggingface,
+  SiGradio,
+  SiPixlr,
+} from 'react-icons/si';
 
 const ICONS: Record<string, React.ElementType> = {
   ChatGPT: SiOpenai,
@@ -10,12 +20,21 @@ const ICONS: Record<string, React.ElementType> = {
   Claude: SiClaude,
   Perplexity: SiPerplexity,
   Grok: SiX,
+  Replicate: SiReplicate,
+  HuggingFace: SiHuggingface,
+  Gradio: SiGradio,
+  Pixlr: SiPixlr,
+};
+
+const LEGACY_LLM_SLUGS: Record<string, string> = {
+  canva: 'pixlr',
 };
 
 function toCanonicalLlmName(value: string): string | null {
   const normalized = value.trim().toLowerCase();
   if (!normalized) return null;
-  return Object.keys(ICONS).find((key) => key.toLowerCase() === normalized) ?? null;
+  const target = LEGACY_LLM_SLUGS[normalized] ?? normalized;
+  return Object.keys(ICONS).find((key) => key.toLowerCase() === target) ?? null;
 }
 
 export function PromptWidgetHydrator() {
@@ -95,6 +114,10 @@ export function PromptWidgetHydrator() {
             Claude: 'https://claude.ai/new',
             Perplexity: 'https://www.perplexity.ai/',
             Grok: 'https://x.com/i/grok',
+            Replicate: 'https://replicate.com/',
+            HuggingFace: 'https://huggingface.co/',
+            Gradio: 'https://www.gradio.app/',
+            Pixlr: 'https://pixlr.com/',
           };
 
           if (urls[llm]) {

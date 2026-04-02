@@ -285,12 +285,14 @@ async function GlobalSchemaScripts() {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <Script
-        id="gp-gtm-init"
-        strategy="beforeInteractive"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: GTM_INIT_SCRIPT }}
-      />
+      <head>
+        <Script
+          id="gp-gtm-init"
+          strategy="beforeInteractive"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: GTM_INIT_SCRIPT }}
+        />
+      </head>
       <body className={poppins.variable} suppressHydrationWarning>
         <noscript>
           <iframe

@@ -1,8 +1,28 @@
 import React from 'react';
 import { NodeViewWrapper, NodeViewContent, type NodeViewProps } from '@tiptap/react';
-import { SiOpenai, SiGooglegemini, SiClaude, SiPerplexity, SiX } from 'react-icons/si';
+import {
+  SiOpenai,
+  SiGooglegemini,
+  SiClaude,
+  SiPerplexity,
+  SiX,
+  SiReplicate,
+  SiHuggingface,
+  SiGradio,
+  SiPixlr,
+} from 'react-icons/si';
 
-const AVAILABLE_LLMS = ['ChatGPT', 'Gemini', 'Claude', 'Perplexity', 'Grok'];
+const AVAILABLE_LLMS = [
+  'ChatGPT',
+  'Gemini',
+  'Claude',
+  'Perplexity',
+  'Grok',
+  'Replicate',
+  'HuggingFace',
+  'Gradio',
+  'Pixlr',
+];
 
 const ICONS: Record<string, React.ElementType> = {
   ChatGPT: SiOpenai,
@@ -10,6 +30,10 @@ const ICONS: Record<string, React.ElementType> = {
   Claude: SiClaude,
   Perplexity: SiPerplexity,
   Grok: SiX,
+  Replicate: SiReplicate,
+  HuggingFace: SiHuggingface,
+  Gradio: SiGradio,
+  Pixlr: SiPixlr,
 };
 
 export default function PromptBoxNodeView({ node, updateAttributes, editor }: NodeViewProps) {
