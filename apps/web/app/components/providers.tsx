@@ -1,51 +1,71 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
-import { signOut, SessionProvider, useSession } from 'next-auth/react';
+import { getSession, signOut, SessionProvider } from 'next-auth/react';
 import { buildAuthCallbackFallbackFromPath } from '../../lib/utils/auth-callback';
 import { redirectToLoginPage } from '../../lib/utils/auth-redirect';
 
+type SessionWithAuthError = {
+  authError?: string;
+};
+
 function SessionExpiryGuard() {
-  const { data: session, status } = useSession();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const isRedirectingRef = useRef(false);
-  const signOutTimerRef = useRef<number | null>(null);
+  const checkInFlightRef = useRef(false);
+  const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
-    return () => {
-      if (signOutTimerRef.current) {
-        window.clearTimeout(signOutTimerRef.current);
+    let isActive = true;
+
+    const checkSessionExpiry = async () => {
+      if (!isActive || isRedirectingRef.current || checkInFlightRef.current) return;
+
+      checkInFlightRef.current = true;
+      try {
+        const session = (await getSession()) as SessionWithAuthError | null;
+        if (!isActive || isRedirectingRef.current) return;
+        if (session?.authError !== 'RefreshAccessTokenError') return;
+
+        isRedirectingRef.current = true;
+        const callbackPath = buildAuthCallbackFallbackFromPath(
+          window.location.pathname || '/',
+          window.location.search || '',
+          window.location.hash || '',
+        );
+
+        void signOut({ redirect: false })
+          .catch(() => null)
+          .finally(() => {
+            redirectToLoginPage(callbackPath, { replace: true });
+          });
+      } finally {
+        checkInFlightRef.current = false;
       }
     };
+
+    const onWindowVisible = () => {
+      if (document.visibilityState === 'visible') {
+        void checkSessionExpiry();
+      }
+    };
+
+    void checkSessionExpiry();
+    intervalRef.current = window.setInterval(() => {
+      void checkSessionExpiry();
+    }, 3000);
+    window.addEventListener('focus', onWindowVisible);
+    document.addEventListener('visibilitychange', onWindowVisible);
+
+    return () => {
+      isActive = false;
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      window.removeEventListener('focus', onWindowVisible);
+      document.removeEventListener('visibilitychange', onWindowVisible);
+    };
   }, []);
-
-  useEffect(() => {
-    if (status !== 'authenticated') return;
-    if (session?.authError !== 'RefreshAccessTokenError') return;
-    if (isRedirectingRef.current) return;
-
-    isRedirectingRef.current = true;
-    const callbackPath = buildAuthCallbackFallbackFromPath(
-      pathname || '/',
-      searchParams?.toString() ? `?${searchParams.toString()}` : '',
-    );
-
-    signOutTimerRef.current = window.setTimeout(() => {
-      redirectToLoginPage(callbackPath, { replace: true });
-    }, 1200);
-
-    void signOut({ redirect: false })
-      .catch(() => null)
-      .finally(() => {
-        if (signOutTimerRef.current) {
-          window.clearTimeout(signOutTimerRef.current);
-          signOutTimerRef.current = null;
-        }
-        redirectToLoginPage(callbackPath, { replace: true });
-      });
-  }, [pathname, searchParams, session?.authError, status]);
 
   return null;
 }
