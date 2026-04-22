@@ -154,14 +154,6 @@ const watchReadListenInitialTake = 8;
 const watchReadListenSkeletonCount = 4;
 const recentPostsSkeletonCount = 4;
 
-function toSlug(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
 function isAccessTokenExpired(expiresAt?: string | null) {
   if (!expiresAt) return false;
   const expiresAtMs = Date.parse(expiresAt);

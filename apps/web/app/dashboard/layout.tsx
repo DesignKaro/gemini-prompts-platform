@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { ProgressiveImage } from '../components/progressive-image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
