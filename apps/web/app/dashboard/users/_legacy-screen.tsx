@@ -126,7 +126,7 @@ function mapUser(user: ApiUser): UserItem {
 }
 
 export default function UsersPage() {
-  const { request, status, isPending } = useAdminApi();
+  const { request, status, isPending = () => false } = useAdminApi();
   const { data: session } = useSession();
   const [users, setUsers] = useState<UserItem[]>([]);
   const [roles, setRoles] = useState<RoleSummary[]>([]);

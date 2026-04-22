@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { Poppins } from 'next/font/google';
 import Script from 'next/script';
 import { headers } from 'next/headers';
 import { Providers } from './components/providers';
@@ -19,21 +18,23 @@ import {
   getBaseUrl,
   getDefaultOgImage,
   getSeoSettings,
+  getSeoSettingsFresh,
 } from '../lib/seo';
 import './globals.css';
-
-const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-poppins',
-  display: 'swap',
-});
 const GTM_CONTAINER_ID = 'GTM-5HMG8JZG';
 const GTM_INIT_SCRIPT = `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','${GTM_CONTAINER_ID}');`;
+const PRIVATE_SITE_ROUTE_PREFIXES = ['/dashboard', '/profile', '/login', '/membership/manage'];
+
+function shouldInjectPublicSiteCode(pathname: string) {
+  const normalized = pathname.startsWith('/') ? pathname : `/${pathname}`;
+  return !PRIVATE_SITE_ROUTE_PREFIXES.some(
+    (prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`),
+  );
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSeoSettings();
@@ -118,37 +119,34 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-async function GlobalIntegrationScripts() {
-  const settings = await getSeoSettings();
+async function GlobalIntegrationHeadAssets() {
+  const requestHeaders = await headers();
+  const pathname = requestHeaders.get(SCHEMA_REQUEST_PATHNAME_HEADER) || '/';
+  if (!shouldInjectPublicSiteCode(pathname)) return null;
+  const settings = await getSeoSettingsFresh();
   const bundle = buildSeoIntegrationScriptBundle(settings.integrations);
-  const fallbackGaMeasurementId = 'G-K188R14HR6';
-  const shouldInjectFallbackGa = !bundle.gtagLoaderSrc && !bundle.gtagInitScript;
-  const fallbackClarityProjectId = 'w45opfylyv';
-  const shouldInjectFallbackClarity = !bundle.clarityInitScript;
-  const fallbackGaInitScript = [
-    'window.dataLayer = window.dataLayer || [];',
-    'function gtag(){dataLayer.push(arguments);}',
-    "gtag('js', new Date());",
-    `gtag('config', '${fallbackGaMeasurementId}');`,
-  ].join('\n');
-  const fallbackClarityInitScript = [
-    '(function(c,l,a,r,i,t,y){',
-    'c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};',
-    't=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;',
-    'y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);',
-    `})(window, document, 'clarity', 'script', '${fallbackClarityProjectId}');`,
-  ].join('');
 
   return (
     <>
+      {bundle.customHeadInlineStyle ? (
+        <style
+          id="gp-custom-head-inline-style"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: bundle.customHeadInlineStyle }}
+        />
+      ) : null}
+      {bundle.customHeadScriptUrls.map((src, index) => (
+        <script key={`gp-custom-head-src-${src}-${index}`} src={src} />
+      ))}
+      {bundle.customHeadInlineScript ? (
+        <script
+          id="gp-custom-head-inline"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: bundle.customHeadInlineScript }}
+        />
+      ) : null}
       {bundle.gtagLoaderSrc ? (
         <Script id="gp-gtag-loader" src={bundle.gtagLoaderSrc} strategy="lazyOnload" />
-      ) : shouldInjectFallbackGa ? (
-        <Script
-          id="gp-gtag-loader-fallback"
-          src={`https://www.googletagmanager.com/gtag/js?id=${fallbackGaMeasurementId}`}
-          strategy="lazyOnload"
-        />
       ) : null}
       {bundle.gtagInitScript ? (
         <Script
@@ -157,21 +155,9 @@ async function GlobalIntegrationScripts() {
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: bundle.gtagInitScript }}
         />
-      ) : shouldInjectFallbackGa ? (
-        <Script
-          id="gp-gtag-init-fallback"
-          strategy="lazyOnload"
-          // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: fallbackGaInitScript }}
-        />
       ) : null}
       {bundle.adsenseLoaderSrc ? (
-        <Script
-          id="gp-adsense-loader"
-          src={bundle.adsenseLoaderSrc}
-          strategy="lazyOnload"
-          crossOrigin="anonymous"
-        />
+        <script async src={bundle.adsenseLoaderSrc} crossOrigin="anonymous" />
       ) : null}
       {bundle.clarityInitScript ? (
         <Script
@@ -180,34 +166,23 @@ async function GlobalIntegrationScripts() {
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: bundle.clarityInitScript }}
         />
-      ) : shouldInjectFallbackClarity ? (
-        <Script
-          id="gp-clarity-init-fallback"
-          strategy="lazyOnload"
-          // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: fallbackClarityInitScript }}
-        />
       ) : null}
-      {bundle.customHeadScriptUrls.map((src, index) => (
-        <Script
-          key={`gp-custom-head-src-${src}-${index}`}
-          id={`gp-custom-head-src-${index}`}
-          src={src}
-          strategy="lazyOnload"
-        />
-      ))}
-      {bundle.customHeadInlineScript ? (
-        <Script
-          id="gp-custom-head-inline"
-          strategy="lazyOnload"
-          // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: bundle.customHeadInlineScript }}
-        />
-      ) : null}
+    </>
+  );
+}
+
+async function GlobalIntegrationBodyStartScript() {
+  const requestHeaders = await headers();
+  const pathname = requestHeaders.get(SCHEMA_REQUEST_PATHNAME_HEADER) || '/';
+  if (!shouldInjectPublicSiteCode(pathname)) return null;
+  const settings = await getSeoSettingsFresh();
+  const bundle = buildSeoIntegrationScriptBundle(settings.integrations);
+
+  return (
+    <>
       {bundle.customBodyStartInlineScript ? (
-        <Script
+        <script
           id="gp-custom-body-start-inline"
-          strategy="lazyOnload"
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: bundle.customBodyStartInlineScript }}
         />
@@ -217,14 +192,16 @@ async function GlobalIntegrationScripts() {
 }
 
 async function GlobalIntegrationBodyEndScript() {
-  const settings = await getSeoSettings();
+  const requestHeaders = await headers();
+  const pathname = requestHeaders.get(SCHEMA_REQUEST_PATHNAME_HEADER) || '/';
+  if (!shouldInjectPublicSiteCode(pathname)) return null;
+  const settings = await getSeoSettingsFresh();
   const bundle = buildSeoIntegrationScriptBundle(settings.integrations);
   if (!bundle.customBodyEndInlineScript) return null;
 
   return (
-    <Script
+    <script
       id="gp-custom-body-end-inline"
-      strategy="lazyOnload"
       // eslint-disable-next-line react/no-danger
       dangerouslySetInnerHTML={{ __html: bundle.customBodyEndInlineScript }}
     />
@@ -286,14 +263,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        />
         <Script
           id="gp-gtm-init"
           strategy="beforeInteractive"
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: GTM_INIT_SCRIPT }}
         />
+        <GlobalIntegrationHeadAssets />
       </head>
-      <body className={poppins.variable} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <noscript>
           <iframe
             src={`https://www.googletagmanager.com/ns.html?id=${GTM_CONTAINER_ID}`}
@@ -303,7 +287,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           />
         </noscript>
         <GlobalSchemaScripts />
-        <GlobalIntegrationScripts />
+        <GlobalIntegrationBodyStartScript />
         <Providers>
           <WebVitalsReporter />
           <div id="top" />

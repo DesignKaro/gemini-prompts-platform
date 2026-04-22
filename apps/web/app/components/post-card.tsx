@@ -1,8 +1,7 @@
 import type { ElementType } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { resolvePostImage } from '../../lib/content-image-fallbacks';
-import { DEFAULT_BLUR_DATA_URL } from '../../lib/image-placeholders';
+import { ProgressiveImage } from './progressive-image';
 
 type PostCardUIProps = {
   title: string;
@@ -39,15 +38,13 @@ export function PostCardUI({
           aria-label={`${title} featured`}
           className="relative aspect-[16/9] w-full overflow-hidden rounded-[20px]"
         >
-          <Image
+          <ProgressiveImage
             src={resolvePostImage(imageUrl, imageFallbackKey || href || title)}
             alt={title}
             fill
             sizes="(max-width: 640px) 94vw, (max-width: 1024px) 46vw, 31vw"
             loading="lazy"
             decoding="async"
-            placeholder="blur"
-            blurDataURL={DEFAULT_BLUR_DATA_URL}
             className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/12 via-transparent to-transparent transition-opacity duration-300 group-hover:opacity-70" />

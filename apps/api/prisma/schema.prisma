@@ -165,6 +165,7 @@ model SeoSettings {
   robotsBlockAiBots         Boolean  @default(false)
   robotsDisallowPaths       Json?
   robotsAdditionalRules     Json?
+  robotsCustomText          String?  @db.LongText
   sitemapIncludePrompts     Boolean  @default(true)
   sitemapIncludePages       Boolean  @default(true)
   sitemapIncludePosts       Boolean  @default(true)
@@ -172,6 +173,7 @@ model SeoSettings {
   sitemapIncludeTags        Boolean  @default(true)
   sitemapIncludeCategories  Boolean  @default(true)
   sitemapIncludeAuthors     Boolean  @default(true)
+  sitemapCustomXml          String?  @db.LongText
   canonicalBaseUrl          String?  @db.LongText
   googleSiteVerification    String?  @db.VarChar(191)
   bingSiteVerification      String?  @db.VarChar(191)
@@ -213,6 +215,7 @@ model SeoIntegrationSettings {
   clarityProjectId           String?  @db.VarChar(64)
   customHeadScriptUrls       Json?
   customHeadInlineScript     String?  @db.LongText
+  customHeadInlineStyle      String?  @db.LongText
   customBodyStartInlineScript String? @db.LongText
   customBodyEndInlineScript  String?  @db.LongText
   updatedByUserId            String?  @db.VarChar(191)

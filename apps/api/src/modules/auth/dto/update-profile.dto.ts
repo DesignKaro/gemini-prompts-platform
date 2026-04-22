@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsString,
   Matches,
+  MinLength,
   MaxLength,
 } from 'class-validator';
 
@@ -42,4 +43,22 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(5000000)
   avatarUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(128)
+  previousPassword?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(8)
+  @MaxLength(128)
+  newPassword?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(128)
+  confirmPassword?: string;
 }

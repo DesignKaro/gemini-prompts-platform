@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
+import { ProgressiveImage } from './components/progressive-image';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
@@ -34,7 +34,6 @@ import {
   resolvePostImage,
   resolvePromptImage,
 } from '../lib/content-image-fallbacks';
-import { DEFAULT_BLUR_DATA_URL } from '../lib/image-placeholders';
 import { COMMUNITY_IMAGE_URLS, CTA_ROBO_URL } from '../lib/site-assets';
 import { refreshSession } from '../lib/utils/session';
 
@@ -152,7 +151,6 @@ const followedPromptInitialTake = 8;
 const followedPromptLoadMoreTake = 4;
 const followedPromptSkeletonCount = 4;
 const watchReadListenInitialTake = 8;
-const watchReadListenLoadMoreTake = 4;
 const watchReadListenSkeletonCount = 4;
 const recentPostsSkeletonCount = 4;
 
@@ -177,50 +175,6 @@ function formatCompactCount(value: number) {
     maximumFractionDigits: 1,
   }).format(value);
 }
-
-const whyChooseItems = [
-  {
-    title: 'Gemini Prompt Clarity',
-    description:
-      'Every featured gemini prompt is reviewed for usefulness, originality, and creator-ready output structure so you get practical results faster.',
-  },
-  {
-    title: 'Fast Creator Workflow',
-    description:
-      'Discover prompt packs, save references, and move from idea to publish without losing momentum using prompt-for-gemini templates.',
-  },
-  {
-    title: 'High-Intent Prompt Variety',
-    description:
-      'From gemini ai photo prompt formats to niche creative sets like rare animals, one library supports multiple creator use cases.',
-  },
-  {
-    title: 'Trend + Timeless Balance',
-    description:
-      'We blend trending prompt seen formats with evergreen templates so your output stays fresh without losing quality fundamentals.',
-  },
-];
-
-const benefitCards = [
-  {
-    title: 'High-Signal Gemini Prompt Quality',
-    description:
-      'Every prompt is reviewed for clarity, structure, and output consistency so you can generate stronger results with less trial and error.',
-    tone: 'bg-[#fff0e6]',
-  },
-  {
-    title: 'Weekly Trending Prompt Drops',
-    description:
-      'Stay current with fresh prompt seen styles, festival themes, and viral content formats published every week.',
-    tone: 'bg-[#f3f3f1]',
-  },
-  {
-    title: 'Creator-Ready Prompt Formats',
-    description:
-      'Use copy-paste prompt formats for Gemini AI, ChatGPT, and visual workflows without rewriting from scratch.',
-    tone: 'bg-[#f3f3f1]',
-  },
-];
 
 const testimonials = [
   {
@@ -483,6 +437,22 @@ const homeFaqCategories = [
   'Photo & Visual',
   'Boys & Girls Prompts',
   'Usage & Access',
+];
+
+const faqTickerTopItems = [
+  'Find Better Prompts',
+  'Launch Faster',
+  'Create With Clarity',
+  'Scale Your Output',
+  'Build With Confidence',
+];
+
+const faqTickerBottomItems = [
+  'Start In Seconds',
+  'Plan Your Prompt',
+  'Refine Your Style',
+  'Ship More Content',
+  'Grow With GeminiPrompts',
 ];
 
 const faqItems = [
@@ -830,10 +800,15 @@ function WatchReadListenPromptCard({ prompt }: { prompt: PublicPrompt }) {
       />
 
       <div className="pointer-events-none relative z-20 grid gap-4 sm:grid-cols-[220px_1fr] sm:items-stretch">
-        <div
-          className="order-1 relative h-[190px] overflow-hidden rounded-[24px] bg-cover bg-center"
-          style={{ backgroundImage: `url(${card.image})` }}
-        />
+        <div className="order-1 relative h-[190px] overflow-hidden rounded-[24px]">
+          <ProgressiveImage
+            src={card.image}
+            alt={card.title}
+            fill
+            sizes="(max-width: 640px) 100vw, 220px"
+            className="object-cover"
+          />
+        </div>
 
         <div className="order-2 flex flex-col">
           <div className="flex flex-wrap items-center gap-2">
@@ -976,11 +951,9 @@ export default function HomePageClient({
   const followedAuthorsRequestRef = useRef(0);
   const followedPromptsRequestRef = useRef(0);
   const watchReadListenRequestRef = useRef(0);
-  const watchReadListenSentinelRef = useRef<HTMLDivElement | null>(null);
   const carouselCards = [...heroCards, ...heroCards];
   const desktopCardHeight = 340;
   const mobileCardHeight = 160;
-  const [openWhyChoose, setOpenWhyChoose] = useState('');
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [activeFaqCategory, setActiveFaqCategory] = useState(homeFaqCategories[0] ?? 'General');
   const [openFaqId, setOpenFaqId] = useState('');
@@ -993,17 +966,13 @@ export default function HomePageClient({
   const [activeWatchReadListenCategory, setActiveWatchReadListenCategory] = useState<string>('all');
   const [isWatchReadListenLoadingInitial, setIsWatchReadListenLoadingInitial] =
     useState(!initialLatestPrompts);
-  const [isWatchReadListenLoadingMore, setIsWatchReadListenLoadingMore] = useState(false);
-  const [watchReadListenHasMore, setWatchReadListenHasMore] = useState(
+  const [watchReadListenCurrentPage, setWatchReadListenCurrentPage] = useState(1);
+  const [watchReadListenTotalPages, setWatchReadListenTotalPages] = useState(
     initialLatestPrompts
-      ? initialLatestPrompts.items.length === watchReadListenInitialTake &&
-          initialLatestPrompts.items.length < initialLatestPrompts.total
-      : true,
+      ? Math.max(1, Math.ceil(initialLatestPrompts.total / watchReadListenInitialTake))
+      : 1,
   );
   const [watchReadListenLoadError, setWatchReadListenLoadError] = useState<string | null>(null);
-  const [watchReadListenLoadMoreError, setWatchReadListenLoadMoreError] = useState<string | null>(
-    null,
-  );
   const [trendingAuthors, setTrendingAuthors] = useState<PublicAuthor[]>(
     initialTrendingAuthors?.items ?? [],
   );
@@ -1051,7 +1020,6 @@ export default function HomePageClient({
       readTime: estimateReadTime(post.excerpt || post.content),
       slug: post.slug,
     })) ?? [];
-  const displayPopularTags = homeContent?.popularTags ?? [];
   const derivedTrendingCategories = useMemo(() => {
     const bySlug = new Map<
       string,
@@ -1115,22 +1083,7 @@ export default function HomePageClient({
         })),
     [displayTrendingCategories],
   );
-  const filteredWatchReadListenPrompts = useMemo(() => {
-    if (activeWatchReadListenCategory === 'all') {
-      return watchReadListenPrompts;
-    }
-    if (!activeWatchReadListenCategory) {
-      return watchReadListenPrompts;
-    }
-
-    return watchReadListenPrompts.filter((prompt) => {
-      const primarySlug = prompt.primaryCategory?.slug;
-      if (primarySlug === activeWatchReadListenCategory) {
-        return true;
-      }
-      return prompt.categories.some((category) => category.slug === activeWatchReadListenCategory);
-    });
-  }, [activeWatchReadListenCategory, watchReadListenPrompts]);
+  const filteredWatchReadListenPrompts = watchReadListenPrompts;
   const selectedFollowedAuthorIdSet = useMemo(
     () => new Set(selectedFollowedAuthorIds),
     [selectedFollowedAuthorIds],
@@ -1227,18 +1180,14 @@ export default function HomePageClient({
   }, [initialTrendingAuthors, loadTrendingAuthors]);
 
   const loadWatchReadListenPrompts = useCallback(
-    async ({ append, skip }: { append: boolean; skip: number }) => {
+    async ({ page, category }: { page: number; category: string }) => {
       const requestId = ++watchReadListenRequestRef.current;
-      const take = append ? watchReadListenLoadMoreTake : watchReadListenInitialTake;
+      const take = watchReadListenInitialTake;
+      const safePage = Math.max(1, page);
+      const skip = (safePage - 1) * take;
 
-      if (append) {
-        setIsWatchReadListenLoadingMore(true);
-        setWatchReadListenLoadMoreError(null);
-      } else {
-        setIsWatchReadListenLoadingInitial(true);
-        setWatchReadListenLoadError(null);
-        setWatchReadListenLoadMoreError(null);
-      }
+      setIsWatchReadListenLoadingInitial(true);
+      setWatchReadListenLoadError(null);
 
       try {
         const response = await getPromptList(
@@ -1247,35 +1196,23 @@ export default function HomePageClient({
             skip,
             take,
             includeTags: 1,
+            category: category === 'all' ? undefined : category,
           },
           { noStore: true },
         );
 
         if (requestId !== watchReadListenRequestRef.current) return;
 
-        const nextCount = skip + response.items.length;
-        const hasMore = response.items.length === take && nextCount < response.total;
-
-        setWatchReadListenHasMore(hasMore);
-        setWatchReadListenPrompts((current) =>
-          append ? [...current, ...response.items] : response.items,
-        );
+        setWatchReadListenPrompts(response.items);
+        setWatchReadListenTotalPages(Math.max(1, Math.ceil(response.total / take)));
       } catch {
         if (requestId !== watchReadListenRequestRef.current) return;
-        if (append) {
-          setWatchReadListenLoadMoreError('Could not load more prompts. Please retry.');
-        } else {
-          setWatchReadListenLoadError('Could not load latest prompts right now.');
-          setWatchReadListenPrompts([]);
-          setWatchReadListenHasMore(false);
-        }
+        setWatchReadListenLoadError('Could not load latest prompts right now.');
+        setWatchReadListenPrompts([]);
+        setWatchReadListenTotalPages(1);
       } finally {
         if (requestId === watchReadListenRequestRef.current) {
-          if (append) {
-            setIsWatchReadListenLoadingMore(false);
-          } else {
-            setIsWatchReadListenLoadingInitial(false);
-          }
+          setIsWatchReadListenLoadingInitial(false);
         }
       }
     },
@@ -1285,14 +1222,16 @@ export default function HomePageClient({
   useEffect(() => {
     if (initialLatestPrompts) {
       setWatchReadListenPrompts(initialLatestPrompts.items);
-      setWatchReadListenHasMore(initialLatestPrompts.items.length < initialLatestPrompts.total);
+      setWatchReadListenCurrentPage(1);
+      setWatchReadListenTotalPages(
+        Math.max(1, Math.ceil(initialLatestPrompts.total / watchReadListenInitialTake)),
+      );
       setIsWatchReadListenLoadingInitial(false);
       setWatchReadListenLoadError(null);
-      setWatchReadListenLoadMoreError(null);
       return;
     }
 
-    void loadWatchReadListenPrompts({ append: false, skip: 0 });
+    void loadWatchReadListenPrompts({ page: 1, category: 'all' });
   }, [initialLatestPrompts, loadWatchReadListenPrompts]);
 
   useEffect(() => {
@@ -1312,57 +1251,23 @@ export default function HomePageClient({
     );
     if (!exists) {
       setActiveWatchReadListenCategory(topWatchReadListenCategories[0]?.slug ?? 'all');
+      setWatchReadListenCurrentPage(1);
     }
   }, [activeWatchReadListenCategory, topWatchReadListenCategories]);
 
   useEffect(() => {
-    const sentinel = watchReadListenSentinelRef.current;
-    if (!sentinel) {
+    if (initialLatestPrompts && activeWatchReadListenCategory === 'all' && watchReadListenCurrentPage === 1) {
       return;
     }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry?.isIntersecting) {
-          return;
-        }
-
-        if (
-          isWatchReadListenLoadingInitial ||
-          isWatchReadListenLoadingMore ||
-          !watchReadListenHasMore ||
-          Boolean(watchReadListenLoadError) ||
-          Boolean(watchReadListenLoadMoreError)
-        ) {
-          return;
-        }
-
-        void loadWatchReadListenPrompts({
-          append: true,
-          skip: watchReadListenPrompts.length,
-        });
-      },
-      {
-        root: null,
-        rootMargin: '220px 0px',
-        threshold: 0.01,
-      },
-    );
-
-    observer.observe(sentinel);
-
-    return () => {
-      observer.disconnect();
-    };
+    void loadWatchReadListenPrompts({
+      page: watchReadListenCurrentPage,
+      category: activeWatchReadListenCategory,
+    });
   }, [
-    isWatchReadListenLoadingInitial,
-    isWatchReadListenLoadingMore,
-    watchReadListenHasMore,
-    watchReadListenLoadError,
-    watchReadListenLoadMoreError,
-    watchReadListenPrompts.length,
+    activeWatchReadListenCategory,
+    initialLatestPrompts,
     loadWatchReadListenPrompts,
+    watchReadListenCurrentPage,
   ]);
 
   const getSessionAccessToken = useCallback(async () => {
@@ -1720,13 +1625,9 @@ export default function HomePageClient({
   };
 
   const retryLoadWatchReadListenInitial = () => {
-    void loadWatchReadListenPrompts({ append: false, skip: 0 });
-  };
-
-  const retryLoadWatchReadListenMore = () => {
     void loadWatchReadListenPrompts({
-      append: true,
-      skip: watchReadListenPrompts.length,
+      page: watchReadListenCurrentPage,
+      category: activeWatchReadListenCategory,
     });
   };
 
@@ -1831,15 +1732,13 @@ export default function HomePageClient({
                       }}
                     >
                       <div className="hero-stack-card relative h-full w-full overflow-hidden rounded-[30px]">
-                        <Image
+                        <ProgressiveImage
                           src={card.src}
                           alt={card.alt}
                           fill
                           sizes="(max-width: 1024px) 0px, 250px"
                           loading="lazy"
                           decoding="async"
-                          placeholder="blur"
-                          blurDataURL={DEFAULT_BLUR_DATA_URL}
                           className="object-cover"
                         />
                       </div>
@@ -1859,15 +1758,13 @@ export default function HomePageClient({
                       style={{ height: `${mobileCardHeight}px` }}
                     >
                       <div className="hero-stack-card relative h-full w-full overflow-hidden rounded-[22px]">
-                        <Image
+                        <ProgressiveImage
                           src={card.src}
                           alt={card.alt}
                           fill
                           sizes="146px"
                           loading="lazy"
                           decoding="async"
-                          placeholder="blur"
-                          blurDataURL={DEFAULT_BLUR_DATA_URL}
                           className="object-cover"
                         />
                       </div>
@@ -1889,7 +1786,7 @@ export default function HomePageClient({
           
           {/* Left: Heading and description */}
           <div className="flex w-full flex-col gap-5">
-            <h2 className="font-poppins text-[2rem] font-medium tracking-[-0.04em] text-[#101010] sm:text-[2.5rem] lg:text-[3rem] lg:leading-[1.2]">
+            <h2 className="font-poppins text-[1.8rem] font-medium tracking-[-0.04em] text-[#101010] sm:text-[2.25rem] lg:text-[2.7rem] lg:leading-[1.2]">
               Find the Right Gemini Prompt in Seconds
             </h2>
             <p className="w-full text-[0.95rem] leading-[1.55] text-[#5f6773] sm:text-[1rem]">
@@ -1946,7 +1843,7 @@ export default function HomePageClient({
       <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <div className="page-container-wide">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-[1.85rem] font-medium leading-[1.06] tracking-[-0.05em] text-[#101010] sm:text-[2.4rem]">
+            <h2 className="text-[1.7rem] font-medium leading-[1.06] tracking-[-0.05em] text-[#101010] sm:text-[2.2rem]">
               Trending Gemini Prompt Categories
             </h2>
             <div className="hidden items-center gap-2 sm:flex">
@@ -2021,15 +1918,13 @@ export default function HomePageClient({
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="relative h-[46px] w-[46px] overflow-hidden rounded-full border border-[#eceff5]">
-                      <Image
+                      <ProgressiveImage
                         src={category.image}
                         alt={`${category.title} icon`}
                         fill
                         sizes="46px"
                         loading="lazy"
                         decoding="async"
-                        placeholder="blur"
-                        blurDataURL={DEFAULT_BLUR_DATA_URL}
                         className="object-cover"
                       />
                     </div>
@@ -2111,7 +2006,7 @@ export default function HomePageClient({
       <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <div className="page-container-wide">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <h2 className="section-heading-medium text-[2rem] leading-[1.05] tracking-[-0.05em] text-[#101010] sm:text-[2.25rem] lg:text-[2.5rem]">
+            <h2 className="section-heading-medium text-[1.8rem] leading-[1.05] tracking-[-0.05em] text-[#101010] sm:text-[2.05rem] lg:text-[2.25rem]">
               Trending Gemini AI Prompts
             </h2>
             <div className="flex w-full items-center gap-2.5 sm:w-auto sm:gap-3">
@@ -2244,7 +2139,7 @@ export default function HomePageClient({
         <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
           <div className="page-container-wide">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="section-heading-medium text-[1.8rem] leading-[1.05] tracking-[-0.05em] text-[#101010] sm:text-[2rem]">
+              <h2 className="section-heading-medium text-[1.65rem] leading-[1.05] tracking-[-0.05em] text-[#101010] sm:text-[1.85rem]">
                 From Authors You Follow
               </h2>
               {selectedFollowedAuthorOrder.length > 0 ? (
@@ -2445,118 +2340,8 @@ export default function HomePageClient({
 
       <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <div className="page-container-wide">
-          <div className="grid gap-5 lg:grid-cols-[1.08fr_0.92fr] lg:gap-6">
-            <div
-              className="min-h-[280px] overflow-hidden rounded-[28px] bg-cover bg-center sm:min-h-[420px] sm:rounded-[32px] lg:min-h-[560px] lg:rounded-[34px]"
-              style={{
-                backgroundImage:
-                  'url(https://media.geminiprompts.io/gemini_prompts/media/2026/03/2eea63366998b2ff86593433c67d0c31.webp)',
-              }}
-            />
-
-            <div className="rounded-[28px] bg-[#f4f3ef] p-5 sm:rounded-[32px] sm:p-8 lg:rounded-[34px] lg:p-10">
-              <h2 className="section-heading-medium text-[2rem] leading-[0.96] tracking-[-0.07em] text-[#080808] sm:text-[2.25rem] lg:text-[2.5rem]">
-                Why Choose GeminiPrompts.io
-              </h2>
-              <p className="mt-4 max-w-[36rem] text-[0.98rem] leading-7 text-[#5d636c] sm:mt-5 sm:text-[1.08rem] sm:leading-8">
-                Build better output with a focused gemini prompt library. From prompt for gemini ai
-                girl and prompt for gemini ai boy to gemini ai photo prompt workflows, every block
-                is designed for practical creator use.
-              </p>
-
-              <div className="mt-7 divide-y divide-[#d8d4ca] sm:mt-8">
-                {whyChooseItems.map((item, index) => {
-                  const isOpen = openWhyChoose === item.title;
-                  const buttonId = `why-choose-trigger-${index}`;
-                  const panelId = `why-choose-panel-${index}`;
-
-                  return (
-                    <div key={item.title}>
-                      <button
-                        id={buttonId}
-                        type="button"
-                        aria-expanded={isOpen}
-                        aria-controls={panelId}
-                        onClick={() =>
-                          setOpenWhyChoose((current) => (current === item.title ? '' : item.title))
-                        }
-                        className="flex w-full items-center justify-between gap-4 py-7 text-left sm:py-8"
-                      >
-                        <span className="pr-4 text-[1.12rem] leading-[1.08] tracking-[-0.035em] text-[#111111] sm:text-[1.32rem]">
-                          {item.title}
-                        </span>
-                        <span
-                          aria-hidden="true"
-                          className="shrink-0 text-[2.4rem] font-[300] leading-none text-[#111111] sm:text-[2.8rem]"
-                        >
-                          {isOpen ? '−' : '+'}
-                        </span>
-                      </button>
-                      {isOpen ? (
-                        <div
-                          id={panelId}
-                          role="region"
-                          aria-labelledby={buttonId}
-                          className="pb-7 pr-12 sm:pb-8"
-                        >
-                          <p className="max-w-[36rem] text-[1rem] leading-8 text-[#5d636c] sm:text-[1.02rem]">
-                            {item.description}
-                          </p>
-                        </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-5 md:grid-cols-2 xl:mt-6 xl:grid-cols-4 xl:gap-6">
-            {benefitCards.map((card, index) => (
-              <article
-                key={card.title}
-                className={`${card.tone} relative flex min-h-[220px] flex-col overflow-hidden rounded-[24px] p-5 sm:min-h-[248px] sm:rounded-[28px] sm:p-7`}
-              >
-                {index < 3 ? (
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute right-4 top-2 text-[4.2rem] font-semibold leading-none tracking-[-0.06em] text-[#101010]/10 sm:right-5 sm:top-3 sm:text-[5rem]"
-                  >
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                ) : null}
-                <h3 className="max-w-[12rem] text-[1.75rem] leading-[1.05] tracking-[-0.05em] text-[#090909] sm:text-[2rem]">
-                  {card.title}
-                </h3>
-                <p className="mt-6 max-w-[16rem] text-[0.98rem] leading-7 text-[#5f6773] sm:mt-8 sm:text-[1rem] sm:leading-8">
-                  {card.description}
-                </p>
-              </article>
-            ))}
-
-            <article
-              className="relative min-h-[220px] overflow-hidden rounded-[24px] bg-cover bg-center p-5 sm:min-h-[248px] sm:rounded-[30px] sm:p-7"
-              style={{
-                backgroundImage:
-                  'url(https://media.geminiprompts.io/gemini_prompts/media/2026/03/612bbc3b63c12674cfc84d784cf94e9f.webp)',
-              }}
-            >
-              <div className="absolute inset-0 bg-[#0b1120]/22" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0f172ae0] via-[#0f172a66] to-transparent" />
-              <div className="relative z-10 flex h-full min-h-[196px] flex-col justify-end sm:min-h-[220px]">
-                <h3 className="max-w-[10rem] text-[2.5rem] leading-[0.95] tracking-[-0.06em] text-white sm:text-[3.6rem]">
-                  Gemini Prompt Trends
-                </h3>
-              </div>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
-        <div className="page-container-wide">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="section-heading-medium text-[1.65rem] leading-[1.06] tracking-[-0.05em] text-[#101010] sm:text-[2.25rem] lg:text-[2.5rem]">
+            <h2 className="section-heading-medium text-[1.5rem] leading-[1.06] tracking-[-0.05em] text-[#101010] sm:text-[2.05rem] lg:text-[2.25rem]">
               Top trending authors
             </h2>
             <div className="hidden items-center gap-3 sm:flex">
@@ -2740,7 +2525,7 @@ export default function HomePageClient({
       <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <div className="page-container-wide overflow-hidden rounded-[30px] bg-[#d5ea52] px-6 py-8 sm:px-10 sm:py-10 lg:grid lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:px-12 lg:py-12">
           <div className="relative z-10 max-w-[34rem]">
-            <h2 className="section-heading-medium max-w-[11ch] text-[2.25rem] leading-[0.96] tracking-[-0.07em] text-[#0f0f0f] sm:text-[2.6rem] lg:text-[4rem]">
+            <h2 className="section-heading-medium max-w-[11ch] text-[2.05rem] leading-[0.96] tracking-[-0.07em] text-[#0f0f0f] sm:text-[2.35rem] lg:text-[3.5rem]">
               Best Prompt Packs Curated For You
             </h2>
             <p className="mt-6 max-w-[26rem] text-[1rem] leading-8 text-[#2a3010] sm:text-[1.08rem]">
@@ -2771,7 +2556,7 @@ export default function HomePageClient({
       <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <div className="page-container-wide">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <h2 className="section-heading-medium text-[1.45rem] leading-[1.2] tracking-[-0.03em] text-[#111111] sm:text-[2.25rem] sm:tracking-[-0.04em] lg:text-[2.5rem]">
+            <h2 className="section-heading-medium text-[1.35rem] leading-[1.2] tracking-[-0.03em] text-[#111111] sm:text-[2.05rem] sm:tracking-[-0.04em] lg:text-[2.25rem]">
               <span className="text-[#111111]">More posts.</span>{' '}
               <span className="text-[#687082]">You may also be interested in.</span>
             </h2>
@@ -2878,65 +2663,10 @@ export default function HomePageClient({
       </section>
 
       <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
-        <div className="page-container-wide overflow-hidden rounded-[20px] border border-[#e1e4ea] bg-white">
-          <div className="px-5 py-5 sm:px-7 sm:py-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-[1rem] font-medium text-[#11141a]">Tags</p>
-              <Link
-                href="/tag"
-                className="rounded-full border border-[#d8dce2] bg-white px-4 py-2 text-[0.9rem] text-[#101010] transition-colors duration-300 hover:border-[#101010] hover:bg-[#101010] hover:text-white"
-              >
-                Explore more tags
-              </Link>
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2.5">
-              {isHomeContentLoading ? (
-                Array.from({ length: 14 }).map((_, index) => (
-                  <Skeleton
-                    key={`tag-skeleton-${index}`}
-                    className="h-[42px] w-[120px] rounded-full bg-[#f0f2f4]"
-                  />
-                ))
-              ) : homeContentLoadError ? (
-                <div className="rounded-[16px] border border-[#e2e6ee] px-4 py-3">
-                  <p className="text-[0.95rem] text-[#5f6978]">{homeContentLoadError}</p>
-                  <button
-                    type="button"
-                    onClick={retryLoadHomeContent}
-                    className="mt-3 rounded-full border border-[#13161d] px-4 py-1.5 text-[0.82rem] text-[#13161d] transition-colors duration-300 hover:bg-[#13161d] hover:text-white"
-                  >
-                    Retry
-                  </button>
-                </div>
-              ) : displayPopularTags.length > 0 ? (
-                displayPopularTags.map((tag) => (
-                  <Link
-                    key={tag.id}
-                    href={`/tag/${tag.slug || toSlug(tag.name)}`}
-                    className="inline-flex w-fit items-center gap-2 whitespace-nowrap rounded-full bg-[#f0f2f4] px-4 py-2 text-[0.92rem] leading-none text-[#3d4654] sm:px-5 sm:text-[0.95rem]"
-                  >
-                    <span>{tag.name}</span>
-                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1.5 text-[0.78rem] text-[#3d4654]">
-                      {tag.usage}
-                    </span>
-                  </Link>
-                ))
-              ) : (
-                <div className="rounded-[16px] bg-[#f8fafc] px-4 py-3 text-[0.95rem] text-[#6f7786]">
-                  No tags available yet.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <div className="page-container-wide rounded-[34px] bg-white px-6 py-10 sm:px-10 sm:py-14 lg:px-16 lg:py-16">
           <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14">
             <div className="max-w-[28rem]">
-              <h2 className="text-[2rem] font-medium leading-[0.96] tracking-[-0.07em] text-[#090909] sm:text-[2.25rem] lg:text-[4rem]">
+              <h2 className="text-[1.8rem] font-medium leading-[0.96] tracking-[-0.07em] text-[#090909] sm:text-[2.05rem] lg:text-[3.5rem]">
                 <span className="block">From image</span>
                 <span className="block">creators.</span>
               </h2>
@@ -3003,7 +2733,7 @@ export default function HomePageClient({
 
             <div className="max-w-[46rem] lg:pt-2">
               <div className="text-[4rem] leading-none text-[#2233a4] sm:text-[4.8rem]">“</div>
-              <blockquote className="-mt-2 text-[1.55rem] leading-[1.2] tracking-[-0.03em] text-[#090909] sm:text-[1.95rem] lg:text-[2.55rem]">
+              <blockquote className="-mt-2 text-[1.4rem] leading-[1.2] tracking-[-0.03em] text-[#090909] sm:text-[1.75rem] lg:text-[2.3rem]">
                 {currentTestimonial.quote}
               </blockquote>
 
@@ -3015,7 +2745,7 @@ export default function HomePageClient({
                   }}
                 />
                 <div>
-                  <p className="text-[1.45rem] leading-none font-medium tracking-[-0.03em] text-[#090909] sm:text-[1.55rem]">
+                  <p className="text-[1.28rem] leading-none font-medium tracking-[-0.03em] text-[#090909] sm:text-[1.4rem]">
                     {currentTestimonial.name}
                   </p>
                   <p className="mt-1.5 text-[0.98rem] leading-7 text-[#222222] sm:text-[1.02rem]">
@@ -3049,7 +2779,7 @@ export default function HomePageClient({
           </div>
 
           <div className="mx-auto mt-10 max-w-[42rem] px-6 text-center sm:mt-12">
-            <h2 className="section-heading-medium text-[2rem] leading-[1.05] tracking-[-0.06em] text-[#101010] sm:text-[2.25rem] lg:text-[2.5rem]">
+            <h2 className="section-heading-medium text-[1.8rem] leading-[1.05] tracking-[-0.06em] text-[#101010] sm:text-[2.05rem] lg:text-[2.25rem]">
               You will find yourself among us
             </h2>
             <p className="mx-auto mt-5 max-w-[29rem] text-[1.03rem] leading-8 text-[#5f6773] sm:text-[1.12rem]">
@@ -3090,14 +2820,17 @@ export default function HomePageClient({
       <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <div className="page-container-wide">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="section-heading-medium text-[2rem] leading-[1.05] tracking-[-0.05em] text-[#101010] sm:text-[2.25rem] lg:text-[2.5rem]">
+            <h2 className="section-heading-medium text-[1.8rem] leading-[1.05] tracking-[-0.05em] text-[#101010] sm:text-[2.05rem] lg:text-[2.25rem]">
               Watch, Read, Listen
             </h2>
             {topWatchReadListenCategories.length > 0 ? (
               <div className="no-scrollbar flex max-w-full items-center gap-2 overflow-x-auto pb-1">
                 <button
                   type="button"
-                  onClick={() => setActiveWatchReadListenCategory('all')}
+                  onClick={() => {
+                    setActiveWatchReadListenCategory('all');
+                    setWatchReadListenCurrentPage(1);
+                  }}
                   className={`shrink-0 rounded-full border px-3 py-1.5 text-[0.86rem] transition-colors ${
                     activeWatchReadListenCategory === 'all'
                       ? 'border-[#101317] bg-[#101317] text-white'
@@ -3110,7 +2843,10 @@ export default function HomePageClient({
                   <button
                     key={category.slug}
                     type="button"
-                    onClick={() => setActiveWatchReadListenCategory(category.slug)}
+                    onClick={() => {
+                      setActiveWatchReadListenCategory(category.slug);
+                      setWatchReadListenCurrentPage(1);
+                    }}
                     className={`shrink-0 rounded-full border px-3 py-1.5 text-[0.86rem] transition-colors ${
                       activeWatchReadListenCategory === category.slug
                         ? 'border-[#101317] bg-[#101317] text-white'
@@ -3228,25 +2964,35 @@ export default function HomePageClient({
             </div>
           ) : null}
 
-          {watchReadListenPrompts.length > 0 ? (
-            <div ref={watchReadListenSentinelRef} className="mt-6 h-px w-full" aria-hidden="true" />
-          ) : null}
-
-          {isWatchReadListenLoadingMore ? (
-            <div className="mt-5 flex justify-center">
-              <p className="text-[0.92rem] text-[#566173]">Loading more prompts...</p>
-            </div>
-          ) : null}
-
-          {watchReadListenLoadMoreError ? (
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-center">
-              <p className="text-[0.9rem] text-[#c34a4a]">{watchReadListenLoadMoreError}</p>
+          {watchReadListenPrompts.length > 0 && watchReadListenTotalPages > 1 ? (
+            <div className="mt-7 flex items-center justify-center gap-3">
               <button
                 type="button"
-                onClick={retryLoadWatchReadListenMore}
-                className="rounded-full border border-[#111111] px-5 py-2 text-[0.86rem] text-[#111111] transition-colors duration-300 hover:bg-[#111111] hover:text-white"
+                onClick={() =>
+                  setWatchReadListenCurrentPage((current) => Math.max(1, current - 1))
+                }
+                disabled={watchReadListenCurrentPage === 1 || isWatchReadListenLoadingInitial}
+                className="rounded-full border border-[#d1d7e1] bg-white px-4 py-2 text-[0.88rem] text-[#111111] transition-colors hover:border-[#b9c1cf] disabled:cursor-not-allowed disabled:opacity-55"
               >
-                Retry
+                Previous
+              </button>
+              <p className="text-[0.9rem] text-[#5f6778]">
+                Page {watchReadListenCurrentPage} of {watchReadListenTotalPages}
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  setWatchReadListenCurrentPage((current) =>
+                    Math.min(watchReadListenTotalPages, current + 1),
+                  )
+                }
+                disabled={
+                  watchReadListenCurrentPage >= watchReadListenTotalPages ||
+                  isWatchReadListenLoadingInitial
+                }
+                className="rounded-full border border-[#d1d7e1] bg-white px-4 py-2 text-[0.88rem] text-[#111111] transition-colors hover:border-[#b9c1cf] disabled:cursor-not-allowed disabled:opacity-55"
+              >
+                Next
               </button>
             </div>
           ) : null}
@@ -3256,7 +3002,7 @@ export default function HomePageClient({
       <section className="reveal-section px-4 pb-4 pt-10 sm:px-6 sm:pb-6 sm:pt-12 lg:px-8 lg:pb-8 lg:pt-14">
         <div className="page-container-wide rounded-[30px] bg-white px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
           <div className="mx-auto max-w-[47rem] text-center">
-            <h2 className="section-heading-medium text-[2rem] leading-[1.06] tracking-[-0.05em] text-[#111827] sm:text-[2.25rem] lg:text-[2.5rem]">
+            <h2 className="section-heading-medium text-[1.8rem] leading-[1.06] tracking-[-0.05em] text-[#111827] sm:text-[2.05rem] lg:text-[2.25rem]">
               Real Image Use Cases
             </h2>
             <p className="mx-auto mt-4 max-w-[44rem] text-[0.98rem] leading-7 text-[#667085] sm:text-[1.04rem]">
@@ -3274,7 +3020,7 @@ export default function HomePageClient({
                 <div className="inline-flex h-12 w-12 items-center justify-center rounded-[14px] bg-[#eef2f8] text-[#4a5568]">
                   {renderUseCaseIcon(card.icon)}
                 </div>
-                <h3 className="mt-5 text-[1.5rem] leading-[1.22] tracking-[-0.03em] text-[#151923]">
+                <h3 className="mt-5 text-[1.35rem] leading-[1.22] tracking-[-0.03em] text-[#151923]">
                   {card.title}
                 </h3>
                 <p className="mt-3 text-[0.98rem] leading-8 text-[#5b6577]">{card.description}</p>
@@ -3284,10 +3030,57 @@ export default function HomePageClient({
         </div>
       </section>
 
+      <section className="reveal-section py-6 sm:py-8 lg:py-10">
+        <div className="relative overflow-hidden py-4 sm:py-6">
+          <div className="relative left-1/2 w-[126vw] -translate-x-1/2 -rotate-[2.4deg]">
+            <div className="community-strip bg-[#111111] py-3 sm:py-4">
+              <div className="community-track" style={{ animationDuration: '34s' }}>
+                {[0, 1].map((groupIndex) => (
+                  <div key={`faq-ticker-top-${groupIndex}`} className="community-row">
+                    {faqTickerTopItems.map((item) => (
+                      <span
+                        key={`faq-ticker-top-item-${groupIndex}-${item}`}
+                        className="inline-flex items-center gap-4 whitespace-nowrap px-1 text-[1.35rem] font-medium leading-none tracking-[-0.02em] text-white sm:text-[2rem]"
+                      >
+                        <span>{item}</span>
+                        <span className="text-[#d5ea52]">*</span>
+                      </span>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="relative -mt-4 left-1/2 w-[126vw] -translate-x-1/2 rotate-[2.4deg] sm:-mt-6">
+            <div className="community-strip bg-[#d5ea52] py-3 sm:py-4">
+              <div
+                className="community-track community-track-reverse"
+                style={{ animationDuration: '30s' }}
+              >
+                {[0, 1].map((groupIndex) => (
+                  <div key={`faq-ticker-bottom-${groupIndex}`} className="community-row">
+                    {faqTickerBottomItems.map((item) => (
+                      <span
+                        key={`faq-ticker-bottom-item-${groupIndex}-${item}`}
+                        className="inline-flex items-center gap-4 whitespace-nowrap px-1 text-[1.35rem] font-medium leading-none tracking-[-0.02em] text-[#111111] sm:text-[2rem]"
+                      >
+                        <span>{item}</span>
+                        <span className="text-[#111111]">*</span>
+                      </span>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
-        <div className="page-container-wide rounded-[30px] border border-[#e6e9ef] bg-white px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+        <div className="page-container-wide rounded-[30px] bg-white px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
           <div className="text-center">
-            <h2 className="section-heading-medium text-[2rem] leading-[1.08] tracking-[-0.05em] text-[#111827] sm:text-[2.25rem] lg:text-[2.5rem]">
+            <h2 className="section-heading-medium text-[1.8rem] leading-[1.08] tracking-[-0.05em] text-[#111827] sm:text-[2.05rem] lg:text-[2.25rem]">
               Gemini Prompt FAQs
             </h2>
             <p className="mx-auto mt-4 max-w-[46rem] text-[0.98rem] leading-7 text-[#7a8191] sm:text-[1.05rem]">
@@ -3296,37 +3089,32 @@ export default function HomePageClient({
             </p>
           </div>
 
-          <div className="mt-8 grid gap-8 lg:grid-cols-[290px_minmax(0,1fr)] lg:gap-10">
-            <aside className="rounded-[18px] border border-[#eceff4] bg-[#fafbfd] p-4 sm:p-5">
-              <p className="text-[1.1rem] leading-none text-[#161b24] sm:text-[1.18rem]">
-                Table of Contents
-              </p>
-              <div className="mt-4 flex flex-col gap-2">
-                {homeFaqCategories.map((category: string) => {
-                  const isActive = activeFaqCategory === category;
+          <div className="mx-auto mt-8 w-full max-w-[800px]">
+            <div className="mb-5 flex flex-wrap items-center justify-center gap-2.5 sm:mb-6">
+              {homeFaqCategories.map((category: string) => {
+                const isActive = activeFaqCategory === category;
 
-                  return (
-                    <button
-                      key={category}
-                      type="button"
-                      onClick={() => setFaqCategory(category)}
-                      className={`w-full rounded-[10px] px-3 py-2 text-left text-[0.96rem] transition-colors sm:text-[1rem] ${isActive ? 'bg-[#d5ea52] text-[#101010]' : 'text-[#101010] hover:bg-[#f2f4f8]'}`}
-                    >
-                      {category}
-                    </button>
-                  );
-                })}
-              </div>
-            </aside>
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => setFaqCategory(category)}
+                    className={`rounded-full px-4 py-2 text-[0.92rem] transition-colors sm:px-5 sm:text-[0.98rem] ${isActive ? 'bg-[#d5ea52] text-[#101010]' : 'bg-[#f2f4f8] text-[#101010] hover:bg-[#e9edf3]'}`}
+                  >
+                    {category}
+                  </button>
+                );
+              })}
+            </div>
 
-            <div className="rounded-[18px] border border-[#eceff4] bg-white px-4 sm:px-6">
-              {visibleFaqItems.map((item, index) => {
+            <div className="rounded-[18px] bg-white px-4 sm:px-6">
+              {visibleFaqItems.map((item) => {
                 const isOpen = openFaqId === item.id;
 
                 return (
                   <div
                     key={item.id}
-                    className={`py-5 ${index !== visibleFaqItems.length - 1 ? 'border-b border-[#eceff4]' : ''}`}
+                    className="py-5"
                   >
                     <button
                       type="button"
@@ -3336,7 +3124,7 @@ export default function HomePageClient({
                       <span className="inline-flex h-10 w-10 min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full bg-[#d5ea52] text-[1.6rem] font-medium leading-none text-[#101010] sm:mt-0.5 sm:h-7 sm:w-7 sm:min-h-7 sm:min-w-7 sm:text-[1.15rem] sm:font-normal">
                         {isOpen ? '−' : '+'}
                       </span>
-                      <span className="text-[1.2rem] leading-[1.35] tracking-[-0.01em] text-[#141922] sm:text-[1.45rem]">
+                      <span className="text-[1.08rem] leading-[1.35] tracking-[-0.01em] text-[#141922] sm:text-[1.28rem]">
                         {item.question}
                       </span>
                     </button>

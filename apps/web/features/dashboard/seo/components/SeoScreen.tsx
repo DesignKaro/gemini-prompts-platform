@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { ActionError } from '@/app/components/dashboard/action-error';
 import { useAdminApi } from '@/app/components/dashboard/use-admin-api';
@@ -13,7 +13,8 @@ import {
   SEO_INTEGRATION_SCOPES,
   type SeoIntegrationScope,
 } from '@/lib/seo-integrations';
-import { isProtectedSuperadminEmail } from '@/lib/utils/permissions';
+import { getBaseUrl } from '@/lib/seo';
+import { hasAnyPermission, isProtectedSuperadminEmail } from '@/lib/utils/permissions';
 import type {
   DashboardSeoIntegrationSettings,
   DashboardSeoIntegrationSettingsUpdateInput,
@@ -29,7 +30,6 @@ const SEO_NAV_BASE: Array<{ href: string; label: string; section: SeoSection }> 
   { href: '/dashboard/seo/robots', label: 'Robots.txt', section: 'robots' },
   { href: '/dashboard/seo/sitemap', label: 'Sitemap.xml', section: 'sitemap' },
   { href: '/dashboard/seo/social', label: 'Social & Schema', section: 'social' },
-  { href: '/dashboard/seo/redirects', label: 'Redirects', section: 'redirects' },
 ];
 
 const AI_BOT_USER_AGENTS = [
@@ -41,32 +41,6 @@ const AI_BOT_USER_AGENTS = [
   'Bytespider',
   'anthropic-ai',
 ];
-const ROBOTS_PREVIEW_BASE_URL = 'https://geminiprompts.io';
-
-function normalizeRobotsPreviewBaseUrl(value?: string | null) {
-  const trimmed = value?.trim();
-  if (!trimmed) {
-    return ROBOTS_PREVIEW_BASE_URL;
-  }
-
-  try {
-    const normalized = trimmed.startsWith('http://') || trimmed.startsWith('https://')
-      ? trimmed
-      : `https://${trimmed}`;
-    return new URL(normalized).origin;
-  } catch {
-    return ROBOTS_PREVIEW_BASE_URL;
-  }
-}
-
-function getRobotsPreviewHost(baseUrl: string) {
-  try {
-    return new URL(baseUrl).host;
-  } catch {
-    return new URL(ROBOTS_PREVIEW_BASE_URL).host;
-  }
-}
-
 function hasRobotsDirective(rule: string, directive: string) {
   const separatorIndex = rule.indexOf(':');
   if (separatorIndex <= 0) return false;
@@ -91,7 +65,14 @@ function buildRobotsPreview(
   robotsDisallowPaths: string[],
   robotsAdditionalRules: string[],
 ) {
-  const baseUrl = normalizeRobotsPreviewBaseUrl(settings.canonicalBaseUrl);
+  const baseUrl = getBaseUrl(settings);
+  const host = (() => {
+    try {
+      return new URL(baseUrl).host;
+    } catch {
+      return new URL('http://localhost:30001').host;
+    }
+  })();
   const rules = [
     'User-agent: *',
     ...(settings.robotsSiteIndex ? ['Allow: /'] : []),
@@ -116,7 +97,7 @@ function buildRobotsPreview(
       rules.push(`Sitemap: ${baseUrl}/sitemap.xml`);
     }
     if (!hasCustomHost) {
-      rules.push(`Host: ${getRobotsPreviewHost(baseUrl)}`);
+      rules.push(`Host: ${host}`);
     }
   }
 
@@ -125,6 +106,12 @@ function buildRobotsPreview(
 
 function buildIntegrationsSnippetPreview(settings: DashboardSeoIntegrationSettings): string {
   const lines: string[] = [];
+  if (settings.googleSiteVerification) {
+    lines.push('Google Search Console: enabled');
+  }
+  if (settings.bingSiteVerification) {
+    lines.push('Bing verification: enabled');
+  }
   if (settings.gaMeasurementId) {
     lines.push(`GA4: ${settings.gaMeasurementId}`);
   }
@@ -137,32 +124,38 @@ function buildIntegrationsSnippetPreview(settings: DashboardSeoIntegrationSettin
   if (settings.clarityProjectId) {
     lines.push(`Clarity: ${settings.clarityProjectId}`);
   }
+  return lines.length > 0 ? lines.join('\n') : 'No verification or analytics settings yet.';
+}
+
+function buildCustomCodeSnippetPreview(settings: DashboardSeoIntegrationSettings): string {
+  const lines: string[] = [];
   if (settings.customHeadScriptUrls.length > 0) {
-    lines.push(`Custom head script URLs: ${settings.customHeadScriptUrls.length}`);
+    lines.push(`Header script URLs: ${settings.customHeadScriptUrls.length}`);
   }
   if (settings.customHeadInlineScript) {
-    lines.push('Custom head inline script: enabled');
+    lines.push('Header JavaScript: enabled');
+  }
+  if (settings.customHeadInlineStyle) {
+    lines.push('Header CSS: enabled');
   }
   if (settings.customBodyStartInlineScript) {
-    lines.push('Custom body-start inline script: enabled');
+    lines.push('Body-start JavaScript: enabled');
   }
   if (settings.customBodyEndInlineScript) {
-    lines.push('Custom body-end inline script: enabled');
+    lines.push('Footer JavaScript: enabled');
   }
-  return lines.length > 0 ? lines.join('\n') : 'No integrations configured yet.';
+  return lines.length > 0 ? lines.join('\n') : 'No custom code configured yet.';
 }
 
 export function SeoScreen({ section }: { section: SeoSection }) {
   const { data: session } = useSession();
   const { request: adminRequest } = useAdminApi();
+  const adminRequestRef = useRef(adminRequest);
   const isSuperadmin = isProtectedSuperadminEmail(session?.user?.email);
+  const canManageSeo = hasAnyPermission(session, ['roles:read', 'roles:manage']);
   const [settings, setSettings] = useState<DashboardSeoSettings>(DEFAULT_DASHBOARD_SEO_SETTINGS);
-  const [robotsInput, setRobotsInput] = useState(
-    DEFAULT_DASHBOARD_SEO_SETTINGS.robotsDisallowPaths.join('\n'),
-  );
-  const [robotsAdditionalRulesInput, setRobotsAdditionalRulesInput] = useState(
-    DEFAULT_DASHBOARD_SEO_SETTINGS.robotsAdditionalRules.join('\n'),
-  );
+  const [robotsInput, setRobotsInput] = useState('');
+  const [robotsEditorOpen, setRobotsEditorOpen] = useState(false);
   const [organizationSameAsInput, setOrganizationSameAsInput] = useState(
     DEFAULT_DASHBOARD_SEO_SETTINGS.organizationSameAs.join('\n'),
   );
@@ -183,15 +176,23 @@ export function SeoScreen({ section }: { section: SeoSection }) {
     DEFAULT_DASHBOARD_SEO_INTEGRATIONS,
   );
 
+  useEffect(() => {
+    adminRequestRef.current = adminRequest;
+  }, [adminRequest]);
+
   const seoNav = useMemo(
     () =>
-      isSuperadmin
+      canManageSeo
         ? [
             ...SEO_NAV_BASE,
-            { href: '/dashboard/seo/integrations', label: 'Integrations', section: 'integrations' as const },
+            { href: '/dashboard/seo/custom-code', label: 'Custom Code', section: 'custom-code' as const },
+            ...(isSuperadmin
+              ? [{ href: '/dashboard/seo/integrations', label: 'Integrations', section: 'integrations' as const }]
+              : []),
+            { href: '/dashboard/seo/redirects', label: 'Redirects', section: 'redirects' as const },
           ]
-        : SEO_NAV_BASE,
-    [isSuperadmin],
+        : [],
+    [canManageSeo, isSuperadmin],
   );
 
   const loadSettings = useCallback(async () => {
@@ -199,20 +200,10 @@ export function SeoScreen({ section }: { section: SeoSection }) {
     setError(null);
 
     try {
-      const payload = await adminRequest<DashboardSeoSettings>('/api/admin/seo', {
+      const payload = await adminRequestRef.current<DashboardSeoSettings>('/api/admin/seo', {
         actionName: 'admin.seo.settings.read',
       });
       setSettings({ ...DEFAULT_DASHBOARD_SEO_SETTINGS, ...payload });
-      setRobotsInput(
-        (payload.robotsDisallowPaths ?? DEFAULT_DASHBOARD_SEO_SETTINGS.robotsDisallowPaths).join(
-          '\n',
-        ),
-      );
-      setRobotsAdditionalRulesInput(
-        (
-          payload.robotsAdditionalRules ?? DEFAULT_DASHBOARD_SEO_SETTINGS.robotsAdditionalRules
-        ).join('\n'),
-      );
       setOrganizationSameAsInput(
         (payload.organizationSameAs ?? DEFAULT_DASHBOARD_SEO_SETTINGS.organizationSameAs).join(
           '\n',
@@ -223,15 +214,19 @@ export function SeoScreen({ section }: { section: SeoSection }) {
     } finally {
       setLoading(false);
     }
-  }, [adminRequest]);
+  }, []);
 
   useEffect(() => {
+    if (!canManageSeo) {
+      setLoading(false);
+      return;
+    }
     void loadSettings();
-  }, [loadSettings]);
+  }, [canManageSeo, loadSettings]);
 
   const loadRedirectRules = useCallback(async () => {
     try {
-      const redirectsPayload = await adminRequest<{ items: RedirectRule[] }>(
+      const redirectsPayload = await adminRequestRef.current<{ items: RedirectRule[] }>(
         '/api/admin/seo/redirects?take=100',
         {
           actionName: 'admin.seo.redirects.list',
@@ -243,23 +238,30 @@ export function SeoScreen({ section }: { section: SeoSection }) {
         requestError instanceof Error ? requestError.message : 'Unable to load redirect rules.',
       );
     }
-  }, [adminRequest]);
+  }, []);
 
   useEffect(() => {
-    if (section !== 'redirects') return;
+    if (!canManageSeo || section !== 'redirects') return;
     void loadRedirectRules();
-  }, [loadRedirectRules, section]);
+  }, [canManageSeo, loadRedirectRules, section]);
 
   const loadIntegrationSettings = useCallback(
-    async (scope: SeoIntegrationScope) => {
+    async (scope: SeoIntegrationScope, targetSection: 'integrations' | 'custom-code') => {
       setIntegrationLoading(true);
       setError(null);
       setSaveMessage(null);
       try {
-        const payload = await adminRequest<DashboardSeoIntegrationSettings>(
-          `/api/admin/seo/integrations?scope=${encodeURIComponent(scope)}`,
+        const endpoint =
+          targetSection === 'custom-code'
+            ? '/api/admin/seo/custom-code'
+            : '/api/admin/seo/integrations';
+        const payload = await adminRequestRef.current<DashboardSeoIntegrationSettings>(
+          `${endpoint}?scope=${encodeURIComponent(scope)}`,
           {
-            actionName: 'admin.seo.integrations.read',
+            actionName:
+              targetSection === 'custom-code'
+                ? 'admin.seo.custom-code.read'
+                : 'admin.seo.integrations.read',
           },
         );
         setIntegrationSettings({
@@ -279,12 +281,18 @@ export function SeoScreen({ section }: { section: SeoSection }) {
         setIntegrationLoading(false);
       }
     },
-    [adminRequest],
+    [],
   );
 
   useEffect(() => {
-    if (section !== 'integrations' || !isSuperadmin) return;
-    void loadIntegrationSettings(integrationScope);
+    if (section === 'integrations') {
+      if (!isSuperadmin) return;
+      void loadIntegrationSettings(integrationScope, 'integrations');
+      return;
+    }
+    if (section === 'custom-code') {
+      void loadIntegrationSettings(integrationScope, 'custom-code');
+    }
   }, [integrationScope, isSuperadmin, loadIntegrationSettings, section]);
 
   const updateIntegrationSetting = useCallback(
@@ -304,6 +312,9 @@ export function SeoScreen({ section }: { section: SeoSection }) {
     setError(null);
     setSaveMessage(null);
     try {
+      const endpoint = section === 'custom-code' ? '/api/admin/seo/custom-code' : '/api/admin/seo/integrations';
+      const actionName =
+        section === 'custom-code' ? 'admin.seo.custom-code.update' : 'admin.seo.integrations.update';
       const payloadInput: DashboardSeoIntegrationSettingsUpdateInput = {
         googleSiteVerification: integrationSettings.googleSiteVerification,
         bingSiteVerification: integrationSettings.bingSiteVerification,
@@ -313,15 +324,16 @@ export function SeoScreen({ section }: { section: SeoSection }) {
         clarityProjectId: integrationSettings.clarityProjectId,
         customHeadScriptUrls: integrationSettings.customHeadScriptUrls,
         customHeadInlineScript: integrationSettings.customHeadInlineScript,
+        customHeadInlineStyle: integrationSettings.customHeadInlineStyle,
         customBodyStartInlineScript: integrationSettings.customBodyStartInlineScript,
         customBodyEndInlineScript: integrationSettings.customBodyEndInlineScript,
       };
-      const payload = await adminRequest<DashboardSeoIntegrationSettings>(
-        `/api/admin/seo/integrations?scope=${encodeURIComponent(integrationScope)}`,
+      const payload = await adminRequestRef.current<DashboardSeoIntegrationSettings>(
+        `${endpoint}?scope=${encodeURIComponent(integrationScope)}`,
         {
           method: 'PATCH',
           body: JSON.stringify(payloadInput),
-          actionName: 'admin.seo.integrations.update',
+          actionName,
         },
       );
       setIntegrationSettings({
@@ -341,7 +353,7 @@ export function SeoScreen({ section }: { section: SeoSection }) {
     } finally {
       setIntegrationSaving(false);
     }
-  }, [adminRequest, integrationScope, integrationSettings]);
+  }, [integrationScope, integrationSettings, section]);
 
   const updateSetting = useCallback(
     <Key extends keyof DashboardSeoSettings>(key: Key, value: DashboardSeoSettings[Key]) => {
@@ -350,6 +362,14 @@ export function SeoScreen({ section }: { section: SeoSection }) {
     },
     [],
   );
+
+  const robotsPreviewText = settings.robotsCustomText?.trim()
+    ? settings.robotsCustomText
+    : buildRobotsPreview(
+        settings,
+        settings.robotsDisallowPaths,
+        settings.robotsAdditionalRules,
+      );
 
   const saveSettings = useCallback(
     async (partial?: Partial<DashboardSeoSettingsUpdateInput>) => {
@@ -360,17 +380,21 @@ export function SeoScreen({ section }: { section: SeoSection }) {
       const settingsWithoutMeta = Object.fromEntries(
         Object.entries(settings).filter(([key]) => key !== 'updatedAt'),
       ) as DashboardSeoSettingsUpdateInput;
+      let nextRobotsCustomText = settings.robotsCustomText;
+      if (robotsEditorOpen) {
+        if (robotsInput.trim().length > 0) {
+          nextRobotsCustomText =
+            (settings.robotsCustomText?.trim() || robotsInput !== robotsPreviewText)
+              ? robotsInput
+              : null;
+        } else {
+          nextRobotsCustomText = null;
+        }
+      }
       const nextPayload: DashboardSeoSettingsUpdateInput = {
         ...settingsWithoutMeta,
         ...(partial ?? {}),
-        robotsDisallowPaths: robotsInput
-          .split('\n')
-          .map((value) => value.trim())
-          .filter(Boolean),
-        robotsAdditionalRules: robotsAdditionalRulesInput
-          .split('\n')
-          .map((value) => value.trim())
-          .filter(Boolean),
+        robotsCustomText: nextRobotsCustomText,
         organizationSameAs: organizationSameAsInput
           .split('\n')
           .map((value) => value.trim())
@@ -378,27 +402,18 @@ export function SeoScreen({ section }: { section: SeoSection }) {
       };
 
       try {
-        const payload = await adminRequest<DashboardSeoSettings>('/api/admin/seo', {
+        const payload = await adminRequestRef.current<DashboardSeoSettings>('/api/admin/seo', {
           method: 'PATCH',
           body: JSON.stringify(nextPayload),
           actionName: 'admin.seo.settings.update',
         });
         setSettings({ ...DEFAULT_DASHBOARD_SEO_SETTINGS, ...payload });
-        setRobotsInput(
-          (payload.robotsDisallowPaths ?? DEFAULT_DASHBOARD_SEO_SETTINGS.robotsDisallowPaths).join(
-            '\n',
-          ),
-        );
-        setRobotsAdditionalRulesInput(
-          (
-            payload.robotsAdditionalRules ?? DEFAULT_DASHBOARD_SEO_SETTINGS.robotsAdditionalRules
-          ).join('\n'),
-        );
         setOrganizationSameAsInput(
           (payload.organizationSameAs ?? DEFAULT_DASHBOARD_SEO_SETTINGS.organizationSameAs).join(
             '\n',
           ),
         );
+        setRobotsEditorOpen(false);
         setSaveMessage('Saved.');
       } catch (requestError) {
         setError(requestError instanceof Error ? requestError.message : 'Unable to save SEO settings.');
@@ -406,7 +421,7 @@ export function SeoScreen({ section }: { section: SeoSection }) {
         setSaving(false);
       }
     },
-    [adminRequest, organizationSameAsInput, robotsAdditionalRulesInput, robotsInput, settings],
+    [organizationSameAsInput, robotsEditorOpen, robotsInput, robotsPreviewText, settings],
   );
 
   const sitemapSections = useMemo<Array<[string, boolean]>>(
@@ -421,6 +436,8 @@ export function SeoScreen({ section }: { section: SeoSection }) {
     ],
     [settings],
   );
+
+  const manualSitemapEnabled = Boolean(settings.sitemapCustomXml?.trim());
 
   const sitemapFiles = useMemo(() => {
     const files: string[] = [];
@@ -460,7 +477,7 @@ export function SeoScreen({ section }: { section: SeoSection }) {
     setError(null);
     setSaveMessage(null);
     try {
-      const created = await adminRequest<RedirectRule>('/api/admin/seo/redirects', {
+      const created = await adminRequestRef.current<RedirectRule>('/api/admin/seo/redirects', {
         method: 'POST',
         body: JSON.stringify({
           sourcePath,
@@ -482,7 +499,6 @@ export function SeoScreen({ section }: { section: SeoSection }) {
       setSaving(false);
     }
   }, [
-    adminRequest,
     redirectDestinationPath,
     redirectIsActive,
     redirectIsPermanent,
@@ -492,11 +508,14 @@ export function SeoScreen({ section }: { section: SeoSection }) {
   const updateRedirectRule = useCallback(
     async (rule: RedirectRule, patch: Partial<RedirectRule>) => {
       try {
-        const updated = await adminRequest<RedirectRule>(`/api/admin/seo/redirects/${rule.id}`, {
-          method: 'PATCH',
-          body: JSON.stringify(patch),
-          actionName: 'admin.seo.redirects.update',
-        });
+        const updated = await adminRequestRef.current<RedirectRule>(
+          `/api/admin/seo/redirects/${rule.id}`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify(patch),
+            actionName: 'admin.seo.redirects.update',
+          },
+        );
         setRedirectRules((current) =>
           current.map((item) => (item.id === updated.id ? updated : item)),
         );
@@ -504,13 +523,13 @@ export function SeoScreen({ section }: { section: SeoSection }) {
         setError(requestError instanceof Error ? requestError.message : 'Unable to update redirect.');
       }
     },
-    [adminRequest],
+    [],
   );
 
   const removeRedirectRule = useCallback(
     async (ruleId: string) => {
       try {
-        await adminRequest(`/api/admin/seo/redirects/${ruleId}`, {
+        await adminRequestRef.current(`/api/admin/seo/redirects/${ruleId}`, {
           method: 'DELETE',
           actionName: 'admin.seo.redirects.delete',
         });
@@ -519,16 +538,23 @@ export function SeoScreen({ section }: { section: SeoSection }) {
         setError(requestError instanceof Error ? requestError.message : 'Unable to delete redirect.');
       }
     },
-    [adminRequest],
+    [],
   );
 
   const activeUpdatedAt =
-    section === 'integrations' ? integrationSettings.updatedAt : settings.updatedAt;
+    section === 'integrations' || section === 'custom-code'
+      ? integrationSettings.updatedAt
+      : settings.updatedAt;
 
   const retryCurrentSection = () => {
+    if (!canManageSeo) return;
     if (section === 'integrations') {
       if (!isSuperadmin) return;
-      void loadIntegrationSettings(integrationScope);
+      void loadIntegrationSettings(integrationScope, 'integrations');
+      return;
+    }
+    if (section === 'custom-code') {
+      void loadIntegrationSettings(integrationScope, 'custom-code');
       return;
     }
     void loadSettings();
@@ -564,7 +590,13 @@ export function SeoScreen({ section }: { section: SeoSection }) {
         ))}
       </div>
 
-      <ActionError error={error} onRetry={retryCurrentSection} />
+      {canManageSeo ? <ActionError error={error} onRetry={retryCurrentSection} /> : null}
+
+      {!canManageSeo ? (
+        <div className="rounded-[20px] border border-amber-200 bg-amber-50 px-5 py-5 text-[0.9rem] text-amber-900">
+          You do not have permission to access SEO settings.
+        </div>
+      ) : null}
 
       {saveMessage ? (
         <div className="rounded-[14px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-[0.84rem] text-emerald-800">
@@ -572,27 +604,31 @@ export function SeoScreen({ section }: { section: SeoSection }) {
         </div>
       ) : null}
 
-      {loading && section !== 'integrations' ? (
+      {canManageSeo && loading && section !== 'integrations' ? (
         <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-10 text-center text-[0.9rem] text-gray-500">
           Loading SEO settings...
         </div>
       ) : null}
 
-      {!loading && section === 'integrations' && !isSuperadmin ? (
+      {canManageSeo && !loading && section === 'integrations' && !isSuperadmin ? (
         <div className="rounded-[20px] border border-amber-200 bg-amber-50 px-5 py-5 text-[0.9rem] text-amber-900">
           Integrations settings are restricted to the protected superadmin account.
         </div>
       ) : null}
 
-      {!loading && section === 'overview' ? (
+      {canManageSeo && !loading && section === 'overview' ? (
         <div className="space-y-5">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <SummaryCard label="Site title" value={settings.siteTitle} />
             <SummaryCard label="Robots" value={settings.robotsSiteIndex ? 'Indexing on' : 'Indexing off'} />
             <SummaryCard label="Twitter card" value={settings.twitterCardType} />
             <SummaryCard
-              label="Sitemap sections"
-              value={String(sitemapSections.filter(([, enabled]) => enabled).length)}
+              label="Sitemap"
+              value={
+                manualSitemapEnabled
+                  ? 'Custom XML override'
+                  : `${sitemapSections.filter(([, enabled]) => enabled).length} sections`
+              }
             />
           </div>
 
@@ -633,7 +669,7 @@ export function SeoScreen({ section }: { section: SeoSection }) {
         </div>
       ) : null}
 
-      {!loading && section === 'settings' ? (
+      {canManageSeo && !loading && section === 'settings' ? (
         <div className="space-y-5">
           <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
             <div className="grid gap-4 md:grid-cols-2">
@@ -745,90 +781,133 @@ export function SeoScreen({ section }: { section: SeoSection }) {
         </div>
       ) : null}
 
-      {!loading && section === 'robots' ? (
+      {canManageSeo && !loading && section === 'robots' ? (
         <div className="space-y-5">
           <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
-            <div className="grid gap-3 md:grid-cols-2">
-              <Toggle
-                label="Allow search indexing"
-                checked={settings.robotsSiteIndex}
-                onChange={(value) => updateSetting('robotsSiteIndex', value)}
-              />
-              <Toggle
-                label="Allow crawler follow links"
-                checked={settings.robotsSiteFollow}
-                onChange={(value) => updateSetting('robotsSiteFollow', value)}
-              />
-              <Toggle
-                label="Block common AI crawlers"
-                checked={settings.robotsBlockAiBots}
-                onChange={(value) => updateSetting('robotsBlockAiBots', value)}
-              />
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">robots.txt preview</h2>
+                <p className="mt-2 max-w-3xl text-[0.84rem] leading-6 text-gray-500">
+                  This is the live output for robots.txt. Click the edit icon to make changes
+                  inline and save them directly.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!robotsEditorOpen) {
+                    setRobotsInput(robotsPreviewText);
+                  }
+                  setRobotsEditorOpen((current) => !current);
+                }}
+                className="inline-flex h-10 items-center gap-2 rounded-full border border-[#d9dfeb] bg-white px-4 text-[0.82rem] font-medium text-[#111111] transition-colors hover:bg-[#f5f7fb]"
+                aria-label={robotsEditorOpen ? 'Close robots editor' : 'Edit robots.txt'}
+                title={robotsEditorOpen ? 'Close editor' : 'Edit robots.txt'}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                </svg>
+                <span>{robotsEditorOpen ? 'Done' : 'Edit'}</span>
+              </button>
             </div>
 
-            <div className="mt-4">
-              <Field label="Disallow paths">
-                <textarea
-                  value={robotsInput}
-                  onChange={(event) => {
-                    setRobotsInput(event.target.value);
-                    setSaveMessage(null);
-                  }}
-                  rows={8}
-                  className="rounded-xl border border-[#e3e8f3] px-3 py-3 font-mono text-[0.86rem] text-[#0f1116] outline-none focus:border-[#c9d5f0]"
-                />
-              </Field>
-              <p className="mt-2 text-[0.78rem] text-gray-500">One path per line, for example `/dashboard` or `/login`.</p>
-            </div>
-
-            <div className="mt-4">
-              <Field label="Additional robots rules">
-                <textarea
-                  value={robotsAdditionalRulesInput}
-                  onChange={(event) => {
-                    setRobotsAdditionalRulesInput(event.target.value);
-                    setSaveMessage(null);
-                  }}
-                  rows={6}
-                  className="rounded-xl border border-[#e3e8f3] px-3 py-3 font-mono text-[0.86rem] text-[#0f1116] outline-none focus:border-[#c9d5f0]"
-                />
-              </Field>
-              <p className="mt-2 text-[0.78rem] text-gray-500">
-                Optional directives (one line each): `User-agent`, `Allow`, `Disallow`, `Sitemap`, `Host`, `Crawl-delay`.
-                Add `Sitemap: https://your-domain/sitemap.xml` here to override the default sitemap line.
-              </p>
-            </div>
-          </div>
-
-          <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
-            <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">Preview</h2>
-            <pre className="mt-4 overflow-x-auto rounded-xl bg-[#f7f9fc] p-4 text-[0.8rem] leading-6 text-[#17202f]">
-              {buildRobotsPreview({
-                ...settings,
-                robotsDisallowPaths: robotsInput
-                  .split('\n')
-                  .map((value) => value.trim())
-                  .filter(Boolean),
-              },
-              robotsInput
-                .split('\n')
-                .map((value) => value.trim())
-                .filter(Boolean),
-              robotsAdditionalRulesInput
-                .split('\n')
-                .map((value) => value.trim())
-                .filter(Boolean))}
-            </pre>
+            {robotsEditorOpen ? (
+              <textarea
+                value={robotsInput}
+                onChange={(event) => {
+                  setRobotsInput(event.target.value);
+                  setSaveMessage(null);
+                }}
+                rows={16}
+                spellCheck={false}
+                className="mt-4 min-h-[420px] w-full rounded-xl border border-[#c9d5f0] bg-[#f7f9fc] p-4 font-mono text-[0.8rem] leading-6 text-[#17202f] outline-none focus:border-[#aebee8]"
+                placeholder={`User-agent: *\nAllow: /\nDisallow: /dashboard\nSitemap: https://your-domain/sitemap.xml`}
+              />
+            ) : (
+              <pre className="mt-4 overflow-x-auto rounded-xl bg-[#f7f9fc] p-4 text-[0.8rem] leading-6 text-[#17202f]">
+                {robotsPreviewText}
+              </pre>
+            )}
           </div>
 
           <SaveBar onSave={() => void saveSettings()} saving={saving} />
         </div>
       ) : null}
 
-      {!loading && section === 'sitemap' ? (
+      {canManageSeo && !loading && section === 'sitemap' ? (
         <div className="space-y-5">
           <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
-            <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">Include in sitemap</h2>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">Manual sitemap XML</h2>
+                <p className="mt-2 max-w-3xl text-[0.84rem] leading-6 text-gray-500">
+                  Paste a complete sitemap or sitemap index here. When this field has content,
+                  `/sitemap.xml` serves it exactly as written and ignores the automatic sitemap
+                  builder below.
+                </p>
+              </div>
+              {manualSitemapEnabled ? (
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[0.75rem] font-medium text-emerald-700">
+                  Active
+                </span>
+              ) : null}
+            </div>
+            <div className="mt-4">
+              <Field label="Custom sitemap XML">
+                <textarea
+                  value={settings.sitemapCustomXml ?? ''}
+                  onChange={(event) => updateSetting('sitemapCustomXml', event.target.value || null)}
+                  rows={18}
+                  spellCheck={false}
+                  className="min-h-[320px] rounded-xl border border-[#e3e8f3] px-3 py-3 font-mono text-[0.82rem] leading-6 text-[#0f1116] outline-none focus:border-[#c9d5f0]"
+                  placeholder={`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://yourdomain.com/</loc>
+  </url>
+</urlset>`}
+                />
+              </Field>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => updateSetting('sitemapCustomXml', null)}
+                  className="rounded-full border border-[#d9dfeb] bg-white px-4 py-2 text-[0.82rem] font-medium text-[#111111] transition-colors hover:bg-[#f5f7fb]"
+                >
+                  Clear override
+                </button>
+                <p className="text-[0.82rem] text-gray-500">
+                  Leave it blank to keep automatic generation.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">Automatic sitemap builder</h2>
+                <p className="mt-2 max-w-3xl text-[0.84rem] leading-6 text-gray-500">
+                  These toggles only affect the generated sitemap when the custom XML override is
+                  empty.
+                </p>
+              </div>
+              {manualSitemapEnabled ? (
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[0.75rem] font-medium text-amber-700">
+                  Disabled by override
+                </span>
+              ) : null}
+            </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <Toggle
                 label="Pages"
@@ -870,6 +949,12 @@ export function SeoScreen({ section }: { section: SeoSection }) {
 
           <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
             <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">Coverage summary</h2>
+            {manualSitemapEnabled ? (
+              <p className="mt-2 text-[0.84rem] text-amber-700">
+                The automatic sitemap is overridden right now. This summary is for the fallback
+                builder only.
+              </p>
+            ) : null}
             <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {sitemapSections.map(([label, enabled]) => (
                 <div
@@ -886,29 +971,35 @@ export function SeoScreen({ section }: { section: SeoSection }) {
           <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
             <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">Sitemap index preview</h2>
             <p className="mt-2 text-[0.84rem] text-gray-500">Main index: `/sitemap.xml`</p>
-            <div className="mt-4 space-y-2">
-              {sitemapFiles.length === 0 ? (
-                <div className="rounded-[14px] border border-dashed border-[#d9dfeb] px-4 py-4 text-[0.85rem] text-[#6b7280]">
-                  No sitemap files enabled.
-                </div>
-              ) : (
-                sitemapFiles.map((filePath) => (
-                  <div
-                    key={filePath}
-                    className="rounded-[12px] border border-[#edf1f8] bg-[#f9fbff] px-3 py-2 font-mono text-[0.8rem] text-[#334155]"
-                  >
-                    {filePath}
+            {manualSitemapEnabled ? (
+              <pre className="mt-4 overflow-x-auto rounded-xl bg-[#f7f9fc] p-4 font-mono text-[0.8rem] leading-6 text-[#17202f]">
+                {settings.sitemapCustomXml}
+              </pre>
+            ) : (
+              <div className="mt-4 space-y-2">
+                {sitemapFiles.length === 0 ? (
+                  <div className="rounded-[14px] border border-dashed border-[#d9dfeb] px-4 py-4 text-[0.85rem] text-[#6b7280]">
+                    No sitemap files enabled.
                   </div>
-                ))
-              )}
-            </div>
+                ) : (
+                  sitemapFiles.map((filePath) => (
+                    <div
+                      key={filePath}
+                      className="rounded-[12px] border border-[#edf1f8] bg-[#f9fbff] px-3 py-2 font-mono text-[0.8rem] text-[#334155]"
+                    >
+                      {filePath}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
 
           <SaveBar onSave={() => void saveSettings()} saving={saving} />
         </div>
       ) : null}
 
-      {!loading && section === 'social' ? (
+      {canManageSeo && !loading && section === 'social' ? (
         <div className="space-y-5">
           <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
             <div className="grid gap-4">
@@ -1061,7 +1152,7 @@ export function SeoScreen({ section }: { section: SeoSection }) {
         </div>
       ) : null}
 
-      {!loading && section === 'integrations' && isSuperadmin ? (
+      {canManageSeo && !loading && section === 'integrations' && isSuperadmin ? (
         <div className="space-y-5">
           <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
             <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">Environment scope</h2>
@@ -1090,7 +1181,7 @@ export function SeoScreen({ section }: { section: SeoSection }) {
               </Field>
               <button
                 type="button"
-                onClick={() => void loadIntegrationSettings(integrationScope)}
+                onClick={() => void loadIntegrationSettings(integrationScope, 'integrations')}
                 disabled={integrationLoading}
                 className="h-11 rounded-full border border-[#d9dfeb] px-5 text-[0.85rem] font-medium text-[#111111] transition-colors hover:bg-[#f5f7fb] disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -1186,67 +1277,6 @@ export function SeoScreen({ section }: { section: SeoSection }) {
               </div>
 
               <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
-                <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">Custom scripts</h2>
-                <div className="mt-4 grid gap-4">
-                  <Field label="Custom head script URLs (one per line, https only)">
-                    <textarea
-                      rows={4}
-                      value={integrationSettings.customHeadScriptUrls.join('\n')}
-                      onChange={(event) =>
-                        updateIntegrationSetting(
-                          'customHeadScriptUrls',
-                          event.target.value
-                            .split('\n')
-                            .map((value) => value.trim())
-                            .filter(Boolean),
-                        )
-                      }
-                      className="rounded-xl border border-[#e3e8f3] px-3 py-3 text-[0.9rem] text-[#0f1116] outline-none focus:border-[#c9d5f0]"
-                    />
-                  </Field>
-                  <Field label="Custom head inline script">
-                    <textarea
-                      rows={4}
-                      value={integrationSettings.customHeadInlineScript ?? ''}
-                      onChange={(event) =>
-                        updateIntegrationSetting(
-                          'customHeadInlineScript',
-                          event.target.value.trim() || null,
-                        )
-                      }
-                      className="rounded-xl border border-[#e3e8f3] px-3 py-3 font-mono text-[0.84rem] text-[#0f1116] outline-none focus:border-[#c9d5f0]"
-                    />
-                  </Field>
-                  <Field label="Custom body-start inline script">
-                    <textarea
-                      rows={4}
-                      value={integrationSettings.customBodyStartInlineScript ?? ''}
-                      onChange={(event) =>
-                        updateIntegrationSetting(
-                          'customBodyStartInlineScript',
-                          event.target.value.trim() || null,
-                        )
-                      }
-                      className="rounded-xl border border-[#e3e8f3] px-3 py-3 font-mono text-[0.84rem] text-[#0f1116] outline-none focus:border-[#c9d5f0]"
-                    />
-                  </Field>
-                  <Field label="Custom body-end inline script">
-                    <textarea
-                      rows={4}
-                      value={integrationSettings.customBodyEndInlineScript ?? ''}
-                      onChange={(event) =>
-                        updateIntegrationSetting(
-                          'customBodyEndInlineScript',
-                          event.target.value.trim() || null,
-                        )
-                      }
-                      className="rounded-xl border border-[#e3e8f3] px-3 py-3 font-mono text-[0.84rem] text-[#0f1116] outline-none focus:border-[#c9d5f0]"
-                    />
-                  </Field>
-                </div>
-              </div>
-
-              <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
                 <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">Snippet preview</h2>
                 <pre className="mt-4 overflow-x-auto rounded-xl bg-[#f7f9fc] p-4 text-[0.82rem] leading-6 text-[#17202f]">
                   {buildIntegrationsSnippetPreview(integrationSettings)}
@@ -1263,7 +1293,148 @@ export function SeoScreen({ section }: { section: SeoSection }) {
         </div>
       ) : null}
 
-      {!loading && section === 'redirects' ? (
+      {canManageSeo && !loading && section === 'custom-code' ? (
+        <div className="space-y-5">
+          <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
+            <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">Environment scope</h2>
+            <p className="mt-2 text-[0.84rem] text-gray-500">
+              Configure separate code snippets for development, staging, and production.
+            </p>
+            <div className="mt-4 grid gap-4 md:grid-cols-[minmax(0,280px)_auto] md:items-end">
+              <Field label="Scope">
+                <select
+                  value={integrationScope}
+                  onChange={(event) => {
+                    const value = event.target.value as SeoIntegrationScope;
+                    setIntegrationScope(value);
+                    setSaveMessage(null);
+                    setError(null);
+                  }}
+                  className="h-11 rounded-xl border border-[#e3e8f3] px-3 text-[0.92rem] text-[#0f1116] outline-none focus:border-[#c9d5f0]"
+                >
+                  {SEO_INTEGRATION_SCOPES.map((scope) => (
+                    <option key={scope} value={scope}>
+                      {scope.charAt(0).toUpperCase()}
+                      {scope.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <button
+                type="button"
+                onClick={() => void loadIntegrationSettings(integrationScope, 'custom-code')}
+                disabled={integrationLoading}
+                className="h-11 rounded-full border border-[#d9dfeb] px-5 text-[0.85rem] font-medium text-[#111111] transition-colors hover:bg-[#f5f7fb] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {integrationLoading ? 'Loading...' : 'Reload'}
+              </button>
+            </div>
+          </div>
+
+          {!integrationLoading ? (
+            <>
+              <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
+                <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">Header code</h2>
+                <p className="mt-2 text-[0.84rem] text-gray-500">
+                  JavaScript is injected in the head. CSS is rendered in a real style tag so it
+                  works like you expect.
+                </p>
+                <div className="mt-4 grid gap-4">
+                  <Field label="Header script URLs (one per line, https only)">
+                    <textarea
+                      rows={4}
+                      value={integrationSettings.customHeadScriptUrls.join('\n')}
+                      onChange={(event) =>
+                        updateIntegrationSetting(
+                          'customHeadScriptUrls',
+                          event.target.value
+                            .split('\n')
+                            .map((value) => value.trim())
+                            .filter(Boolean),
+                        )
+                      }
+                      className="rounded-xl border border-[#e3e8f3] px-3 py-3 text-[0.9rem] text-[#0f1116] outline-none focus:border-[#c9d5f0]"
+                    />
+                  </Field>
+                  <Field label="Header JavaScript">
+                    <textarea
+                      rows={5}
+                      value={integrationSettings.customHeadInlineScript ?? ''}
+                      onChange={(event) =>
+                        updateIntegrationSetting(
+                          'customHeadInlineScript',
+                          event.target.value.trim() || null,
+                        )
+                      }
+                      className="rounded-xl border border-[#e3e8f3] px-3 py-3 font-mono text-[0.84rem] text-[#0f1116] outline-none focus:border-[#c9d5f0]"
+                    />
+                  </Field>
+                  <Field label="Header CSS">
+                    <textarea
+                      rows={6}
+                      value={integrationSettings.customHeadInlineStyle ?? ''}
+                      onChange={(event) =>
+                        updateIntegrationSetting(
+                          'customHeadInlineStyle',
+                          event.target.value.trim() || null,
+                        )
+                      }
+                      className="rounded-xl border border-[#e3e8f3] px-3 py-3 font-mono text-[0.84rem] text-[#0f1116] outline-none focus:border-[#c9d5f0]"
+                    />
+                  </Field>
+                </div>
+              </div>
+
+              <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
+                <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">Footer code</h2>
+                <div className="mt-4 grid gap-4">
+                  <Field label="Body-start JavaScript (advanced)">
+                    <textarea
+                      rows={4}
+                      value={integrationSettings.customBodyStartInlineScript ?? ''}
+                      onChange={(event) =>
+                        updateIntegrationSetting(
+                          'customBodyStartInlineScript',
+                          event.target.value.trim() || null,
+                        )
+                      }
+                      className="rounded-xl border border-[#e3e8f3] px-3 py-3 font-mono text-[0.84rem] text-[#0f1116] outline-none focus:border-[#c9d5f0]"
+                    />
+                  </Field>
+                  <Field label="Footer JavaScript">
+                    <textarea
+                      rows={5}
+                      value={integrationSettings.customBodyEndInlineScript ?? ''}
+                      onChange={(event) =>
+                        updateIntegrationSetting(
+                          'customBodyEndInlineScript',
+                          event.target.value.trim() || null,
+                        )
+                      }
+                      className="rounded-xl border border-[#e3e8f3] px-3 py-3 font-mono text-[0.84rem] text-[#0f1116] outline-none focus:border-[#c9d5f0]"
+                    />
+                  </Field>
+                </div>
+              </div>
+
+              <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
+                <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">Snippet preview</h2>
+                <pre className="mt-4 overflow-x-auto rounded-xl bg-[#f7f9fc] p-4 text-[0.82rem] leading-6 text-[#17202f]">
+                  {buildCustomCodeSnippetPreview(integrationSettings)}
+                </pre>
+              </div>
+
+              <SaveBar onSave={() => void saveIntegrationSettings()} saving={integrationSaving} />
+            </>
+          ) : (
+            <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-10 text-center text-[0.9rem] text-gray-500">
+              Loading custom code settings...
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      {canManageSeo && !loading && section === 'redirects' ? (
         <div className="space-y-5">
           <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
             <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">Create redirect</h2>

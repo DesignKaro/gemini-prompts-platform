@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { normalizePagination } from '../../../common/utils/pagination';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -94,5 +94,17 @@ export class NewsletterService {
       total,
       sources: sourceRows.map((row) => row.source),
     };
+  }
+
+  async remove(id: string) {
+    const result = await this.prisma.newsletterSubmission.deleteMany({
+      where: { id },
+    });
+
+    if (!result.count) {
+      throw new NotFoundException('Newsletter submission not found.');
+    }
+
+    return { success: true };
   }
 }

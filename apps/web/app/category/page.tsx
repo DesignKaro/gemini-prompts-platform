@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { ProgressiveImage } from '../components/progressive-image';
 import { SeoSchemaScripts } from '../components/seo-schema-script';
 import { Skeleton } from '../components/ui/skeleton';
 import { getCategoryList } from '../../lib/public-content';
@@ -168,12 +169,15 @@ async function CategoriesArchiveSection({
                 href={`/category/${category.slug}`}
                 className="flex items-center gap-3 rounded-[20px] border border-[#e4e8ef] bg-white px-3 py-2.5 transition-colors hover:border-[#cfd6e3] hover:bg-[#fbfcff]"
               >
-                <div
-                  className="h-11 w-11 shrink-0 rounded-full border border-[#e3e6ee] bg-cover bg-center"
-                  style={{
-                    backgroundImage: `url(${resolveCategoryImage(category.imageUrl, category.slug || category.id)})`,
-                  }}
-                />
+                <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border border-[#e3e6ee]">
+                  <ProgressiveImage
+                    src={resolveCategoryImage(category.imageUrl, category.slug || category.id)}
+                    alt={`${category.name} category`}
+                    fill
+                    sizes="44px"
+                    className="object-cover"
+                  />
+                </div>
                 <div className="min-w-0">
                   <p className="truncate text-[1.02rem] font-medium text-[#171b24]">{category.name}</p>
                   <p className="text-[0.95rem] text-[#9aa2b0]">{formatCompactCount(category.totalCount)}</p>
@@ -199,12 +203,15 @@ async function CategoriesArchiveSection({
                 href={`/category/${category.slug}`}
                 className="flex items-center gap-3 rounded-[20px] border border-[#e4e8ef] bg-white p-2.5 transition-colors hover:border-[#cfd6e3] hover:bg-[#fbfcff]"
               >
-                <div
-                  className="h-[72px] w-[138px] shrink-0 rounded-[14px] border border-[#e3e6ee] bg-cover bg-center"
-                  style={{
-                    backgroundImage: `url(${resolveCategoryImage(category.imageUrl, category.slug || category.id)})`,
-                  }}
-                />
+                <div className="relative h-[72px] w-[138px] shrink-0 overflow-hidden rounded-[14px] border border-[#e3e6ee]">
+                  <ProgressiveImage
+                    src={resolveCategoryImage(category.imageUrl, category.slug || category.id)}
+                    alt={`${category.name} category`}
+                    fill
+                    sizes="138px"
+                    className="object-cover"
+                  />
+                </div>
                 <div className="min-w-0">
                   <p className="truncate text-[1.04rem] font-medium text-[#171b24]">{category.name}</p>
                   <p className="text-[0.95rem] text-[#9aa2b0]">

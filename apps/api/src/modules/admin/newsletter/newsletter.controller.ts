@@ -1,5 +1,6 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { IdParamDto } from '../../../common/dto/id-param.dto';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
@@ -25,5 +26,11 @@ export class NewsletterController {
       to: query.to,
       sort: query.sort,
     });
+  }
+
+  @Delete(':id')
+  @Permissions('activity:read')
+  remove(@Param() params: IdParamDto) {
+    return this.newsletterService.remove(params.id);
   }
 }

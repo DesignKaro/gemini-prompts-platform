@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
+import { ProgressiveImage } from '../../components/progressive-image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { FaRegComment } from 'react-icons/fa6';
@@ -359,7 +359,7 @@ async function BlogPostPageContent({ params }: PageProps) {
                   aria-label={`${post.title} cover`}
                   className="relative aspect-[16/9] w-full"
                 >
-                  <Image
+                  <ProgressiveImage
                     src={post.image}
                     alt={`${post.title} cover`}
                     fill

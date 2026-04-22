@@ -13,6 +13,7 @@ type IntegrationRecord = {
   clarityProjectId: string | null;
   customHeadScriptUrls: string[];
   customHeadInlineScript: string | null;
+  customHeadInlineStyle: string | null;
   customBodyStartInlineScript: string | null;
   customBodyEndInlineScript: string | null;
   updatedByUserId: string | null;
@@ -60,6 +61,7 @@ function createService() {
           clarityProjectId: null,
           customHeadScriptUrls: [],
           customHeadInlineScript: null,
+          customHeadInlineStyle: null,
           customBodyStartInlineScript: null,
           customBodyEndInlineScript: null,
           updatedByUserId: null,
@@ -111,6 +113,14 @@ describe('SeoIntegrationsService', () => {
     expect(staging.gaMeasurementId).toBeNull();
   });
 
+  it('uses the site default AdSense publisher id when none is stored', async () => {
+    const { service } = createService();
+
+    const payload = await service.getSettings('production');
+
+    expect(payload.adsensePublisherId).toBe('ca-pub-9138814143617371');
+  });
+
   it('sanitizes inline script wrappers', async () => {
     const { service } = createService();
 
@@ -123,6 +133,20 @@ describe('SeoIntegrationsService', () => {
     );
 
     expect(payload.customHeadInlineScript).toBe('window.gpInline = true;');
+  });
+
+  it('sanitizes inline style wrappers', async () => {
+    const { service } = createService();
+
+    const payload = await service.updateSettings(
+      'development',
+      {
+        customHeadInlineStyle: '<style>body { background: #fff; }</style>',
+      },
+      'user_dev',
+    );
+
+    expect(payload.customHeadInlineStyle).toBe('body { background: #fff; }');
   });
 
   it('rejects non-https custom script urls', async () => {
@@ -151,10 +175,13 @@ describe('SeoIntegrationsService', () => {
     ];
     (record as unknown as { customHeadInlineScript: unknown }).customHeadInlineScript =
       '<iframe src="https://evil.example.com"></iframe>';
+    (record as unknown as { customHeadInlineStyle: unknown }).customHeadInlineStyle =
+      '<style><script>evil()</script>body{color:red;}</style>';
 
     const payload = await service.getSettings('production');
     expect(payload.gaMeasurementId).toBeNull();
     expect(payload.customHeadScriptUrls).toEqual(['https://cdn.example.com/ok.js']);
     expect(payload.customHeadInlineScript).toBeNull();
+    expect(payload.customHeadInlineStyle).toBeNull();
   });
 });

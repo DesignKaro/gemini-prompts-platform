@@ -920,9 +920,12 @@ export function PromptMobileBar({
             setCopied(ok);
             setTimeout(() => setCopied(false), 1400);
           }}
-          className="flex h-11 flex-1 items-center justify-center rounded-full bg-[#111111] px-5 text-[0.95rem] text-white transition-colors hover:bg-black"
+          className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-[#111111] px-3 text-white transition-colors hover:bg-black"
+          aria-label={copied ? 'Copied' : 'Copy prompt'}
+          title={copied ? 'Copied!' : 'Copy prompt'}
         >
-          {copied ? 'Copied' : 'Copy prompt'}
+          {copied ? <LuCheck className="h-[18px] w-[18px]" /> : <LuCopy className="h-[18px] w-[18px]" />}
+          <span className="sr-only">{copied ? 'Copied' : 'Copy prompt'}</span>
         </button>
         <SocialShareMenu
           shareUrl={shareUrl}

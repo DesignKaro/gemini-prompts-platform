@@ -2,16 +2,15 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   formatDisplayDate,
   getPromptCategoryName,
   type PublicPrompt,
 } from '../../lib/public-content';
 import { resolvePromptImage } from '../../lib/content-image-fallbacks';
-import { DEFAULT_BLUR_DATA_URL } from '../../lib/image-placeholders';
 import { usePromptInteractions } from './prompt-interactions/use-prompt-interactions';
 import { AuthorFollowButton } from './author-follow-button';
+import { ProgressiveImage } from './progressive-image';
 import { Skeleton } from './ui/skeleton';
 
 /* ─── Prompt Card UI ────────────────────────────────────────── */
@@ -59,15 +58,13 @@ export function PromptCardUI({ prompt, showReadTime = true }: PromptCardProps) {
         aria-label={prompt.title}
         className="relative aspect-[4/3] w-full overflow-hidden rounded-[24px]"
       >
-        <Image
+        <ProgressiveImage
           src={resolvePromptImage(prompt.image, prompt.slug || prompt.id)}
           alt={prompt.title}
           fill
           sizes="(max-width: 640px) 94vw, (max-width: 1024px) 46vw, 24vw"
           loading="lazy"
           decoding="async"
-          placeholder="blur"
-          blurDataURL={DEFAULT_BLUR_DATA_URL}
           className="object-cover"
         />
         <Link

@@ -350,4 +350,19 @@ export class ContactSubmissionsService {
       return this.findOne(id);
     });
   }
+
+  async remove(id: string) {
+    return this.withContactSubmissionTableRecovery(async () => {
+      const affectedRows = await this.prisma.$executeRaw(Prisma.sql`
+        DELETE FROM \`ContactSubmission\`
+        WHERE id = ${id}
+      `);
+
+      if (!affectedRows) {
+        throw new NotFoundException('Contact submission not found.');
+      }
+
+      return { success: true };
+    });
+  }
 }

@@ -15,6 +15,7 @@ export type SeoIntegrationSettingsPayload = {
   clarityProjectId: string | null;
   customHeadScriptUrls: string[];
   customHeadInlineScript: string | null;
+  customHeadInlineStyle: string | null;
   customBodyStartInlineScript: string | null;
   customBodyEndInlineScript: string | null;
   updatedByUserId: string | null;
@@ -24,7 +25,9 @@ export type SeoIntegrationSettingsPayload = {
 type IntegrationRecord = Record<string, unknown>;
 
 const MAX_INLINE_SCRIPT_LENGTH = 8_000;
+const MAX_INLINE_STYLE_LENGTH = 8_000;
 const MAX_SCRIPT_URLS = 25;
+const DEFAULT_ADSENSE_PUBLISHER_ID = 'ca-pub-9138814143617371';
 
 @Injectable()
 export class SeoIntegrationsService {
@@ -91,6 +94,10 @@ export class SeoIntegrationsService {
           input.customHeadInlineScript,
           current.customHeadInlineScript,
         ),
+        customHeadInlineStyle: this.normalizeInlineStyle(
+          input.customHeadInlineStyle,
+          current.customHeadInlineStyle,
+        ),
         customBodyStartInlineScript: this.normalizeInlineScript(
           input.customBodyStartInlineScript,
           current.customBodyStartInlineScript,
@@ -128,6 +135,10 @@ export class SeoIntegrationsService {
           input.customHeadInlineScript,
           current.customHeadInlineScript,
         ),
+        customHeadInlineStyle: this.normalizeInlineStyle(
+          input.customHeadInlineStyle,
+          current.customHeadInlineStyle,
+        ),
         customBodyStartInlineScript: this.normalizeInlineScript(
           input.customBodyStartInlineScript,
           current.customBodyStartInlineScript,
@@ -161,6 +172,7 @@ export class SeoIntegrationsService {
       clarityProjectId: this.sanitizeClarityProjectId(record.clarityProjectId),
       customHeadScriptUrls: this.sanitizeScriptUrls(record.customHeadScriptUrls),
       customHeadInlineScript: this.sanitizeInlineScript(record.customHeadInlineScript),
+      customHeadInlineStyle: this.sanitizeInlineStyle(record.customHeadInlineStyle),
       customBodyStartInlineScript: this.sanitizeInlineScript(record.customBodyStartInlineScript),
       customBodyEndInlineScript: this.sanitizeInlineScript(record.customBodyEndInlineScript),
       updatedByUserId: this.cleanNullableText(record.updatedByUserId, null, 191),
@@ -186,9 +198,12 @@ export class SeoIntegrationsService {
 
   private sanitizeAdsensePublisherId(value: unknown): string | null {
     try {
-      return this.normalizeAdsensePublisherId(value, null);
+      return (
+        this.normalizeAdsensePublisherId(value, DEFAULT_ADSENSE_PUBLISHER_ID) ??
+        DEFAULT_ADSENSE_PUBLISHER_ID
+      );
     } catch {
-      return null;
+      return DEFAULT_ADSENSE_PUBLISHER_ID;
     }
   }
 
@@ -233,6 +248,14 @@ export class SeoIntegrationsService {
   private sanitizeInlineScript(value: unknown): string | null {
     try {
       return this.normalizeInlineScript(value, null);
+    } catch {
+      return null;
+    }
+  }
+
+  private sanitizeInlineStyle(value: unknown): string | null {
+    try {
+      return this.normalizeInlineStyle(value, null);
     } catch {
       return null;
     }
@@ -368,6 +391,35 @@ export class SeoIntegrationsService {
 
     if (blockedFragments.some((fragment) => lower.includes(fragment))) {
       throw new BadRequestException('Inline script contains blocked content.');
+    }
+
+    return withoutWrapperTags;
+  }
+
+  private normalizeInlineStyle(value: unknown, fallback: string | null): string | null {
+    if (value === undefined) {
+      return fallback;
+    }
+
+    const normalized = this.cleanNullableText(value, null, MAX_INLINE_STYLE_LENGTH);
+    if (!normalized) {
+      return null;
+    }
+
+    const withoutWrapperTags = normalized
+      .replace(/^<style\b[^>]*>/i, '')
+      .replace(/<\/style>$/i, '')
+      .trim();
+
+    if (!withoutWrapperTags) {
+      return null;
+    }
+
+    const lower = withoutWrapperTags.toLowerCase();
+    const blockedFragments = ['<script', '</script', '<iframe', '<object', '<embed', '<link', '<meta'];
+
+    if (blockedFragments.some((fragment) => lower.includes(fragment))) {
+      throw new BadRequestException('Inline style contains blocked content.');
     }
 
     return withoutWrapperTags;

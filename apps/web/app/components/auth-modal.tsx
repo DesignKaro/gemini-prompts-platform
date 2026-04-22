@@ -20,70 +20,6 @@ type AuthErrorState = {
   message: string;
 };
 
-const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/\/$/, '');
-
-type HealthCheckResult = {
-  ok: boolean;
-  message?: string;
-};
-
-async function checkAuthHealth(): Promise<HealthCheckResult> {
-  const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 4000);
-  try {
-    const response = await fetch(`${apiBaseUrl}/api/health`, {
-      method: 'GET',
-      cache: 'no-store',
-      signal: controller.signal,
-    });
-    const payload = (await response.json().catch(() => null)) as {
-      status?: string;
-      database?: { connected?: boolean; missingTables?: string[]; error?: string };
-    } | null;
-
-    if (!response.ok || !payload) {
-      return {
-        ok: false,
-        message: 'Auth service is unavailable. Please make sure the API server is running.',
-      };
-    }
-
-    if (payload.status !== 'ok') {
-      if (payload.database?.connected === false) {
-        return {
-          ok: false,
-          message: `Database connection failed: ${payload.database?.error ?? 'Unknown error.'}`,
-        };
-      }
-
-      const missingTables = payload.database?.missingTables ?? [];
-      if (missingTables.length > 0) {
-        return {
-          ok: false,
-          message: `Database is missing required tables: ${missingTables.join(
-            ', ',
-          )}. Apply the SQL migrations and restart the API.`,
-        };
-      }
-
-      return {
-        ok: false,
-        message:
-          'API is running but the database is not ready. Apply migrations and restart the API.',
-      };
-    }
-
-    return { ok: true };
-  } catch {
-    return {
-      ok: false,
-      message: 'Auth service is unavailable. Please make sure the API server is running.',
-    };
-  } finally {
-    window.clearTimeout(timeout);
-  }
-}
-
 function mapSignInError(error?: string, code?: string, mode: AuthTab = 'signin'): AuthErrorState {
   if (code === 'account_suspended' || error === 'AccountSuspended') {
     return {
@@ -179,6 +115,7 @@ export function AuthModal({
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const firstFocusableRef = useRef<HTMLButtonElement>(null);
+  const blurValidationSuppressedRef = useRef(false);
 
   const isValidEmail = useMemo(() => /\S+@\S+\.\S+/.test(email.trim()), [email]);
 
@@ -195,6 +132,7 @@ export function AuthModal({
     setEmailEditable(false);
     setPasswordEditable(false);
     setGoogleSubmitting(false);
+    blurValidationSuppressedRef.current = false;
 
     const focusTimer = window.setTimeout(() => {
       firstFocusableRef.current?.focus();
@@ -287,24 +225,20 @@ export function AuthModal({
   };
 
   const handleEmailContinue = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
     clearFormErrors();
     const isEmailValid = validateEmailField();
     const isPasswordValid = validatePasswordField();
     if (!isEmailValid || !isPasswordValid) {
+      blurValidationSuppressedRef.current = false;
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const healthCheck = await checkAuthHealth();
-      if (!healthCheck.ok) {
-        setFormError(
-          healthCheck.message ??
-            'Auth service is unavailable. Please make sure the API server is running.',
-        );
-        return;
-      }
-
       const result = await signIn('credentials', {
         email: email.trim(),
         password,
@@ -338,7 +272,6 @@ export function AuthModal({
         fallback: '/',
       });
 
-      onClose?.();
       redirectToAuthPath(targetPath);
     } catch {
       setFormError(
@@ -346,6 +279,7 @@ export function AuthModal({
       );
     } finally {
       setIsSubmitting(false);
+      blurValidationSuppressedRef.current = false;
     }
   };
 
@@ -359,12 +293,25 @@ export function AuthModal({
     }
   };
 
+  const handleCredentialsSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    blurValidationSuppressedRef.current = true;
+    void handleEmailContinue();
+  };
+
+  const handlePasswordEnterSubmit = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    blurValidationSuppressedRef.current = true;
+    void handleEmailContinue();
+  };
+
   return (
     <div
       role={isModal ? 'presentation' : undefined}
       className={
         isModal
-          ? 'fixed inset-0 z-[80] flex items-center justify-center bg-[#0f141fcc] px-4 py-6'
+          ? 'fixed inset-0 z-[200] flex items-center justify-center bg-[#0f141fcc] px-4 py-6'
           : 'flex w-full items-center justify-center'
       }
       onClick={isModal && onClose ? onClose : undefined}
@@ -441,233 +388,241 @@ export function AuthModal({
           </button>
         </div>
 
-        <div
-          className={`mt-4 rounded-[16px] border bg-white p-3 ${
-            emailError ? 'border-[#e15c5c]' : 'border-[#e4e7ee]'
-          }`}
-        >
-          <label htmlFor="auth-email" className="flex items-center gap-3.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-[11px] border border-[#dde1e8] text-[#20242f]">
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
-                <rect
-                  x="3.5"
-                  y="5.5"
-                  width="17"
-                  height="13"
-                  rx="2.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
+        <form className="mt-4" onSubmit={handleCredentialsSubmit} noValidate>
+          <div
+            className={`rounded-[16px] border bg-white p-3 ${
+              emailError ? 'border-[#e15c5c]' : 'border-[#e4e7ee]'
+            }`}
+          >
+            <label htmlFor="auth-email" className="flex items-center gap-3.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-[11px] border border-[#dde1e8] text-[#20242f]">
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
+                  <rect
+                    x="3.5"
+                    y="5.5"
+                    width="17"
+                    height="13"
+                    rx="2.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  />
+                  <path
+                    d="m4.2 7 7.8 6 7.8-6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </span>
+              <span className="h-9 w-px bg-[#eaedf2]" />
+              <span className="relative min-w-0 flex-1 pt-4 pb-2">
+                <span
+                  className={`pointer-events-none absolute left-0 text-[#757d8b] transition-all duration-200 ${
+                    emailFocused || email
+                      ? 'top-0 text-[0.82rem] leading-none'
+                      : 'top-1/2 -translate-y-1/2 text-[0.95rem] leading-none'
+                  }`}
+                >
+                  Email Address
+                </span>
+                <input
+                  id="auth-email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    if (emailError) setEmailError('');
+                    clearFormErrors();
+                  }}
+                  name="gp_email_input"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  onFocus={() => {
+                    setEmailEditable(true);
+                    setEmailFocused(true);
+                  }}
+                  onBlur={() => {
+                    setEmailFocused(false);
+                    if (blurValidationSuppressedRef.current || isSubmitting) {
+                      return;
+                    }
+                    validateEmailField();
+                  }}
+                  onPointerDown={() => setEmailEditable(true)}
+                  placeholder=""
+                  readOnly={!emailEditable}
+                  aria-invalid={Boolean(emailError)}
+                  aria-describedby={emailError ? 'auth-email-error' : undefined}
+                  className="w-full border-none p-0 text-[0.98rem] leading-none text-[#151922] outline-none sm:text-[1rem]"
                 />
-                <path
-                  d="m4.2 7 7.8 6 7.8-6"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </span>
-            <span className="h-9 w-px bg-[#eaedf2]" />
-            <span className="relative min-w-0 flex-1 pt-4 pb-2">
+              </span>
               <span
-                className={`pointer-events-none absolute left-0 text-[#757d8b] transition-all duration-200 ${
-                  emailFocused || email
-                    ? 'top-0 text-[0.82rem] leading-none'
-                    : 'top-1/2 -translate-y-1/2 text-[0.95rem] leading-none'
+                className={`flex h-6 w-6 items-center justify-center rounded-full ${
+                  isValidEmail ? 'bg-[#1bc47d] text-white' : 'bg-[#ebedf2] text-[#8f96a4]'
                 }`}
               >
-                Email Address
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5">
+                  <path
+                    d="m6 12.7 3.3 3.3L18 7.3"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </span>
-              <input
-                id="auth-email"
-                type="email"
-                value={email}
-                onChange={(event) => {
-                  setEmail(event.target.value);
-                  if (emailError) setEmailError('');
-                  clearFormErrors();
-                }}
-                name="gp_email_input"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="none"
-                spellCheck={false}
-                onFocus={() => {
-                  setEmailEditable(true);
-                  setEmailFocused(true);
-                }}
-                onBlur={() => {
-                  setEmailFocused(false);
-                  validateEmailField();
-                }}
-                onPointerDown={() => setEmailEditable(true)}
-                placeholder=""
-                readOnly={!emailEditable}
-                aria-invalid={Boolean(emailError)}
-                aria-describedby={emailError ? 'auth-email-error' : undefined}
-                className="w-full border-none p-0 text-[0.98rem] leading-none text-[#151922] outline-none sm:text-[1rem]"
-              />
-            </span>
-            <span
-              className={`flex h-6 w-6 items-center justify-center rounded-full ${
-                isValidEmail ? 'bg-[#1bc47d] text-white' : 'bg-[#ebedf2] text-[#8f96a4]'
-              }`}
-            >
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5">
-                <path
-                  d="m6 12.7 3.3 3.3L18 7.3"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
-          </label>
-        </div>
-        <div className="min-h-[24px]">
-          {emailError ? (
-            <p id="auth-email-error" className="mt-2 text-[0.86rem] leading-[1.2] text-[#cd3f3f]">
-              {emailError}
-            </p>
-          ) : null}
-        </div>
-        <div
-          className={`mt-2.5 rounded-[16px] border bg-white p-3 ${
-            passwordError ? 'border-[#e15c5c]' : 'border-[#e4e7ee]'
-          }`}
-        >
-          <label htmlFor="auth-password" className="flex items-center gap-3.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-[11px] border border-[#dde1e8] text-[#20242f]">
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
-                <rect
-                  x="5"
-                  y="10"
-                  width="14"
-                  height="10"
-                  rx="2.2"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                />
-                <path
-                  d="M8.2 10V8.3a3.8 3.8 0 1 1 7.6 0V10"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                />
-              </svg>
-            </span>
-            <span className="h-9 w-px bg-[#eaedf2]" />
-            <span className="relative min-w-0 flex-1 pt-4 pb-2">
-              <span
-                className={`pointer-events-none absolute left-0 text-[#757d8b] transition-all duration-200 ${
-                  passwordFocused || password
-                    ? 'top-0 text-[0.82rem] leading-none'
-                    : 'top-1/2 -translate-y-1/2 text-[0.95rem] leading-none'
-                }`}
-              >
-                Password
+            </label>
+          </div>
+          <div className="min-h-[24px]">
+            {emailError ? (
+              <p id="auth-email-error" className="mt-2 text-[0.86rem] leading-[1.2] text-[#cd3f3f]">
+                {emailError}
+              </p>
+            ) : null}
+          </div>
+          <div
+            className={`mt-2.5 rounded-[16px] border bg-white p-3 ${
+              passwordError ? 'border-[#e15c5c]' : 'border-[#e4e7ee]'
+            }`}
+          >
+            <label htmlFor="auth-password" className="flex items-center gap-3.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-[11px] border border-[#dde1e8] text-[#20242f]">
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
+                  <rect
+                    x="5"
+                    y="10"
+                    width="14"
+                    height="10"
+                    rx="2.2"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  />
+                  <path
+                    d="M8.2 10V8.3a3.8 3.8 0 1 1 7.6 0V10"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  />
+                </svg>
               </span>
-              <input
-                id="auth-password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(event) => {
-                  setPassword(event.target.value);
-                  if (passwordError) setPasswordError('');
-                  clearFormErrors();
-                }}
-                name="gp_password_input"
-                autoComplete="new-password"
-                onFocus={() => {
-                  setPasswordEditable(true);
-                  setPasswordFocused(true);
-                }}
-                onBlur={() => {
-                  setPasswordFocused(false);
-                  validatePasswordField();
-                }}
-                onPointerDown={() => setPasswordEditable(true)}
-                placeholder=""
-                readOnly={!passwordEditable}
-                aria-invalid={Boolean(passwordError)}
-                aria-describedby={passwordError ? 'auth-password-error' : undefined}
-                className="w-full border-none p-0 pr-10 text-[0.98rem] leading-none text-[#151922] outline-none sm:text-[1rem]"
-              />
-              <button
-                type="button"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="absolute right-0 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-[#ebedf2] text-[#8f96a4]"
-                onClick={() => setShowPassword((prev) => !prev)}
+              <span className="h-9 w-px bg-[#eaedf2]" />
+              <span className="relative min-w-0 flex-1 pt-4 pb-2">
+                <span
+                  className={`pointer-events-none absolute left-0 text-[#757d8b] transition-all duration-200 ${
+                    passwordFocused || password
+                      ? 'top-0 text-[0.82rem] leading-none'
+                      : 'top-1/2 -translate-y-1/2 text-[0.95rem] leading-none'
+                  }`}
+                >
+                  Password
+                </span>
+                <input
+                  id="auth-password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    if (passwordError) setPasswordError('');
+                    clearFormErrors();
+                  }}
+                  name="gp_password_input"
+                  autoComplete="new-password"
+                  onFocus={() => {
+                    setPasswordEditable(true);
+                    setPasswordFocused(true);
+                  }}
+                  onBlur={() => {
+                    setPasswordFocused(false);
+                    if (blurValidationSuppressedRef.current || isSubmitting) {
+                      return;
+                    }
+                    validatePasswordField();
+                  }}
+                  onPointerDown={() => setPasswordEditable(true)}
+                  placeholder=""
+                  readOnly={!passwordEditable}
+                  aria-invalid={Boolean(passwordError)}
+                  aria-describedby={passwordError ? 'auth-password-error' : undefined}
+                  onKeyDown={handlePasswordEnterSubmit}
+                  className="w-full border-none p-0 pr-10 text-[0.98rem] leading-none text-[#151922] outline-none sm:text-[1rem]"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-0 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-[#ebedf2] text-[#8f96a4]"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                >
+                  {showPassword ? (
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5">
+                      <path
+                        d="M3.5 3.5 20.5 20.5M9.9 9.9A3 3 0 0 0 14.1 14.1M6.1 6.1A15.9 15.9 0 0 0 2.8 12c2.2 4 5.6 6 9.2 6 1.7 0 3.2-.4 4.6-1.2M10.5 6.1c.5-.1 1-.1 1.5-.1 3.6 0 7 2 9.2 6-.7 1.3-1.4 2.4-2.3 3.3"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  ) : (
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5">
+                      <path
+                        d="M2.8 12c2.2-4 5.6-6 9.2-6s7 2 9.2 6c-2.2 4-5.6 6-9.2 6s-7-2-9.2-6Z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="2.8"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                      />
+                    </svg>
+                  )}
+                </button>
+              </span>
+            </label>
+          </div>
+          <div className="min-h-[24px]">
+            {passwordError ? (
+              <p
+                id="auth-password-error"
+                className="mt-2 text-[0.86rem] leading-[1.2] text-[#cd3f3f]"
               >
-                {showPassword ? (
-                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5">
-                    <path
-                      d="M3.5 3.5 20.5 20.5M9.9 9.9A3 3 0 0 0 14.1 14.1M6.1 6.1A15.9 15.9 0 0 0 2.8 12c2.2 4 5.6 6 9.2 6 1.7 0 3.2-.4 4.6-1.2M10.5 6.1c.5-.1 1-.1 1.5-.1 3.6 0 7 2 9.2 6-.7 1.3-1.4 2.4-2.3 3.3"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                ) : (
-                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5">
-                    <path
-                      d="M2.8 12c2.2-4 5.6-6 9.2-6s7 2 9.2 6c-2.2 4-5.6 6-9.2 6s-7-2-9.2-6Z"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="2.8"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                    />
-                  </svg>
-                )}
-              </button>
-            </span>
-          </label>
-        </div>
-        <div className="min-h-[24px]">
-          {passwordError ? (
-            <p
-              id="auth-password-error"
-              className="mt-2 text-[0.86rem] leading-[1.2] text-[#cd3f3f]"
-            >
-              {passwordError}
-            </p>
-          ) : activeTab === 'signup' ? (
-            <p className="mt-2 text-[0.82rem] leading-[1.2] text-[#7e8697]">
-              Use at least 8 characters.
-            </p>
-          ) : null}
-        </div>
+                {passwordError}
+              </p>
+            ) : activeTab === 'signup' ? (
+              <p className="mt-2 text-[0.82rem] leading-[1.2] text-[#7e8697]">
+                Use at least 8 characters.
+              </p>
+            ) : null}
+          </div>
 
-        <LoadingButton
-          type="button"
-          pending={isSubmitting}
-          pendingLabel="Please wait..."
-          spinnerSize="xs"
-          className="mt-3.5 h-[54px] w-full rounded-[14px] bg-[#1f6bff] text-[1rem] leading-none text-white transition hover:bg-[#1c5ddd] disabled:cursor-not-allowed disabled:opacity-70"
-          onClick={handleEmailContinue}
-        >
-          Continue
-        </LoadingButton>
-        {formError ? (
-          <p className="mt-3 text-center text-[0.95rem] leading-[1.3] text-[#c94040]">
-            {formError}
-          </p>
-        ) : null}
+          <LoadingButton
+            type="submit"
+            pending={isSubmitting}
+            pendingLabel="Please wait..."
+            spinnerSize="xs"
+            className="mt-3.5 h-[54px] w-full rounded-[14px] bg-[#1f6bff] text-[1rem] leading-none text-white transition hover:bg-[#1c5ddd] disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            Continue
+          </LoadingButton>
+          {formError ? (
+            <p className="mt-3 text-center text-[0.95rem] leading-[1.3] text-[#c94040]">
+              {formError}
+            </p>
+          ) : null}
+        </form>
 
         <div className="mt-5 flex items-center gap-3">
           <span className="h-px flex-1 bg-[#e5e7ec]" />

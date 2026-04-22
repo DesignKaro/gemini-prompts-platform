@@ -5,6 +5,7 @@ import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import type { JWT } from 'next-auth/jwt';
 import { NextResponse } from 'next/server';
+import { logoutApiSession } from './lib/utils/auth-api';
 import { hasDashboardAccess } from './lib/utils/permissions';
 import { resolveApiBaseUrls } from './lib/utils/api-base-url';
 
@@ -18,6 +19,7 @@ type ApiUser = {
   focusTags: string[] | null;
   avatarUrl: string | null;
   avatarUpdatedAt: string | null;
+  hasPassword: boolean;
   role: 'ADMIN' | 'EDITOR' | 'MODERATOR' | 'USER' | 'SUPERADMIN';
   plan: 'FREE' | 'PREMIUM';
   permissions?: string[];
@@ -41,6 +43,7 @@ type AuthExtendedUser = {
   bio?: string | null;
   focusTags?: string[] | null;
   avatarUpdatedAt?: string | null;
+  hasPassword?: boolean;
   role: ApiUser['role'];
   plan: ApiUser['plan'];
   apiAccessToken: string;
@@ -249,6 +252,7 @@ function mergeTokenFromApiResponse(token: JWT, auth: ApiAuthResponse): JWT {
   token.bio = auth.user.bio;
   token.focusTags = auth.user.focusTags ?? undefined;
   token.avatarUpdatedAt = auth.user.avatarUpdatedAt ?? undefined;
+  token.hasPassword = Boolean(auth.user.hasPassword);
   token.apiAccessToken = auth.accessToken;
   token.apiAccessTokenExpiresAt = auth.accessTokenExpiresAt;
   token.apiRefreshToken = auth.refreshToken;
@@ -326,6 +330,7 @@ const authConfig: NextAuthConfig = {
             bio: auth.user.bio,
             focusTags: auth.user.focusTags ?? undefined,
             avatarUpdatedAt: auth.user.avatarUpdatedAt ?? undefined,
+            hasPassword: auth.user.hasPassword,
             role: auth.user.role,
             plan: auth.user.plan,
             apiAccessToken: auth.accessToken,
@@ -380,6 +385,24 @@ const authConfig: NextAuthConfig = {
       },
     }),
   ],
+  events: {
+    async signOut(message) {
+      if (!('token' in message)) {
+        return;
+      }
+
+      const refreshToken = message.token?.apiRefreshToken;
+      if (!isNonEmptyString(refreshToken)) {
+        return;
+      }
+
+      try {
+        await logoutApiSession(refreshToken);
+      } catch (error) {
+        console.error('[auth] API logout failed:', error);
+      }
+    },
+  },
   callbacks: {
     authorized({ request, auth }) {
       if (!request.nextUrl.pathname.startsWith('/dashboard')) {
@@ -413,6 +436,7 @@ const authConfig: NextAuthConfig = {
             bio: (user as AuthExtendedUser).bio ?? null,
             focusTags: (user as AuthExtendedUser).focusTags ?? null,
             avatarUpdatedAt: (user as AuthExtendedUser).avatarUpdatedAt ?? null,
+            hasPassword: Boolean((user as AuthExtendedUser).hasPassword),
             role: (user as AuthExtendedUser).role,
             plan: (user as AuthExtendedUser).plan,
           },
@@ -557,6 +581,7 @@ const authConfig: NextAuthConfig = {
         session.user.focusTags = Array.isArray(token.focusTags) ? token.focusTags : null;
         session.user.avatarUpdatedAt = (token.avatarUpdatedAt as string | null) ?? null;
         session.user.handle = token.handle ?? null;
+        session.user.hasPassword = Boolean(token.hasPassword);
       }
       if (isNonEmptyString(token.apiAccessToken)) {
         session.apiAccessToken = token.apiAccessToken;

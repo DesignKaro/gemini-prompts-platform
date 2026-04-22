@@ -16,6 +16,7 @@ import { ActionError } from '../../components/dashboard/action-error';
 import { bulkActionMessage, runBulkAction } from '../../components/dashboard/bulk-action';
 import { InlineSpinner } from '../../components/ui/inline-spinner';
 import { LoadingButton } from '../../components/ui/loading-button';
+import { getFileStem } from '../../../lib/utils/file-name';
 
 type Category = {
   id: string;
@@ -283,9 +284,10 @@ export default function CategoriesPage() {
     setLoadError(null);
 
     try {
+      const fileTitle = getFileStem(file.name) || file.name;
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('title', file.name);
+      formData.append('title', fileTitle);
 
       const created = await request<{
         id: string;
@@ -300,7 +302,7 @@ export default function CategoriesPage() {
 
       const uploadedItem = {
         id: created.id,
-        title: created.title ?? file.name,
+        title: created.title ?? fileTitle,
         url: created.url,
       };
 

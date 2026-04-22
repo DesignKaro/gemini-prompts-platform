@@ -9,6 +9,8 @@ type SessionWithAuthError = {
   authError?: string;
 };
 
+const SESSION_EXPIRY_CHECK_INTERVAL_MS = 60_000;
+
 function SessionExpiryGuard() {
   const isRedirectingRef = useRef(false);
   const checkInFlightRef = useRef(false);
@@ -19,6 +21,7 @@ function SessionExpiryGuard() {
 
     const checkSessionExpiry = async () => {
       if (!isActive || isRedirectingRef.current || checkInFlightRef.current) return;
+      if (document.visibilityState !== 'visible' || !navigator.onLine) return;
 
       checkInFlightRef.current = true;
       try {
@@ -52,8 +55,9 @@ function SessionExpiryGuard() {
     void checkSessionExpiry();
     intervalRef.current = window.setInterval(() => {
       void checkSessionExpiry();
-    }, 3000);
+    }, SESSION_EXPIRY_CHECK_INTERVAL_MS);
     window.addEventListener('focus', onWindowVisible);
+    window.addEventListener('online', onWindowVisible);
     document.addEventListener('visibilitychange', onWindowVisible);
 
     return () => {
@@ -63,6 +67,7 @@ function SessionExpiryGuard() {
         intervalRef.current = null;
       }
       window.removeEventListener('focus', onWindowVisible);
+      window.removeEventListener('online', onWindowVisible);
       document.removeEventListener('visibilitychange', onWindowVisible);
     };
   }, []);

@@ -49,26 +49,26 @@ export class SeoController {
   }
 
   @Get()
-  @Permissions('roles:manage')
+  @Permissions('roles:read')
   getSettings() {
     return this.seoSettingsService.getSettings();
   }
 
   @Patch()
-  @Permissions('roles:manage')
+  @Permissions('roles:read')
   updateSettings(@Body() body: UpdateSeoSettingsDto) {
     return this.seoSettingsService.updateSettings(body);
   }
 
   @Get('integrations')
-  @Permissions('roles:manage')
+  @Permissions('roles:read')
   getIntegrations(@CurrentUser() user: AuthUser, @Query() query: SeoIntegrationsScopeQueryDto) {
     this.assertSuperadmin(user);
     return this.seoIntegrationsService.getSettings(query.scope);
   }
 
   @Patch('integrations')
-  @Permissions('roles:manage')
+  @Permissions('roles:read')
   updateIntegrations(
     @CurrentUser() user: AuthUser,
     @Query() query: SeoIntegrationsScopeQueryDto,
@@ -78,8 +78,24 @@ export class SeoController {
     return this.seoIntegrationsService.updateSettings(query.scope, body, user.sub);
   }
 
+  @Get('custom-code')
+  @Permissions('roles:read')
+  getCustomCode(@Query() query: SeoIntegrationsScopeQueryDto) {
+    return this.seoIntegrationsService.getSettings(query.scope);
+  }
+
+  @Patch('custom-code')
+  @Permissions('roles:read')
+  updateCustomCode(
+    @CurrentUser() user: AuthUser,
+    @Query() query: SeoIntegrationsScopeQueryDto,
+    @Body() body: UpdateSeoIntegrationsDto,
+  ) {
+    return this.seoIntegrationsService.updateSettings(query.scope, body, user.sub);
+  }
+
   @Get('redirects')
-  @Permissions('roles:manage')
+  @Permissions('roles:read')
   listRedirects(@Query() query: ListRedirectRulesQueryDto) {
     return this.redirectRulesService.list({
       skip: query.skip,
@@ -89,19 +105,19 @@ export class SeoController {
   }
 
   @Post('redirects')
-  @Permissions('roles:manage')
+  @Permissions('roles:read')
   createRedirect(@Body() body: CreateRedirectRuleDto) {
     return this.redirectRulesService.create(body);
   }
 
   @Patch('redirects/:id')
-  @Permissions('roles:manage')
+  @Permissions('roles:read')
   updateRedirect(@Param() params: IdParamDto, @Body() body: UpdateRedirectRuleDto) {
     return this.redirectRulesService.update(params.id, body);
   }
 
   @Delete('redirects/:id')
-  @Permissions('roles:manage')
+  @Permissions('roles:read')
   removeRedirect(@Param() params: IdParamDto) {
     return this.redirectRulesService.remove(params.id);
   }

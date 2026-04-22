@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRef } from 'react';
 import { AuthorAvatar } from '../components/author-avatar';
+import { ProgressiveImage } from '../components/progressive-image';
 
 type RelatedPost = {
   id: string;
@@ -104,12 +105,14 @@ export default function CategoryPostsSlider({ posts }: CategoryPostsSliderProps)
             data-recent-card
             className="relative w-[320px] shrink-0 snap-start overflow-hidden rounded-[22px] border border-[#d8dce2] bg-white sm:w-[360px]"
           >
-            <div
-              role="img"
-              aria-label={post.title}
-              className="relative aspect-video w-full bg-cover bg-center"
-              style={{ backgroundImage: `url(${post.image})` }}
-            >
+            <div className="relative aspect-video w-full overflow-hidden">
+              <ProgressiveImage
+                src={post.image}
+                alt={post.title}
+                fill
+                sizes="(max-width: 640px) 320px, 360px"
+                className="object-cover"
+              />
               <span className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white/10 text-white backdrop-blur-sm">
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
                   <path

@@ -13,6 +13,7 @@ declare module 'next-auth' {
     bio?: string | null;
     focusTags?: string[] | null;
     avatarUpdatedAt?: string | null;
+    hasPassword?: boolean;
     apiAccessToken?: string;
     apiAccessTokenExpiresAt?: string;
     apiRefreshToken?: string;
@@ -30,6 +31,7 @@ declare module 'next-auth' {
       bio?: string | null;
       focusTags?: string[] | null;
       avatarUpdatedAt?: string | null;
+      hasPassword?: boolean;
       permissions?: string[];
       roleNames?: string[];
     } & DefaultSession['user'];
@@ -48,6 +50,7 @@ declare module 'next-auth/jwt' {
     profileTitle?: string | null;
     bio?: string | null;
     focusTags?: string[] | null;
+    hasPassword?: boolean;
     apiAccessToken?: string;
     apiAccessTokenExpiresAt?: string;
     apiRefreshToken?: string;

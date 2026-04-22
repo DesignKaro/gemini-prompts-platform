@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { MdDeleteOutline } from 'react-icons/md';
 import { ActionError } from '../../../../app/components/dashboard/action-error';
 import { useAdminApi } from '../../../../app/components/dashboard/use-admin-api';
 import { buildNewsletterSubmissionsQuery } from '../api';
@@ -9,6 +10,43 @@ import { DEFAULT_PAGE_SIZE, DEFAULT_PAGE_STATE } from '../state';
 import type { DashboardPageState, NewsletterSubmissionsResponse } from '../types';
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
+const DATE_RANGE_OPTIONS = [
+  { label: 'All time', value: 'all' },
+  { label: 'Today', value: 'today' },
+  { label: 'Yesterday', value: 'yesterday' },
+  { label: 'This week', value: 'this-week' },
+  { label: 'This month', value: 'this-month' },
+] as const;
+
+type DateRangeFilter = (typeof DATE_RANGE_OPTIONS)[number]['value'];
+
+function getDateRangeBounds(range: DateRangeFilter) {
+  const now = new Date();
+  const startOfDay = new Date(now);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(now);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  if (range === 'today') return { from: startOfDay.toISOString(), to: endOfDay.toISOString() };
+  if (range === 'yesterday') {
+    const start = new Date(startOfDay);
+    start.setDate(start.getDate() - 1);
+    const end = new Date(endOfDay);
+    end.setDate(end.getDate() - 1);
+    return { from: start.toISOString(), to: end.toISOString() };
+  }
+  if (range === 'this-week') {
+    const start = new Date(startOfDay);
+    start.setDate(start.getDate() - start.getDay());
+    return { from: start.toISOString(), to: endOfDay.toISOString() };
+  }
+  if (range === 'this-month') {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    start.setHours(0, 0, 0, 0);
+    return { from: start.toISOString(), to: endOfDay.toISOString() };
+  }
+  return { from: '', to: '' };
+}
 
 export function NewsletterSubmissionsScreen() {
   const { request: adminRequest } = useAdminApi();
@@ -18,12 +56,14 @@ export function NewsletterSubmissionsScreen() {
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
+  const [dateRangeFilter, setDateRangeFilter] = useState<DateRangeFilter>('all');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [sort, setSort] = useState<'recent' | 'oldest'>('recent');
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [pageIndex, setPageIndex] = useState(0);
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -38,13 +78,14 @@ export function NewsletterSubmissionsScreen() {
       setPageState((current) => (current === 'loading' ? 'loading' : 'saving'));
       setError(null);
       const skip = pageIndex * pageSize;
+      const dateBounds = getDateRangeBounds(dateRangeFilter);
       const query = buildNewsletterSubmissionsQuery({
         skip,
         take: pageSize,
         search: debouncedSearch,
         source: sourceFilter,
-        from: fromDate,
-        to: toDate,
+        from: fromDate || dateBounds.from,
+        to: toDate || dateBounds.to,
         sort,
       });
 
@@ -70,7 +111,17 @@ export function NewsletterSubmissionsScreen() {
         setPageState('error');
       }
     },
-    [adminRequest, debouncedSearch, fromDate, pageIndex, pageSize, sort, sourceFilter, toDate],
+    [
+      adminRequest,
+      debouncedSearch,
+      dateRangeFilter,
+      fromDate,
+      pageIndex,
+      pageSize,
+      sort,
+      sourceFilter,
+      toDate,
+    ],
   );
 
   useEffect(() => {
@@ -86,6 +137,27 @@ export function NewsletterSubmissionsScreen() {
   const canNext = pageIndex + 1 < totalPages;
 
   const sourceOptions = useMemo(() => response?.sources ?? [], [response?.sources]);
+
+  const deleteSubmission = async (id: string) => {
+    if (!window.confirm('Delete this newsletter submission? This cannot be undone.')) {
+      return;
+    }
+
+    setDeletingId(id);
+    setError(null);
+
+    try {
+      await adminRequest(`/api/admin/newsletter/submissions/${id}`, {
+        method: 'DELETE',
+        actionName: 'admin.newsletter.submissions.delete',
+      });
+      setRefreshNonce((value) => value + 1);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Unable to delete submission.');
+    } finally {
+      setDeletingId((current) => (current === id ? null : current));
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -132,6 +204,24 @@ export function NewsletterSubmissionsScreen() {
               {sourceOptions.map((source) => (
                 <option key={source} value={source}>
                   {source}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1 text-[0.74rem] font-semibold uppercase tracking-wide text-gray-500">
+            Date range
+            <select
+              value={dateRangeFilter}
+              onChange={(event) => {
+                setDateRangeFilter(event.target.value as DateRangeFilter);
+                setPageIndex(0);
+              }}
+              className="h-10 rounded-xl border border-[#e3e8f3] bg-white px-3 text-[0.86rem] font-medium text-[#0f1116] outline-none transition-colors focus:border-[#c9d5f0]"
+            >
+              {DATE_RANGE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>
@@ -228,6 +318,7 @@ export function NewsletterSubmissionsScreen() {
                   <th className="px-4 py-3 font-semibold">Source</th>
                   <th className="px-4 py-3 font-semibold">Page</th>
                   <th className="px-4 py-3 font-semibold">Submitted At</th>
+                  <th className="px-4 py-3 font-semibold">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#edf1f8]">
@@ -242,6 +333,17 @@ export function NewsletterSubmissionsScreen() {
                     <td className="px-4 py-3 text-[#4a5363]">{item.pagePath || '—'}</td>
                     <td className="px-4 py-3 text-[#4a5363]">
                       {formatSubmissionTimestamp(item.createdAt)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={() => void deleteSubmission(item.id)}
+                        disabled={deletingId === item.id}
+                        className="inline-flex items-center gap-2 rounded-full border border-[#f1d6d6] bg-white px-3 py-1.5 text-[0.78rem] font-medium text-[#a73737] transition-colors hover:bg-[#fff4f4] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <MdDeleteOutline size={16} />
+                        {deletingId === item.id ? 'Deleting...' : 'Delete'}
+                      </button>
                     </td>
                   </tr>
                 ))}

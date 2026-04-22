@@ -10,6 +10,7 @@ import { createPortal } from 'react-dom';
 import { useAdminApi } from '../../../components/dashboard/use-admin-api';
 import { ActionError } from '../../../components/dashboard/action-error';
 import { LoadingButton } from '../../../components/ui/loading-button';
+import { getFileStem } from '../../../../lib/utils/file-name';
 
 const RichTextEditor = dynamic(() => import('../../../components/rich-text-editor'), {
   ssr: false,
@@ -936,9 +937,10 @@ export default function CreateContentPage() {
       throw new Error('Image must be 5MB or smaller.');
     }
 
+    const fileTitle = getFileStem(file.name) || file.name;
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('title', file.name);
+    formData.append('title', fileTitle);
 
     const uploaded = await request<{ id?: string; url?: string | null }>('/api/admin/media/upload', {
       method: 'POST',
@@ -1617,7 +1619,11 @@ export default function CreateContentPage() {
             <input
               type="text"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                if (isEditHydrating) return;
+                setTitle(e.target.value);
+              }}
+              disabled={isEditHydrating}
               placeholder="Write a title..."
               className={`w-full border-none bg-transparent text-[1.6rem] font-medium text-[#0f1116] outline-none placeholder:text-[#b5bac6] sm:text-[2.4rem] ${
                 validationError && !title.trim() ? 'placeholder:text-red-300' : ''

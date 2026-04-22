@@ -5,6 +5,8 @@ import { SeoScreen } from '../../features/dashboard/seo/components/SeoScreen';
 
 const requestMock = vi.fn();
 let sessionEmail = 'argro.official@gmail.com';
+let sessionRole: 'SUPERADMIN' | 'ADMIN' = 'SUPERADMIN';
+let sessionPermissions: string[] = ['roles:read'];
 
 vi.mock('../../app/components/dashboard/use-admin-api', () => ({
   useAdminApi: () => ({
@@ -17,6 +19,8 @@ vi.mock('next-auth/react', () => ({
     data: {
       user: {
         email: sessionEmail,
+        role: sessionRole,
+        permissions: sessionPermissions,
       },
     },
   }),
@@ -25,8 +29,10 @@ vi.mock('next-auth/react', () => ({
 describe('SeoScreen integrations tab', () => {
   beforeEach(() => {
     requestMock.mockReset();
+    sessionRole = 'SUPERADMIN';
+    sessionPermissions = ['roles:read'];
     requestMock.mockImplementation(async (path: string) => {
-      if (path.startsWith('/api/admin/seo/integrations')) {
+      if (path.startsWith('/api/admin/seo/integrations') || path.startsWith('/api/admin/seo/custom-code')) {
         return {
           scope: 'production',
           customHeadScriptUrls: [],
@@ -51,6 +57,8 @@ describe('SeoScreen integrations tab', () => {
 
   it('hides integrations tab for non-superadmin users', async () => {
     sessionEmail = 'admin@example.com';
+    sessionRole = 'ADMIN';
+    sessionPermissions = ['roles:read'];
 
     render(<SeoScreen section="overview" />);
 
@@ -63,6 +71,8 @@ describe('SeoScreen integrations tab', () => {
 
   it('loads integration settings for selected scope when superadmin', async () => {
     sessionEmail = 'argro.official@gmail.com';
+    sessionRole = 'SUPERADMIN';
+    sessionPermissions = ['roles:read'];
 
     render(<SeoScreen section="integrations" />);
 
@@ -81,6 +91,34 @@ describe('SeoScreen integrations tab', () => {
       expect(paths.some((path) => path.includes('/api/admin/seo/integrations?scope=staging'))).toBe(
         true,
       );
+    });
+  });
+
+  it('loads custom code settings for the custom code tab when admin', async () => {
+    sessionEmail = 'admin@example.com';
+    sessionRole = 'ADMIN';
+    sessionPermissions = ['roles:read'];
+
+    render(<SeoScreen section="custom-code" />);
+
+    await waitFor(() => {
+      const paths = requestMock.mock.calls.map((call) => String(call[0] ?? ''));
+      expect(paths.some((path) => path.includes('/api/admin/seo/custom-code?scope=production'))).toBe(
+        true,
+      );
+    });
+  });
+
+  it('loads overview settings only once on initial render', async () => {
+    sessionEmail = 'argro.official@gmail.com';
+    sessionRole = 'SUPERADMIN';
+    sessionPermissions = ['roles:read'];
+
+    render(<SeoScreen section="overview" />);
+
+    await waitFor(() => {
+      const paths = requestMock.mock.calls.map((call) => String(call[0] ?? ''));
+      expect(paths.filter((path) => path === '/api/admin/seo')).toHaveLength(1);
     });
   });
 });

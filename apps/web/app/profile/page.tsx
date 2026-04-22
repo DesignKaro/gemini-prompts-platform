@@ -134,8 +134,12 @@ function ProfilePageContent() {
     focusTags: [] as string[],
     avatarUrl: '',
     avatarUpdatedAt: null as string | null,
+    hasPassword: false,
   });
   const [focusTagsInput, setFocusTagsInput] = useState('');
+  const [previousPassword, setPreviousPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const [profileStats, setProfileStats] = useState({
     promptCount: 0,
@@ -231,6 +235,7 @@ function ProfilePageContent() {
             focusTags: string[] | null;
             avatarUrl: string | null;
             avatarUpdatedAt: string | null;
+            hasPassword: boolean;
           };
           stats: {
             promptCount: number;
@@ -269,6 +274,7 @@ function ProfilePageContent() {
             focusTags: nextFocusTags,
             avatarUrl: payload.user.avatarUrl ?? '',
             avatarUpdatedAt: payload.user.avatarUpdatedAt ?? null,
+            hasPassword: Boolean(payload.user.hasPassword),
           });
         }
 
@@ -429,6 +435,9 @@ function ProfilePageContent() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const closeEditModal = () => {
     setAvatarPreview(null);
+    setPreviousPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
     setIsEditOpen(false);
   };
 
@@ -1107,7 +1116,7 @@ function ProfilePageContent() {
 
       {isEditOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-4 backdrop-blur-[2px] sm:items-center sm:py-6"
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0f141fcc] px-4 py-6"
           onClick={closeEditModal}
           role="dialog"
           aria-modal="true"
@@ -1158,6 +1167,58 @@ function ProfilePageContent() {
                   );
                   return;
                 }
+                const hasPreviousPassword = previousPassword.length > 0;
+                const hasNewPassword = newPassword.length > 0;
+                const hasConfirmPassword = confirmPassword.length > 0;
+                const hasAnyPasswordInput =
+                  hasPreviousPassword || hasNewPassword || hasConfirmPassword;
+
+                if (hasAnyPasswordInput) {
+                  if (profile.hasPassword) {
+                    if (!hasPreviousPassword) {
+                      setProfileSaveError('Previous password is required to set a new password.');
+                      return;
+                    }
+                    if (!hasNewPassword) {
+                      setProfileSaveError('New password is required.');
+                      return;
+                    }
+                  } else {
+                    if (!hasNewPassword) {
+                      setProfileSaveError('New password is required.');
+                      return;
+                    }
+                    if (!hasConfirmPassword) {
+                      setProfileSaveError('Confirm password is required.');
+                      return;
+                    }
+                    if (newPassword !== confirmPassword) {
+                      setProfileSaveError('Confirm password must match new password.');
+                      return;
+                    }
+                  }
+
+                  if (newPassword.length < 8 || newPassword.length > 128) {
+                    setProfileSaveError('Password must be between 8 and 128 characters long.');
+                    return;
+                  }
+                }
+
+                const updatePayload = {
+                  name: profile.name,
+                  handle: profile.handle,
+                  profileTitle: profile.profileTitle,
+                  bio: profile.bio,
+                  focusTags: focusTagsInput
+                    .split(',')
+                    .map((tag) => tag.trim())
+                    .filter((tag) => tag.length > 0),
+                  avatarUrl: avatarPreview || profile.avatarUrl || null,
+                  ...(hasPreviousPassword ? { previousPassword } : {}),
+                  ...(hasNewPassword ? { newPassword } : {}),
+                  ...(hasConfirmPassword ? { confirmPassword } : {}),
+                };
+
                 setIsSaving(true);
                 setProfileSaveError(null);
                 try {
@@ -1167,17 +1228,7 @@ function ProfilePageContent() {
                       'content-type': 'application/json',
                       Authorization: `Bearer ${accessToken}`,
                     },
-                    body: JSON.stringify({
-                      name: profile.name,
-                      handle: profile.handle,
-                      profileTitle: profile.profileTitle,
-                      bio: profile.bio,
-                      focusTags: focusTagsInput
-                        .split(',')
-                        .map((tag) => tag.trim())
-                        .filter((tag) => tag.length > 0),
-                      avatarUrl: avatarPreview || profile.avatarUrl || null,
-                    }),
+                    body: JSON.stringify(updatePayload),
                   });
                   if (response.status === 401 && refreshSession) {
                     const refreshed = await refreshSessionOnce(refreshSession);
@@ -1189,17 +1240,7 @@ function ProfilePageContent() {
                           'content-type': 'application/json',
                           Authorization: `Bearer ${retryToken}`,
                         },
-                        body: JSON.stringify({
-                          name: profile.name,
-                          handle: profile.handle,
-                          profileTitle: profile.profileTitle,
-                          bio: profile.bio,
-                          focusTags: focusTagsInput
-                            .split(',')
-                            .map((tag) => tag.trim())
-                            .filter((tag) => tag.length > 0),
-                          avatarUrl: avatarPreview || profile.avatarUrl || null,
-                        }),
+                        body: JSON.stringify(updatePayload),
                       });
                     }
                   }
@@ -1216,9 +1257,13 @@ function ProfilePageContent() {
                     focusTags: nextFocusTags,
                     avatarUrl: payload.user.avatarUrl ?? '',
                     avatarUpdatedAt: payload.user.avatarUpdatedAt ?? null,
+                    hasPassword: Boolean(payload.user.hasPassword),
                   });
                   setFocusTagsInput(nextFocusTags.join(', '));
                   setAvatarPreview(null);
+                  setPreviousPassword('');
+                  setNewPassword('');
+                  setConfirmPassword('');
                   setIsEditOpen(false);
                   window.dispatchEvent(new Event('profile-updated'));
                 } catch (error) {
@@ -1351,6 +1396,61 @@ function ProfilePageContent() {
                 />
                 <p className="mt-2 text-[0.78rem] text-[#9aa1ae]">Separate tags with commas.</p>
               </label>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                {profile.hasPassword ? (
+                  <>
+                    <label className="block">
+                      <span className="text-[0.85rem] text-[#7a8292]">Previous password</span>
+                      <input
+                        type="password"
+                        value={previousPassword}
+                        onChange={(event) => setPreviousPassword(event.target.value)}
+                        autoComplete="current-password"
+                        className="mt-2 w-full rounded-[14px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem] text-[#0f1116] outline-none focus:border-[#0f1116]"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-[0.85rem] text-[#7a8292]">New password</span>
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(event) => setNewPassword(event.target.value)}
+                        autoComplete="new-password"
+                        className="mt-2 w-full rounded-[14px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem] text-[#0f1116] outline-none focus:border-[#0f1116]"
+                      />
+                    </label>
+                  </>
+                ) : (
+                  <>
+                    <label className="block">
+                      <span className="text-[0.85rem] text-[#7a8292]">New password</span>
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(event) => setNewPassword(event.target.value)}
+                        autoComplete="new-password"
+                        className="mt-2 w-full rounded-[14px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem] text-[#0f1116] outline-none focus:border-[#0f1116]"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-[0.85rem] text-[#7a8292]">Confirm password</span>
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(event) => setConfirmPassword(event.target.value)}
+                        autoComplete="new-password"
+                        className="mt-2 w-full rounded-[14px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem] text-[#0f1116] outline-none focus:border-[#0f1116]"
+                      />
+                    </label>
+                  </>
+                )}
+              </div>
+              <p className="text-[0.78rem] text-[#9aa1ae]">
+                {profile.hasPassword
+                  ? 'Leave password fields empty if you do not want to change your password.'
+                  : 'Set a password if you want email/password login in addition to Google.'}
+              </p>
 
               {profileSaveError ? (
                 <p className="text-[0.85rem] text-[#d2603a]">{profileSaveError}</p>

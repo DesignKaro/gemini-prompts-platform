@@ -44,6 +44,11 @@ export class UpdateSeoIntegrationsDto {
   @IsOptional()
   @IsString()
   @MaxLength(8000)
+  customHeadInlineStyle?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(8000)
   customBodyStartInlineScript?: string | null;
 
   @IsOptional()

@@ -1,7 +1,9 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { ActionError } from '@/app/components/dashboard/action-error';
+import { getInitial, normalizeAvatarUrl } from '@/lib/utils/avatar';
 
 export type ProfileFormState = {
   name: string;
@@ -11,6 +13,7 @@ export type ProfileFormState = {
   focusTags: string[];
   avatarUrl: string;
   avatarUpdatedAt: string | null;
+  hasPassword: boolean;
 };
 
 type ProfileSettingsModalProps = {
@@ -32,6 +35,12 @@ type ProfileSettingsModalProps = {
   onHandleChange: (value: string) => void;
   onFocusTagsInputChange: (value: string) => void;
   onBioChange: (value: string) => void;
+  previousPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+  onPreviousPasswordChange: (value: string) => void;
+  onNewPasswordChange: (value: string) => void;
+  onConfirmPasswordChange: (value: string) => void;
 };
 
 export function ProfileSettingsModal({
@@ -53,13 +62,32 @@ export function ProfileSettingsModal({
   onHandleChange,
   onFocusTagsInputChange,
   onBioChange,
+  previousPassword,
+  newPassword,
+  confirmPassword,
+  onPreviousPasswordChange,
+  onNewPasswordChange,
+  onConfirmPasswordChange,
 }: ProfileSettingsModalProps) {
+  const avatarSrc = useMemo(
+    () => normalizeAvatarUrl(avatarPreview || profileForm.avatarUrl || null),
+    [avatarPreview, profileForm.avatarUrl],
+  );
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
+
+  useEffect(() => {
+    setAvatarLoadError(false);
+  }, [avatarSrc]);
+
+  const hasPassword = profileForm.hasPassword;
+  const showPasswordSetFlow = !hasPassword;
+
   if (!isOpen) {
     return null;
   }
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/45 px-2 py-2 sm:px-4 sm:py-6">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0f141fcc] px-4 py-6">
       <div className="no-scrollbar w-full max-w-[560px] max-h-[80vh] overflow-y-auto rounded-[18px] bg-white p-4 shadow-2xl sm:rounded-[24px] sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -93,15 +121,18 @@ export function ProfileSettingsModal({
               <span className="text-[0.8rem] text-[#7a8292]">Profile photo</span>
               <div className="mt-2 flex items-start gap-3 sm:flex-col sm:gap-3">
                 <div className="h-16 w-16 overflow-hidden rounded-full bg-[#f0f2f7]">
-                  {avatarPreview || profileForm.avatarUrl ? (
+                  {avatarSrc && !avatarLoadError ? (
                     <img
-                      src={avatarPreview || profileForm.avatarUrl}
+                      src={avatarSrc}
                       alt="Profile"
                       className="h-full w-full object-cover"
+                      onError={() => setAvatarLoadError(true)}
+                      referrerPolicy="no-referrer"
+                      decoding="async"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-[0.9rem] font-medium text-[#9aa3b2]">
-                      {displayName.slice(0, 1).toUpperCase()}
+                      {getInitial(displayName)}
                     </div>
                   )}
                 </div>
@@ -180,6 +211,61 @@ export function ProfileSettingsModal({
               className="mt-1.5 w-full resize-none rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116] sm:mt-2 sm:rows-3"
             />
           </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {showPasswordSetFlow ? (
+              <>
+                <label className="block">
+                  <span className="text-[0.8rem] text-[#7a8292]">New password</span>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(event) => onNewPasswordChange(event.target.value)}
+                    autoComplete="new-password"
+                    className="mt-1.5 w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116] sm:mt-2"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-[0.8rem] text-[#7a8292]">Confirm password</span>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(event) => onConfirmPasswordChange(event.target.value)}
+                    autoComplete="new-password"
+                    className="mt-1.5 w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116] sm:mt-2"
+                  />
+                </label>
+              </>
+            ) : (
+              <>
+                <label className="block">
+                  <span className="text-[0.8rem] text-[#7a8292]">Previous password</span>
+                  <input
+                    type="password"
+                    value={previousPassword}
+                    onChange={(event) => onPreviousPasswordChange(event.target.value)}
+                    autoComplete="current-password"
+                    className="mt-1.5 w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116] sm:mt-2"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-[0.8rem] text-[#7a8292]">New password</span>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(event) => onNewPasswordChange(event.target.value)}
+                    autoComplete="new-password"
+                    className="mt-1.5 w-full rounded-[12px] border border-[#e1e5ee] px-3 py-2 text-[0.9rem] text-[#0f1116] sm:mt-2"
+                  />
+                </label>
+              </>
+            )}
+          </div>
+          <p className="text-[0.72rem] text-[#9aa3b2]">
+            {showPasswordSetFlow
+              ? 'Set a password if you want email/password login in addition to Google.'
+              : 'Leave password fields empty if you do not want to change your password.'}
+          </p>
 
           <div className="flex items-center justify-end gap-2 border-t border-[#eef1f6] pt-3">
             <button

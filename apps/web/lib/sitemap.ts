@@ -99,6 +99,15 @@ function getLatestLastModified(entries: SitemapUrlEntry[]) {
   }, undefined);
 }
 
+function normalizeCustomSitemapXml(value: unknown) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 function xmlEscape(value: string) {
   return value
     .replace(/&/g, '&amp;')
@@ -326,12 +335,12 @@ async function loadSection(
   }
 }
 
-async function loadAllSections() {
-  const settings = await getSeoSettingsFresh();
-  const baseUrl = getBaseUrl(settings);
+async function loadAllSections(settings?: SeoSettings) {
+  const resolvedSettings = settings ?? (await getSeoSettingsFresh());
+  const baseUrl = getBaseUrl(resolvedSettings);
   const keys = SITEMAP_CHILDREN.map((child) => child.key);
-  const sections = await Promise.all(keys.map((key) => loadSection(key, settings, baseUrl)));
-  return { baseUrl, sections };
+  const sections = await Promise.all(keys.map((key) => loadSection(key, resolvedSettings, baseUrl)));
+  return { baseUrl, sections, settings: resolvedSettings };
 }
 
 export async function getSitemapSection(key: SitemapSectionKey): Promise<SitemapSection> {
@@ -340,9 +349,28 @@ export async function getSitemapSection(key: SitemapSectionKey): Promise<Sitemap
   return loadSection(key, settings, baseUrl);
 }
 
-export async function getSitemapIndexSections(): Promise<SitemapSection[]> {
-  const { sections } = await loadAllSections();
+export async function getSitemapIndexSections(settings?: SeoSettings): Promise<SitemapSection[]> {
+  const { sections } = await loadAllSections(settings);
   return sections.filter((section) => section.enabled && section.entries.length > 0);
+}
+
+export function buildSitemapIndexXml(
+  settings: Pick<SeoSettings, 'sitemapCustomXml'> | null | undefined,
+  sections: SitemapSection[],
+) {
+  const customXml = normalizeCustomSitemapXml(settings?.sitemapCustomXml);
+  return customXml ?? renderSitemapIndex(sections);
+}
+
+export async function getSitemapIndexXml(): Promise<string> {
+  const settings = await getSeoSettingsFresh();
+  const customXml = normalizeCustomSitemapXml(settings.sitemapCustomXml);
+  if (customXml) {
+    return customXml;
+  }
+
+  const sections = await getSitemapIndexSections(settings);
+  return renderSitemapIndex(sections);
 }
 
 export function renderSitemapUrlSet(entries: SitemapUrlEntry[]) {

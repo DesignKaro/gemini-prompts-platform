@@ -8,6 +8,7 @@ import { AuthorAvatar } from '../../components/author-avatar';
 import { ContentViewTracker } from '../../components/content-view-tracker';
 import { ExclusiveAccessCard } from '../../components/exclusive-access-card';
 import { PostCardUI } from '../../components/post-card';
+import { ProgressiveImage } from '../../components/progressive-image';
 import { SeoSchemaScripts } from '../../components/seo-schema-script';
 import { Skeleton } from '../../components/ui/skeleton';
 import {
@@ -272,12 +273,15 @@ async function NewsletterIssuePageContent({ params }: PageProps) {
 
             {post.image ? (
               <div className="mt-10 overflow-hidden rounded-[26px] border border-[#e6e9f2]">
-                <div
-                  role="img"
-                  aria-label={`${post.title} cover`}
-                  className="relative aspect-[16/9] w-full bg-cover bg-center"
-                  style={{ backgroundImage: `url(${post.image})` }}
-                />
+                <div className="relative aspect-[16/9] w-full">
+                  <ProgressiveImage
+                    src={post.image}
+                    alt={`${post.title} cover`}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 70vw"
+                    className="object-cover"
+                  />
+                </div>
               </div>
             ) : null}
 

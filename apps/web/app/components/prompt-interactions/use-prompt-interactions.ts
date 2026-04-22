@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { SessionContext, type SessionContextValue } from 'next-auth/react';
 import { redirectToSignInModal } from '../../../lib/utils/auth-redirect';
 import { refreshSession } from '../../../lib/utils/session';
 import {
@@ -29,6 +29,12 @@ type UsePromptInteractionsOptions = {
 const FALLBACK_STATUS: InteractionState = {
   likedByIp: false,
   savedByUser: false,
+};
+
+const FALLBACK_SESSION_CONTEXT: SessionContextValue = {
+  data: null,
+  status: 'unauthenticated',
+  update: async () => null,
 };
 
 const statusCache = new Map<string, Map<string, InteractionState>>();
@@ -149,7 +155,9 @@ export function usePromptInteractions({
   syncStatus = true,
   syncAnonymousStatus = false,
 }: UsePromptInteractionsOptions) {
-  const { data: session, status: sessionStatus, update } = useSession();
+  const sessionContext = useContext(SessionContext);
+  const { data: session, status: sessionStatus, update } =
+    sessionContext ?? FALLBACK_SESSION_CONTEXT;
   const [likedByIp, setLikedByIp] = useState(false);
   const [savedByUser, setSavedByUser] = useState(false);
   const [statusReady, setStatusReady] = useState(false);

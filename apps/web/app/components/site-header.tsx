@@ -314,7 +314,7 @@ export function SiteHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 px-2 pb-1 pt-1.5 sm:px-4 md:px-6">
+      <header className="sticky top-0 z-[120] isolate px-2 pb-1 pt-1.5 sm:px-4 md:px-6">
         <div className="page-container-wide rounded-full border border-[#e8e8e8] bg-white/72 px-2.5 py-1.5 shadow-[0_10px_30px_rgba(17,17,17,0.04)] backdrop-blur-md sm:rounded-[25px] sm:px-4 md:rounded-[30px] md:px-5">
           <div className="flex min-w-0 items-center justify-between gap-2.5 sm:gap-3 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:items-center lg:gap-4">
             <Link href="/" className="flex shrink-0 items-center lg:justify-self-start">
@@ -610,6 +610,8 @@ export function SiteHeader() {
                     </div>
                   ) : null}
                 </div>
+              ) : status === 'loading' ? (
+                <div className="h-[40px] min-w-0 rounded-full bg-[#f2f5f8] px-3 sm:h-[48px] sm:min-w-[142px] sm:px-5" />
               ) : (
                 <button
                   type="button"

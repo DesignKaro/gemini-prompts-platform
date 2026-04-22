@@ -42,6 +42,7 @@ type PublicUser = {
   focusTags: string[] | null;
   avatarUrl: string | null;
   avatarUpdatedAt: string | null;
+  hasPassword: boolean;
   suspendedAt: string | null;
   role: UserRole;
   plan: MembershipPlan;
@@ -386,11 +387,13 @@ export class AuthService {
         return this.updateUserProfileFromGoogle(tx, existingUserByEmail.id, profile);
       }
 
+      const normalizedAvatar = this.normalizeAvatarUrl(profile.picture);
       const createdUser = await tx.user.create({
         data: {
           email,
           name: this.normalizeName(profile.name),
-          avatarUrl: profile.picture ?? null,
+          avatarUrl: normalizedAvatar,
+          ...(normalizedAvatar ? { avatarUpdatedAt: new Date() } : {}),
           authAccounts: {
             create: {
               provider: AuthProvider.GOOGLE,
@@ -545,6 +548,12 @@ export class AuthService {
         email: true,
         name: true,
         handle: true,
+        passwordCredential: {
+          select: {
+            userId: true,
+            passwordHash: true,
+          },
+        },
       },
     });
 
@@ -562,6 +571,82 @@ export class AuthService {
       normalizedAvatar,
       'avatars',
     );
+    const previousPassword = this.normalizePasswordInput(dto.previousPassword);
+    const nextPassword = this.normalizePasswordInput(dto.newPassword);
+    const confirmPassword = this.normalizePasswordInput(dto.confirmPassword);
+    const hasAnyPasswordInput = Boolean(previousPassword || nextPassword || confirmPassword);
+    const existingPasswordCredential = existingUser.passwordCredential;
+    const userHasPassword = Boolean(existingPasswordCredential);
+
+    if (hasAnyPasswordInput) {
+      if (userHasPassword) {
+        if (!existingPasswordCredential) {
+          throw new BadRequestException('Unable to verify password for this account.');
+        }
+        if (!previousPassword) {
+          throw new BadRequestException('Previous password is required.');
+        }
+        if (!nextPassword) {
+          throw new BadRequestException('New password is required.');
+        }
+        if (nextPassword.length < 8 || nextPassword.length > 128) {
+          throw new BadRequestException('Password must be between 8 and 128 characters long.');
+        }
+
+        const passwordMatches = await verifyPassword(
+          previousPassword,
+          existingPasswordCredential.passwordHash,
+        );
+        if (!passwordMatches) {
+          throw new BadRequestException('Previous password is incorrect.');
+        }
+
+        await this.prisma.passwordCredential.update({
+          where: { userId },
+          data: {
+            passwordHash: await hashPassword(nextPassword),
+          },
+        });
+      } else {
+        if (!nextPassword) {
+          throw new BadRequestException('New password is required.');
+        }
+        if (!confirmPassword) {
+          throw new BadRequestException('Confirm password is required.');
+        }
+        if (nextPassword !== confirmPassword) {
+          throw new BadRequestException('Password confirmation does not match.');
+        }
+        if (nextPassword.length < 8 || nextPassword.length > 128) {
+          throw new BadRequestException('Password must be between 8 and 128 characters long.');
+        }
+
+        await this.prisma.passwordCredential.create({
+          data: {
+            userId,
+            passwordHash: await hashPassword(nextPassword),
+          },
+        });
+        await this.prisma.authAccount.upsert({
+          where: {
+            provider_providerAccountId: {
+              provider: AuthProvider.CREDENTIALS,
+              providerAccountId: existingUser.email,
+            },
+          },
+          update: {
+            email: existingUser.email,
+          },
+          create: {
+            userId,
+            provider: AuthProvider.CREDENTIALS,
+            providerAccountId: existingUser.email,
+            email: existingUser.email,
+          },
+        });
+      }
+    }
+
     let nextHandle: string | undefined;
 
     if (dto.handle !== undefined) {
@@ -1260,6 +1345,13 @@ export class AuthService {
     return next;
   }
 
+  private normalizePasswordInput(value: string | null | undefined): string | undefined {
+    if (typeof value !== 'string') {
+      return undefined;
+    }
+    return value.length > 0 ? value : undefined;
+  }
+
   private normalizeAvatarUrl(value: string | null | undefined): string | null {
     const trimmed = value?.trim();
     if (!trimmed || trimmed === 'null' || trimmed === 'undefined') {
@@ -1435,6 +1527,11 @@ export class AuthService {
     focusTags: true,
     avatarUrl: true,
     avatarUpdatedAt: true,
+    passwordCredential: {
+      select: {
+        userId: true,
+      },
+    },
     suspendedAt: true,
     role: true,
     plan: true,
@@ -1450,6 +1547,7 @@ export class AuthService {
     focusTags: Prisma.JsonValue | null;
     avatarUrl: string | null;
     avatarUpdatedAt: Date | null;
+    passwordCredential?: { userId: string } | null;
     suspendedAt: Date | null;
     role: UserRole;
     plan: MembershipPlan;
@@ -1464,6 +1562,7 @@ export class AuthService {
       focusTags: Array.isArray(user.focusTags) ? (user.focusTags as string[]) : null,
       avatarUrl: user.avatarUrl,
       avatarUpdatedAt: user.avatarUpdatedAt ? user.avatarUpdatedAt.toISOString() : null,
+      hasPassword: Boolean(user.passwordCredential),
       suspendedAt: user.suspendedAt ? user.suspendedAt.toISOString() : null,
       role: user.role,
       plan: user.plan,

@@ -1,4 +1,4 @@
-import { AI_BOT_USER_AGENTS, getBaseUrl, getSeoSettings } from '../../lib/seo';
+import { AI_BOT_USER_AGENTS, getBaseUrl, getSeoSettingsFresh } from '../../lib/seo';
 
 const ROBOTS_CONTENT_TYPE = 'text/plain; charset=utf-8';
 const ROBOTS_CACHE_CONTROL = 'public, max-age=0, s-maxage=300, stale-while-revalidate=600';
@@ -20,7 +20,7 @@ function getHostValue(baseUrl: string) {
   }
 }
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 function sanitizeAdditionalRobotsRules(rules: string[]) {
   return rules
@@ -59,7 +59,18 @@ function hasDirective(rule: string, directive: string) {
 
 export async function GET() {
   try {
-    const settings = await getSeoSettings();
+    const settings = await getSeoSettingsFresh();
+    const customRobotsText = settings.robotsCustomText?.trim();
+    if (customRobotsText) {
+      return new Response(settings.robotsCustomText, {
+        headers: {
+          'Content-Type': ROBOTS_CONTENT_TYPE,
+          'Cache-Control': ROBOTS_CACHE_CONTROL,
+          'X-GP-Robots-Generator': ROBOTS_GENERATOR_HEADER,
+        },
+      });
+    }
+
     const baseUrl = getBaseUrl(settings);
     const lines: string[] = ['User-agent: *'];
 

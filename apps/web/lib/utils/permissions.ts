@@ -24,6 +24,49 @@ const DASHBOARD_PERMISSION_HINTS = [
   'contacts:manage',
 ] as const;
 
+const ADMIN_FALLBACK_PERMISSIONS = [
+  'users:read',
+  'users:manage',
+  'roles:read',
+  'prompts:read',
+  'prompts:manage',
+  'posts:read',
+  'posts:manage',
+  'media:read',
+  'media:manage',
+  'categories:read',
+  'categories:manage',
+  'tags:read',
+  'tags:manage',
+  'comments:read',
+  'comments:moderate',
+  'analytics:read',
+  'activity:read',
+  'contacts:read',
+  'contacts:manage',
+] as const;
+
+const EDITOR_FALLBACK_PERMISSIONS = [
+  'prompts:read',
+  'prompts:manage',
+  'posts:read',
+  'posts:manage',
+  'media:read',
+  'media:manage',
+  'categories:read',
+  'tags:read',
+  'comments:read',
+  'comments:moderate',
+  'analytics:read',
+  'activity:read',
+] as const;
+
+const MODERATOR_FALLBACK_PERMISSIONS = [
+  'comments:read',
+  'comments:moderate',
+  'activity:read',
+] as const;
+
 export function isProtectedSuperadminEmail(email?: string | null): boolean {
   return email?.trim().toLowerCase() === PROTECTED_SUPERADMIN_EMAIL;
 }
@@ -34,6 +77,25 @@ export function isSuperadminSession(session: Session | null | undefined): boolea
 
 function isSystemRoleName(roleName: string): roleName is (typeof SYSTEM_ROLE_NAMES)[number] {
   return SYSTEM_ROLE_NAMES.includes(roleName as (typeof SYSTEM_ROLE_NAMES)[number]);
+}
+
+function getEffectivePermissions(session: Session | null | undefined): string[] {
+  const explicitPermissions = session?.user?.permissions ?? [];
+  if (explicitPermissions.length > 0) {
+    return explicitPermissions;
+  }
+
+  const role = session?.user?.role;
+  if (role === 'ADMIN') {
+    return [...ADMIN_FALLBACK_PERMISSIONS];
+  }
+  if (role === 'EDITOR') {
+    return [...EDITOR_FALLBACK_PERMISSIONS];
+  }
+  if (role === 'MODERATOR') {
+    return [...MODERATOR_FALLBACK_PERMISSIONS];
+  }
+  return [];
 }
 
 export function isStaffSession(session: Session | null | undefined): boolean {
@@ -50,7 +112,7 @@ export function isStaffSession(session: Session | null | undefined): boolean {
 
 export function hasPermission(session: Session | null | undefined, permission: string): boolean {
   if (isSuperadminSession(session)) return true;
-  return Boolean(session?.user?.permissions?.includes(permission));
+  return getEffectivePermissions(session).includes(permission);
 }
 
 export function hasAnyPermission(
@@ -58,7 +120,7 @@ export function hasAnyPermission(
   permissions: string[],
 ): boolean {
   if (isSuperadminSession(session)) return true;
-  const current = session?.user?.permissions ?? [];
+  const current = getEffectivePermissions(session);
   return permissions.some((permission) => current.includes(permission));
 }
 
@@ -67,7 +129,7 @@ export function hasAllPermissions(
   permissions: string[],
 ): boolean {
   if (isSuperadminSession(session)) return true;
-  const current = session?.user?.permissions ?? [];
+  const current = getEffectivePermissions(session);
   return permissions.every((permission) => current.includes(permission));
 }
 

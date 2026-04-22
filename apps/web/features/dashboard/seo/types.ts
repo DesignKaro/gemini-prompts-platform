@@ -24,6 +24,7 @@ export type DashboardSeoSettings = {
   robotsBlockAiBots: boolean;
   robotsDisallowPaths: string[];
   robotsAdditionalRules: string[];
+  robotsCustomText: string | null;
   sitemapIncludePrompts: boolean;
   sitemapIncludePages: boolean;
   sitemapIncludePosts: boolean;
@@ -31,6 +32,7 @@ export type DashboardSeoSettings = {
   sitemapIncludeTags: boolean;
   sitemapIncludeCategories: boolean;
   sitemapIncludeAuthors: boolean;
+  sitemapCustomXml: string | null;
   canonicalBaseUrl: string | null;
   googleSiteVerification: string | null;
   bingSiteVerification: string | null;
@@ -60,6 +62,7 @@ export type DashboardSeoIntegrationSettings = {
   clarityProjectId: string | null;
   customHeadScriptUrls: string[];
   customHeadInlineScript: string | null;
+  customHeadInlineStyle: string | null;
   customBodyStartInlineScript: string | null;
   customBodyEndInlineScript: string | null;
   updatedByUserId: string | null;
@@ -78,6 +81,7 @@ export type SeoSection =
   | 'sitemap'
   | 'social'
   | 'redirects'
+  | 'custom-code'
   | 'integrations';
 
 export type RedirectRule = {

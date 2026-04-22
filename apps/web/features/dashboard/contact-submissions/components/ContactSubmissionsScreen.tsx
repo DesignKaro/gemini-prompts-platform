@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { MdDeleteOutline } from 'react-icons/md';
 import { ActionError } from '../../../../app/components/dashboard/action-error';
 import { useAdminApi } from '../../../../app/components/dashboard/use-admin-api';
 import { buildContactSubmissionsQuery } from '../api';
@@ -15,6 +16,43 @@ import type {
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100, 200];
 const FALLBACK_STATUSES: ContactSubmissionStatus[] = ['NEW', 'IN_PROGRESS', 'RESOLVED', 'SPAM'];
+const DATE_RANGE_OPTIONS = [
+  { label: 'All time', value: 'all' },
+  { label: 'Today', value: 'today' },
+  { label: 'Yesterday', value: 'yesterday' },
+  { label: 'This week', value: 'this-week' },
+  { label: 'This month', value: 'this-month' },
+] as const;
+
+type DateRangeFilter = (typeof DATE_RANGE_OPTIONS)[number]['value'];
+
+function getDateRangeBounds(range: DateRangeFilter) {
+  const now = new Date();
+  const startOfDay = new Date(now);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(now);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  if (range === 'today') return { from: startOfDay.toISOString(), to: endOfDay.toISOString() };
+  if (range === 'yesterday') {
+    const start = new Date(startOfDay);
+    start.setDate(start.getDate() - 1);
+    const end = new Date(endOfDay);
+    end.setDate(end.getDate() - 1);
+    return { from: start.toISOString(), to: end.toISOString() };
+  }
+  if (range === 'this-week') {
+    const start = new Date(startOfDay);
+    start.setDate(start.getDate() - start.getDay());
+    return { from: start.toISOString(), to: endOfDay.toISOString() };
+  }
+  if (range === 'this-month') {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    start.setHours(0, 0, 0, 0);
+    return { from: start.toISOString(), to: endOfDay.toISOString() };
+  }
+  return { from: '', to: '' };
+}
 
 const STATUS_BADGES: Record<ContactSubmissionStatus, string> = {
   NEW: 'bg-[#eef4ff] text-[#3158b8] border-[#d7e4ff]',
@@ -33,11 +71,13 @@ export function ContactSubmissionsScreen() {
   const [detailError, setDetailError] = useState<string | null>(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [isSavingDetail, setIsSavingDetail] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ContactSubmissionStatus | ''>('');
   const [sourceFilter, setSourceFilter] = useState('');
+  const [dateRangeFilter, setDateRangeFilter] = useState<DateRangeFilter>('all');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [sort, setSort] = useState<'recent' | 'oldest'>('recent');
@@ -61,14 +101,15 @@ export function ContactSubmissionsScreen() {
       setPageState((current) => (current === 'loading' ? 'loading' : 'saving'));
       setError(null);
       const skip = pageIndex * pageSize;
+      const dateBounds = getDateRangeBounds(dateRangeFilter);
       const query = buildContactSubmissionsQuery({
         skip,
         take: pageSize,
         search: debouncedSearch,
         status: statusFilter,
         source: sourceFilter,
-        from: fromDate,
-        to: toDate,
+        from: fromDate || dateBounds.from,
+        to: toDate || dateBounds.to,
         sort,
       });
 
@@ -113,6 +154,7 @@ export function ContactSubmissionsScreen() {
       sort,
       sourceFilter,
       statusFilter,
+      dateRangeFilter,
       toDate,
     ],
   );
@@ -215,6 +257,44 @@ export function ContactSubmissionsScreen() {
     }
   };
 
+  const deleteSubmission = async (id: string) => {
+    if (!window.confirm('Delete this contact submission? This cannot be undone.')) {
+      return;
+    }
+
+    setDeletingId(id);
+    setError(null);
+    setDetailError(null);
+
+    try {
+      await adminRequest(`/api/admin/contact/submissions/${id}`, {
+        method: 'DELETE',
+        actionName: 'admin.contact.submissions.delete',
+      });
+
+      setResponse((current) => {
+        if (!current) return current;
+        const nextItems = current.items.filter((item) => item.id !== id);
+        return {
+          ...current,
+          items: nextItems,
+          total: Math.max(0, current.total - 1),
+        };
+      });
+
+      setSelectedId((current) => (current === id ? null : current));
+      setSelectedDetail((current) => (current?.id === id ? null : current));
+      if (selectedDetail?.id === id) {
+        setStatusDraft('NEW');
+        setNoteDraft('');
+      }
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Unable to delete submission.');
+    } finally {
+      setDeletingId((current) => (current === id ? null : current));
+    }
+  };
+
   const submissions = response?.items ?? [];
   const total = response?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -306,6 +386,24 @@ export function ContactSubmissionsScreen() {
           </label>
 
           <label className="flex flex-col gap-1 text-[0.74rem] font-semibold uppercase tracking-wide text-gray-500">
+            Date range
+            <select
+              value={dateRangeFilter}
+              onChange={(event) => {
+                setDateRangeFilter(event.target.value as DateRangeFilter);
+                setPageIndex(0);
+              }}
+              className="h-10 rounded-xl border border-[#e3e8f3] bg-white px-3 text-[0.86rem] font-medium text-[#0f1116] outline-none transition-colors focus:border-[#c9d5f0]"
+            >
+              {DATE_RANGE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1 text-[0.74rem] font-semibold uppercase tracking-wide text-gray-500">
             Sort
             <select
               value={sort}
@@ -371,6 +469,7 @@ export function ContactSubmissionsScreen() {
               setDebouncedSearch('');
               setStatusFilter('');
               setSourceFilter('');
+              setDateRangeFilter('all');
               setFromDate('');
               setToDate('');
               setSort('recent');
@@ -438,13 +537,24 @@ export function ContactSubmissionsScreen() {
                           {formatSubmissionTimestamp(item.createdAt)}
                         </td>
                         <td className="px-4 py-3">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedId(item.id)}
-                            className="rounded-full border border-[#d9dfeb] bg-white px-3 py-1.5 text-[0.78rem] font-medium text-[#0f1116] transition-colors hover:bg-[#f5f7fb]"
-                          >
-                            Open
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedId(item.id)}
+                              className="rounded-full border border-[#d9dfeb] bg-white px-3 py-1.5 text-[0.78rem] font-medium text-[#0f1116] transition-colors hover:bg-[#f5f7fb]"
+                            >
+                              Open
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void deleteSubmission(item.id)}
+                              disabled={deletingId === item.id}
+                              className="inline-flex items-center gap-1.5 rounded-full border border-[#f1d6d6] bg-white px-3 py-1.5 text-[0.78rem] font-medium text-[#a73737] transition-colors hover:bg-[#fff4f4] disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <MdDeleteOutline size={15} />
+                              {deletingId === item.id ? 'Deleting...' : 'Delete'}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -577,14 +687,24 @@ export function ContactSubmissionsScreen() {
                     {selectedDetail.reviewedBy ? ` by ${selectedDetail.reviewedBy.name ?? selectedDetail.reviewedBy.email}` : ''}
                   </p>
 
-                  <button
-                    type="button"
-                    onClick={saveDetail}
-                    disabled={!hasChanges || isSavingDetail}
-                    className="rounded-full border border-[#d9dfeb] bg-[#101625] px-4 py-2 text-[0.82rem] font-medium text-white transition-colors hover:bg-[#0b111d] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isSavingDetail ? 'Saving...' : 'Save updates'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void deleteSubmission(selectedDetail.id)}
+                      disabled={deletingId === selectedDetail.id}
+                      className="rounded-full border border-[#f1d6d6] bg-white px-4 py-2 text-[0.82rem] font-medium text-[#a73737] transition-colors hover:bg-[#fff4f4] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {deletingId === selectedDetail.id ? 'Deleting...' : 'Delete'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={saveDetail}
+                      disabled={!hasChanges || isSavingDetail}
+                      className="rounded-full border border-[#d9dfeb] bg-[#101625] px-4 py-2 text-[0.82rem] font-medium text-white transition-colors hover:bg-[#0b111d] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isSavingDetail ? 'Saving...' : 'Save updates'}
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : null}

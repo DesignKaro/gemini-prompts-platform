@@ -44,6 +44,7 @@ describe('seo integrations helpers', () => {
       clarityProjectId: 'abc123',
       customHeadScriptUrls: ['https://cdn.example.com/script.js'],
       customHeadInlineScript: 'window.headInline = true;',
+      customHeadInlineStyle: 'body { background: #fff; }',
       customBodyStartInlineScript: null,
       customBodyEndInlineScript: 'window.bodyEndInline = true;',
     });
@@ -56,9 +57,30 @@ describe('seo integrations helpers', () => {
     expect(bundle.clarityInitScript).toContain("'abc123'");
     expect(bundle.googleSiteVerification).toBe('google-token');
     expect(bundle.bingSiteVerification).toBe('bing-token');
+    expect(bundle.customHeadInlineStyle).toBe('body { background: #fff; }');
   });
 
-  it('sanitizes unsafe inline scripts and insecure script URLs before injection', () => {
+  it('uses the site default AdSense publisher id when one is not configured', () => {
+    const bundle = buildSeoIntegrationScriptBundle({
+      scope: 'production',
+      googleSiteVerification: null,
+      bingSiteVerification: null,
+      gaMeasurementId: null,
+      googleAdsTagId: null,
+      adsensePublisherId: null,
+      clarityProjectId: null,
+      customHeadScriptUrls: [],
+      customHeadInlineScript: null,
+      customHeadInlineStyle: null,
+      customBodyStartInlineScript: null,
+      customBodyEndInlineScript: null,
+    });
+
+    expect(bundle.adsensePublisherId).toBe('ca-pub-9138814143617371');
+    expect(bundle.adsenseLoaderSrc).toContain('client=ca-pub-9138814143617371');
+  });
+
+  it('sanitizes unsafe inline scripts, styles, and insecure script urls before injection', () => {
     const bundle = buildSeoIntegrationScriptBundle({
       scope: 'production',
       googleSiteVerification: null,
@@ -69,12 +91,14 @@ describe('seo integrations helpers', () => {
       clarityProjectId: null,
       customHeadScriptUrls: ['http://bad.example.com/a.js', 'https://cdn.example.com/safe.js'],
       customHeadInlineScript: '<script>window.safe=true;</script>',
+      customHeadInlineStyle: '<style>body{color:#111;}</style>',
       customBodyStartInlineScript: '<iframe src="https://example.com"></iframe>',
       customBodyEndInlineScript: 'console.log("done")',
     });
 
     expect(bundle.customHeadScriptUrls).toEqual(['https://cdn.example.com/safe.js']);
     expect(bundle.customHeadInlineScript).toBe('window.safe=true;');
+    expect(bundle.customHeadInlineStyle).toBe('body{color:#111;}');
     expect(bundle.customBodyStartInlineScript).toBeNull();
     expect(bundle.customBodyEndInlineScript).toBe('console.log("done")');
   });

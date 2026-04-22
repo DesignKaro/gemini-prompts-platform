@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { AnimatedCounter } from '../components/animated-counter';
 import { AuthorAvatar } from '../components/author-avatar';
+import { ProgressiveImage } from '../components/progressive-image';
 import { SeoSchemaScripts } from '../components/seo-schema-script';
 import { Skeleton } from '../components/ui/skeleton';
 import { getAuthorList, type PublicAuthor } from '../../lib/public-content';
@@ -253,15 +254,15 @@ export default async function AboutPage() {
             </div>
           </div>
 
-          <div
-            className="h-[260px] w-full overflow-hidden rounded-[30px] border border-[#e6e9f2] bg-cover bg-center sm:h-[320px] lg:h-[380px]"
-            style={{
-              backgroundImage:
-                'url(https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1400)',
-            }}
-            role="img"
-            aria-label="Team collaborating around a laptop"
-          />
+          <div className="relative h-[260px] w-full overflow-hidden rounded-[30px] border border-[#e6e9f2] sm:h-[320px] lg:h-[380px]">
+            <ProgressiveImage
+              src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=1400"
+              alt="Team collaborating around a laptop"
+              fill
+              sizes="(max-width: 1024px) 100vw, 70vw"
+              className="object-cover"
+            />
+          </div>
         </section>
 
         <section className="mt-14 grid gap-6 lg:grid-cols-3">

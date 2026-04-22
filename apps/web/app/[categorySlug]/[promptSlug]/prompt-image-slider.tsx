@@ -1,7 +1,7 @@
 'use client';
 
-import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { ProgressiveImage } from '../../components/progressive-image';
 
 type PromptImageSliderProps = {
   title: string;
@@ -36,7 +36,7 @@ export function PromptImageSlider({ title, images }: PromptImageSliderProps) {
         aria-label={`${title} cover`}
         className="relative aspect-[4/3] w-full overflow-hidden rounded-[18px] border border-[#eceff5] bg-[#f5f7fb]"
       >
-        <Image
+        <ProgressiveImage
           src={currentImage}
           alt={`${title} cover`}
           fill
@@ -61,7 +61,7 @@ export function PromptImageSlider({ title, images }: PromptImageSliderProps) {
                     isActive ? 'border-[#111111]' : 'border-[#dce2ee] hover:border-[#9aa5b7]'
                   }`}
                 >
-                  <Image
+                  <ProgressiveImage
                     src={image}
                     alt={`${title} thumbnail ${index + 1}`}
                     fill

@@ -148,6 +148,10 @@ export class UpdateSeoSettingsDto {
   robotsAdditionalRules?: string[];
 
   @IsOptional()
+  @IsString()
+  robotsCustomText?: string | null;
+
+  @IsOptional()
   @Transform(toOptionalBoolean)
   @IsBoolean()
   sitemapIncludePrompts?: boolean;
@@ -181,6 +185,10 @@ export class UpdateSeoSettingsDto {
   @Transform(toOptionalBoolean)
   @IsBoolean()
   sitemapIncludeAuthors?: boolean;
+
+  @IsOptional()
+  @IsString()
+  sitemapCustomXml?: string | null;
 
   @IsOptional()
   @IsString()

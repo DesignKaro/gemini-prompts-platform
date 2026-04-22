@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { CategoryDescriptionPreview } from '../components/category-description-preview';
 import { PostCardUI } from '../components/post-card';
+import { ProgressiveImage } from '../components/progressive-image';
 import { PromptCardServer } from '../components/prompt-card-server';
 import { SeoSchemaScripts } from '../components/seo-schema-script';
 import { Skeleton } from '../components/ui/skeleton';
@@ -265,12 +266,15 @@ async function CategoryDetailPageContent({ params }: PageProps) {
             </div>
           </div>
 
-          <div
-            role="img"
-            aria-label={`${category.name} featured image`}
-            className="aspect-[4/3] w-full rounded-[28px] bg-cover bg-center shadow-[0_20px_60px_rgba(15,17,22,0.08)]"
-            style={{ backgroundImage: `url(${categoryImageUrl})` }}
-          />
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[28px] shadow-[0_20px_60px_rgba(15,17,22,0.08)]">
+            <ProgressiveImage
+              src={categoryImageUrl}
+              alt={`${category.name} featured image`}
+              fill
+              sizes="(max-width: 1024px) 100vw, 40vw"
+              className="object-cover"
+            />
+          </div>
         </div>
 
         {promptsResponse.items.length > 0 ? (

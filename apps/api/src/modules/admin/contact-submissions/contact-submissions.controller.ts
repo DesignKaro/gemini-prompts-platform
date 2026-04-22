@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IdParamDto } from '../../../common/dto/id-param.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -55,5 +55,11 @@ export class ContactSubmissionsController {
       },
       actor.sub,
     );
+  }
+
+  @Delete(':id')
+  @Permissions('contacts:manage')
+  remove(@Param() params: IdParamDto) {
+    return this.contactSubmissionsService.remove(params.id);
   }
 }

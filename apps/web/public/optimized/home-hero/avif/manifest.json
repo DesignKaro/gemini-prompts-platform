@@ -1,0 +1,56 @@
+[
+  {
+    "source": "25378b7205f765b8bb69b5107f096246.webp",
+    "output": "25378b7205f765b8bb69b5107f096246.avif",
+    "width": 720,
+    "height": 1440,
+    "sourceBytes": 195190,
+    "outputBytes": 149152,
+    "reductionPercent": 23.6
+  },
+  {
+    "source": "30ad9993c8f9fbc779fb09a8d89db02a.webp",
+    "output": "30ad9993c8f9fbc779fb09a8d89db02a.avif",
+    "width": 600,
+    "height": 900,
+    "sourceBytes": 22570,
+    "outputBytes": 19546,
+    "reductionPercent": 13.4
+  },
+  {
+    "source": "642a12b6bee2014946b05c6f05d3c9e6.avif",
+    "output": "642a12b6bee2014946b05c6f05d3c9e6.avif",
+    "width": 640,
+    "height": 960,
+    "sourceBytes": 20298,
+    "outputBytes": 20298,
+    "reductionPercent": 0
+  },
+  {
+    "source": "8e3a7a03f5a3d4f21c8e88f2c81ac254.webp",
+    "output": "8e3a7a03f5a3d4f21c8e88f2c81ac254.avif",
+    "width": 736,
+    "height": 1472,
+    "sourceBytes": 170732,
+    "outputBytes": 124675,
+    "reductionPercent": 27
+  },
+  {
+    "source": "d31a683406c15454afd78f1e2fb4decc.webp",
+    "output": "d31a683406c15454afd78f1e2fb4decc.avif",
+    "width": 1037,
+    "height": 1843,
+    "sourceBytes": 192958,
+    "outputBytes": 90093,
+    "reductionPercent": 53.3
+  },
+  {
+    "source": "defe2d7e19db3aea6c6c5ad368c91376.webp",
+    "output": "defe2d7e19db3aea6c6c5ad368c91376.avif",
+    "width": 1200,
+    "height": 2605,
+    "sourceBytes": 114066,
+    "outputBytes": 11317,
+    "reductionPercent": 90.1
+  }
+]

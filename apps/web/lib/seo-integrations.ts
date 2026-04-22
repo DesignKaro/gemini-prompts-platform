@@ -12,6 +12,7 @@ export type SeoIntegrationSettings = {
   clarityProjectId: string | null;
   customHeadScriptUrls: string[];
   customHeadInlineScript: string | null;
+  customHeadInlineStyle: string | null;
   customBodyStartInlineScript: string | null;
   customBodyEndInlineScript: string | null;
 };
@@ -26,6 +27,7 @@ export type SeoIntegrationScriptBundle = {
   clarityInitScript: string | null;
   customHeadScriptUrls: string[];
   customHeadInlineScript: string | null;
+  customHeadInlineStyle: string | null;
   customBodyStartInlineScript: string | null;
   customBodyEndInlineScript: string | null;
 };
@@ -40,9 +42,11 @@ export const DEFAULT_SEO_INTEGRATION_SETTINGS: SeoIntegrationSettings = {
   clarityProjectId: null,
   customHeadScriptUrls: [],
   customHeadInlineScript: null,
+  customHeadInlineStyle: null,
   customBodyStartInlineScript: null,
   customBodyEndInlineScript: null,
 };
+const DEFAULT_ADSENSE_PUBLISHER_ID = 'ca-pub-9138814143617371';
 
 const BLOCKED_INLINE_SCRIPT_FRAGMENTS = [
   '<script',
@@ -76,6 +80,29 @@ function sanitizeInlineScriptForRuntime(value: unknown): string | null {
 
   const lower = withoutWrapperTags.toLowerCase();
   if (BLOCKED_INLINE_SCRIPT_FRAGMENTS.some((fragment) => lower.includes(fragment))) {
+    return null;
+  }
+
+  return withoutWrapperTags;
+}
+
+function sanitizeInlineStyleForRuntime(value: unknown): string | null {
+  const normalized = cleanNullableText(value, 8000);
+  if (!normalized) return null;
+
+  const withoutWrapperTags = normalized
+    .replace(/^<style\b[^>]*>/i, '')
+    .replace(/<\/style>$/i, '')
+    .trim();
+
+  if (!withoutWrapperTags) return null;
+
+  const lower = withoutWrapperTags.toLowerCase();
+  if (
+    ['<script', '</script', '<iframe', '<object', '<embed', '<link', '<meta'].some((fragment) =>
+      lower.includes(fragment),
+    )
+  ) {
     return null;
   }
 
@@ -145,6 +172,7 @@ export function normalizeSeoIntegrationSettings(
     clarityProjectId: cleanNullableText(payload.clarityProjectId, 64),
     customHeadScriptUrls: normalizeHttpsUrls(payload.customHeadScriptUrls),
     customHeadInlineScript: sanitizeInlineScriptForRuntime(payload.customHeadInlineScript),
+    customHeadInlineStyle: sanitizeInlineStyleForRuntime(payload.customHeadInlineStyle),
     customBodyStartInlineScript: sanitizeInlineScriptForRuntime(
       payload.customBodyStartInlineScript,
     ),
@@ -177,7 +205,8 @@ export function buildSeoIntegrationScriptBundle(
 ): SeoIntegrationScriptBundle {
   const gaMeasurementId = safeGaMeasurementId(settings.gaMeasurementId);
   const googleAdsTagId = safeGoogleAdsTagId(settings.googleAdsTagId);
-  const adsensePublisherId = safeAdsensePublisherId(settings.adsensePublisherId);
+  const adsensePublisherId =
+    safeAdsensePublisherId(settings.adsensePublisherId) ?? DEFAULT_ADSENSE_PUBLISHER_ID;
   const clarityProjectId = safeClarityProjectId(settings.clarityProjectId);
   const gtagPrimaryId = gaMeasurementId || googleAdsTagId;
 
@@ -215,6 +244,7 @@ export function buildSeoIntegrationScriptBundle(
     clarityInitScript,
     customHeadScriptUrls: normalizeHttpsUrls(settings.customHeadScriptUrls),
     customHeadInlineScript: sanitizeInlineScriptForRuntime(settings.customHeadInlineScript),
+    customHeadInlineStyle: sanitizeInlineStyleForRuntime(settings.customHeadInlineStyle),
     customBodyStartInlineScript: sanitizeInlineScriptForRuntime(
       settings.customBodyStartInlineScript,
     ),

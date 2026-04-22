@@ -35,6 +35,7 @@ export type SeoSettingsPayload = {
   robotsBlockAiBots: boolean;
   robotsDisallowPaths: string[];
   robotsAdditionalRules: string[];
+  robotsCustomText: string | null;
   sitemapIncludePrompts: boolean;
   sitemapIncludePages: boolean;
   sitemapIncludePosts: boolean;
@@ -42,6 +43,7 @@ export type SeoSettingsPayload = {
   sitemapIncludeTags: boolean;
   sitemapIncludeCategories: boolean;
   sitemapIncludeAuthors: boolean;
+  sitemapCustomXml: string | null;
   canonicalBaseUrl: string | null;
   googleSiteVerification: string | null;
   bingSiteVerification: string | null;
@@ -95,6 +97,14 @@ export class SeoSettingsService {
       input.organizationSameAs !== undefined
         ? this.normalizeSameAsUrls(input.organizationSameAs)
         : current.organizationSameAs;
+    const nextCustomRobotsText =
+      input.robotsCustomText !== undefined
+        ? this.cleanLongText(input.robotsCustomText, current.robotsCustomText)
+        : current.robotsCustomText;
+    const nextCustomSitemapXml =
+      input.sitemapCustomXml !== undefined
+        ? this.cleanLongText(input.sitemapCustomXml, current.sitemapCustomXml)
+        : current.sitemapCustomXml;
 
     const record = await this.seoSettingsDelegate.upsert({
       where: { id: GLOBAL_SEO_SETTINGS_ID },
@@ -141,6 +151,7 @@ export class SeoSettingsService {
         robotsBlockAiBots: input.robotsBlockAiBots ?? current.robotsBlockAiBots,
         robotsDisallowPaths: nextDisallowPaths,
         robotsAdditionalRules: nextAdditionalRobotRules,
+        robotsCustomText: nextCustomRobotsText,
         sitemapIncludePrompts: input.sitemapIncludePrompts ?? current.sitemapIncludePrompts,
         sitemapIncludePages: input.sitemapIncludePages ?? current.sitemapIncludePages,
         sitemapIncludePosts: input.sitemapIncludePosts ?? current.sitemapIncludePosts,
@@ -150,6 +161,7 @@ export class SeoSettingsService {
         sitemapIncludeCategories:
           input.sitemapIncludeCategories ?? current.sitemapIncludeCategories,
         sitemapIncludeAuthors: input.sitemapIncludeAuthors ?? current.sitemapIncludeAuthors,
+        sitemapCustomXml: nextCustomSitemapXml,
         canonicalBaseUrl: this.cleanNullableText(
           input.canonicalBaseUrl,
           current.canonicalBaseUrl,
@@ -236,6 +248,7 @@ export class SeoSettingsService {
       robotsBlockAiBots: Boolean(record.robotsBlockAiBots),
       robotsDisallowPaths: this.normalizePaths(record.robotsDisallowPaths),
       robotsAdditionalRules: this.normalizeAdditionalRobotRules(record.robotsAdditionalRules),
+      robotsCustomText: typeof record.robotsCustomText === 'string' ? record.robotsCustomText : null,
       sitemapIncludePrompts: Boolean(record.sitemapIncludePrompts),
       sitemapIncludePages: Boolean(record.sitemapIncludePages),
       sitemapIncludePosts: Boolean(record.sitemapIncludePosts),
@@ -243,6 +256,7 @@ export class SeoSettingsService {
       sitemapIncludeTags: Boolean(record.sitemapIncludeTags),
       sitemapIncludeCategories: Boolean(record.sitemapIncludeCategories),
       sitemapIncludeAuthors: Boolean(record.sitemapIncludeAuthors),
+      sitemapCustomXml: typeof record.sitemapCustomXml === 'string' ? record.sitemapCustomXml : null,
       canonicalBaseUrl: typeof record.canonicalBaseUrl === 'string' ? record.canonicalBaseUrl : null,
       googleSiteVerification:
         typeof record.googleSiteVerification === 'string' ? record.googleSiteVerification : null,
@@ -324,6 +338,13 @@ export class SeoSettingsService {
     if (value === null) return null;
     const trimmed = value.trim();
     return trimmed.length > 0 ? trimmed.slice(0, max) : null;
+  }
+
+  private cleanLongText(value: string | null | undefined, fallback: string | null) {
+    if (value === undefined) return fallback;
+    if (value === null) return null;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
   }
 
   private readBoolean(value: unknown, fallback: boolean) {

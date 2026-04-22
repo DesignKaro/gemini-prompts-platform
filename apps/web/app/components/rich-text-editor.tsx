@@ -41,6 +41,7 @@ import {
 import { BiHighlight } from 'react-icons/bi';
 import { PromptBox } from './extensions/prompt-box';
 import { useAdminApi } from './dashboard/use-admin-api';
+import { getFileStem } from '../../lib/utils/file-name';
 
 /* ─── Types ─── */
 type Props = { value: string; onChange: (html: string) => void };
@@ -285,10 +286,11 @@ function ImagePicker({ editor, disabled }: { editor: Editor | null; disabled: bo
       alert('Image must be 10MB or smaller.');
       return;
     }
+    const fileTitle = getFileStem(file.name) || file.name;
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('title', file.name);
+      formData.append('title', fileTitle);
 
       const response = await request<{ id?: string; url: string; title?: string | null }>(
         '/api/admin/media/upload',
@@ -302,7 +304,7 @@ function ImagePicker({ editor, disabled }: { editor: Editor | null; disabled: bo
       const newItem: MediaItem = {
         id: response.id || Math.random().toString(), // fallback id for legacy response shapes
         url: response.url,
-        title: response.title?.trim() || file.name,
+        title: response.title?.trim() || fileTitle,
       };
       setLibraryMedia((prev) => [newItem, ...prev]);
       setSelectedImage(newItem);
@@ -1211,9 +1213,22 @@ const RichTextEditor: FC<Props> = ({ value, onChange }) => {
     if (!editor) return;
     const incoming = value || '';
     if (incoming === editor.getHTML()) return;
-    isApplyingRef.current = true;
-    editor.commands.setContent(incoming, { emitUpdate: false });
-    isApplyingRef.current = false;
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (cancelled) return;
+      if (incoming === editor.getHTML()) return;
+      isApplyingRef.current = true;
+      try {
+        editor.commands.setContent(incoming, { emitUpdate: false });
+      } finally {
+        isApplyingRef.current = false;
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [editor, value]);
 
   return (

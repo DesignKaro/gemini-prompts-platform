@@ -57,6 +57,7 @@ export type SeoSettings = {
   robotsBlockAiBots: boolean;
   robotsDisallowPaths: string[];
   robotsAdditionalRules: string[];
+  robotsCustomText: string | null;
   sitemapIncludePrompts: boolean;
   sitemapIncludePages: boolean;
   sitemapIncludePosts: boolean;
@@ -64,6 +65,7 @@ export type SeoSettings = {
   sitemapIncludeTags: boolean;
   sitemapIncludeCategories: boolean;
   sitemapIncludeAuthors: boolean;
+  sitemapCustomXml: string | null;
   canonicalBaseUrl: string | null;
   googleSiteVerification: string | null;
   bingSiteVerification: string | null;
@@ -105,6 +107,7 @@ export const DEFAULT_SEO_SETTINGS: SeoSettings = {
   robotsBlockAiBots: false,
   robotsDisallowPaths: ['/dashboard', '/login', '/profile', '/membership/manage'],
   robotsAdditionalRules: [],
+  robotsCustomText: null,
   sitemapIncludePrompts: true,
   sitemapIncludePages: true,
   sitemapIncludePosts: true,
@@ -112,6 +115,7 @@ export const DEFAULT_SEO_SETTINGS: SeoSettings = {
   sitemapIncludeTags: true,
   sitemapIncludeCategories: true,
   sitemapIncludeAuthors: true,
+  sitemapCustomXml: null,
   canonicalBaseUrl: null,
   googleSiteVerification: null,
   bingSiteVerification: null,
@@ -223,7 +227,15 @@ function normalizeSeoPayload(payload: Partial<SeoSettings> | null | undefined): 
         ? normalizedDisallowPaths
         : DEFAULT_SEO_SETTINGS.robotsDisallowPaths,
     robotsAdditionalRules: normalizeAdditionalRobotRules(payload.robotsAdditionalRules),
+    robotsCustomText:
+      typeof payload.robotsCustomText === 'string' && payload.robotsCustomText.trim().length > 0
+        ? payload.robotsCustomText
+        : null,
     organizationSameAs: normalizeStringArray(payload.organizationSameAs),
+    sitemapCustomXml:
+      typeof payload.sitemapCustomXml === 'string' && payload.sitemapCustomXml.trim().length > 0
+        ? payload.sitemapCustomXml
+        : null,
     canonicalBaseUrl: normalizeBaseUrlCandidate(payload.canonicalBaseUrl) ?? null,
     integrations: normalizeSeoIntegrationSettings(
       payload.integrations,
@@ -284,7 +296,7 @@ export const getSeoSettings = cache(async (): Promise<SeoSettings> => {
   }
 });
 
-export async function getSeoSettingsFresh(): Promise<SeoSettings> {
+export const getSeoSettingsFresh = cache(async (): Promise<SeoSettings> => {
   const scope = resolveSeoIntegrationScope(process.env.SITE_CONFIG_ENV, process.env.NODE_ENV);
   const query = `scope=${encodeURIComponent(scope)}`;
   try {
@@ -301,7 +313,7 @@ export async function getSeoSettingsFresh(): Promise<SeoSettings> {
   } catch {
     return DEFAULT_SEO_SETTINGS;
   }
-}
+});
 
 type BuildMetadataOptions = {
   title?: string;

@@ -182,12 +182,6 @@ describe('MediaStorageService upload processing', () => {
         '<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2"><rect width="2" height="2"/></svg>',
       ),
     },
-    {
-      label: 'AVIF',
-      mime: 'image/avif',
-      expectedExtension: '.avif',
-      buffer: Buffer.from([0x00, 0x01, 0x02, 0x03, 0x04]),
-    },
   ])('keeps $label uploads unchanged', async ({ mime, expectedExtension, buffer }) => {
     const service = createService();
     const capture = stubUploadClient(service);

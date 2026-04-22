@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import Image from 'next/image';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { ProgressiveImage } from '../components/progressive-image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
@@ -42,6 +42,7 @@ import {
   normalizeAuthCallbackPath,
 } from '../../lib/utils/auth-callback';
 import { redirectToSignInModal } from '../../lib/utils/auth-redirect';
+import { normalizeAvatarUrl } from '../../lib/utils/avatar';
 
 type DashboardNavChild = {
   href: string;
@@ -67,6 +68,8 @@ function DashboardLink({
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!isDashboard) return;
     e.preventDefault();
+    const search = typeof window !== 'undefined' ? window.location.search : '';
+    const nextHref = search && href.includes('?') ? href : `${href}${search}`;
     const canUseViewTransition =
       typeof document !== 'undefined' &&
       'startViewTransition' in document &&
@@ -77,10 +80,10 @@ function DashboardLink({
       (
         document as Document & { startViewTransition: (cb: () => void) => void }
       ).startViewTransition(() => {
-        router.push(href);
+        router.push(nextHref);
       });
     } else {
-      router.push(href);
+      router.push(nextHref);
     }
   };
   return (
@@ -115,42 +118,92 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     focusTags: [] as string[],
     avatarUrl: '',
     avatarUpdatedAt: null as string | null,
+    hasPassword: false,
   });
   const [focusTagsInput, setFocusTagsInput] = useState('');
+  const [previousPassword, setPreviousPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [dashboardSearch, setDashboardSearch] = useState('');
   const [profileSnapshot, setProfileSnapshot] = useState<{
     name: string | null;
     avatarUrl: string | null;
     avatarUpdatedAt: string | null;
     role: string | null;
+    hasPassword: boolean;
   } | null>(null);
+  const [resolvedPermissions, setResolvedPermissions] = useState<string[] | null>(null);
 
   const hasDashboardAccess = userHasDashboardAccess(session);
-  const canViewPrompts = hasAnyPermission(session, ['prompts:read', 'prompts:manage']);
-  const canManagePrompts = hasAnyPermission(session, ['prompts:manage']);
-  const canViewPosts = hasAnyPermission(session, ['posts:read', 'posts:manage']);
-  const canManagePosts = hasAnyPermission(session, ['posts:manage']);
-  const canViewMedia = hasAnyPermission(session, ['media:read', 'media:manage']);
-  const canViewCategories = hasAnyPermission(session, ['categories:read', 'categories:manage']);
-  const canManageCategories = hasAnyPermission(session, ['categories:manage']);
-  const canViewTags = hasAnyPermission(session, ['tags:read', 'tags:manage']);
-  const canManageTags = hasAnyPermission(session, ['tags:manage']);
-  const canViewComments = hasAnyPermission(session, ['comments:read', 'comments:moderate']);
-  const canModerateComments = hasAnyPermission(session, ['comments:moderate']);
-  const canViewAnalytics = hasAnyPermission(session, ['analytics:read']);
-  const canViewActivity = hasAnyPermission(session, ['activity:read']);
+  const permissionSession = useMemo(
+    () =>
+      session
+        ? ({
+            ...session,
+            user: {
+              ...session.user,
+              permissions: resolvedPermissions ?? session.user?.permissions ?? [],
+            },
+          } as typeof session)
+        : session,
+    [resolvedPermissions, session],
+  );
+  const canViewPrompts = hasAnyPermission(permissionSession, ['prompts:read', 'prompts:manage']);
+  const canManagePrompts = hasAnyPermission(permissionSession, ['prompts:manage']);
+  const canViewPosts = hasAnyPermission(permissionSession, ['posts:read', 'posts:manage']);
+  const canManagePosts = hasAnyPermission(permissionSession, ['posts:manage']);
+  const canViewMedia = hasAnyPermission(permissionSession, ['media:read', 'media:manage']);
+  const canViewCategories = hasAnyPermission(permissionSession, ['categories:read', 'categories:manage']);
+  const canManageCategories = hasAnyPermission(permissionSession, ['categories:manage']);
+  const canViewTags = hasAnyPermission(permissionSession, ['tags:read', 'tags:manage']);
+  const canManageTags = hasAnyPermission(permissionSession, ['tags:manage']);
+  const canViewComments = hasAnyPermission(permissionSession, ['comments:read', 'comments:moderate']);
+  const canModerateComments = hasAnyPermission(permissionSession, ['comments:moderate']);
+  const canViewAnalytics = hasAnyPermission(permissionSession, ['analytics:read']);
+  const canViewActivity = hasAnyPermission(permissionSession, ['activity:read']);
   const canViewErrorLogs = canViewActivity;
   const canViewNewsletterSubmissions = canViewActivity;
-  const canViewContactSubmissions = hasAnyPermission(session, ['contacts:read', 'contacts:manage']);
-  const canViewUsers = hasAnyPermission(session, ['users:read', 'users:manage']);
-  const canManageUsers = hasAnyPermission(session, ['users:manage']);
+  const canViewContactSubmissions = hasAnyPermission(permissionSession, ['contacts:read', 'contacts:manage']);
+  const canViewUsers = hasAnyPermission(permissionSession, ['users:read', 'users:manage']);
+  const canManageUsers = hasAnyPermission(permissionSession, ['users:manage']);
   const canViewMembers = isProtectedSuperadminEmail(session?.user?.email);
-  const canViewRoles = hasAnyPermission(session, ['roles:read', 'roles:manage']);
-  const canViewSeo = hasAnyPermission(session, ['roles:manage']);
+  const canViewRoles = hasAnyPermission(permissionSession, ['roles:read', 'roles:manage']);
+  const canViewSeo = hasAnyPermission(permissionSession, ['roles:read', 'roles:manage']);
   const canViewSeoIntegrations = isProtectedSuperadminEmail(session?.user?.email);
   const canCreateContent = canManagePrompts || canManagePosts;
   const canClearPublicCache =
     canManagePrompts || canManagePosts || canManageCategories || canManageTags || canManageUsers;
+
+  useEffect(() => {
+    if (sessionStatus !== 'authenticated') {
+      setResolvedPermissions(null);
+      return;
+    }
+
+    let isActive = true;
+    const hydratePermissions = async () => {
+      try {
+        const payload = await adminRequest<{
+          user?: {
+            permissions?: string[];
+          };
+        }>('/api/auth/me', {
+          actionName: 'dashboard.auth.me',
+        });
+        if (!isActive) return;
+        setResolvedPermissions(payload.user?.permissions ?? []);
+      } catch {
+        if (!isActive) return;
+        setResolvedPermissions(null);
+      }
+    };
+
+    void hydratePermissions();
+
+    return () => {
+      isActive = false;
+    };
+  }, [adminRequest, sessionStatus]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -263,6 +316,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 { href: '/dashboard/seo/sitemap', label: 'Sitemap.xml' },
                 { href: '/dashboard/seo/settings', label: 'Meta Defaults' },
                 { href: '/dashboard/seo/social', label: 'Social & Schema' },
+                { href: '/dashboard/seo/custom-code', label: 'Custom Code' },
                 ...(canViewSeoIntegrations
                   ? [{ href: '/dashboard/seo/integrations', label: 'Integrations' }]
                   : []),
@@ -343,6 +397,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (pathname.startsWith('/dashboard/seo')) {
       if (pathname.startsWith('/dashboard/seo/integrations')) {
         return canViewSeoIntegrations;
+      }
+      if (pathname.startsWith('/dashboard/seo/custom-code')) {
+        return canViewSeo;
       }
       return canViewSeo;
     }
@@ -437,11 +494,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     if (!hasDashboardAccess) {
-      router.replace('/profile');
+      if (pathname !== '/profile') {
+        router.replace('/profile');
+      }
       return;
     }
 
-    if (!canAccessCurrentRoute) {
+    if (!canAccessCurrentRoute && pathname !== defaultDashboardHref) {
       router.replace(defaultDashboardHref);
     }
   }, [
@@ -449,6 +508,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     dashboardCallbackUrl,
     defaultDashboardHref,
     hasDashboardAccess,
+    pathname,
     router,
     dashboardSearch,
     sessionStatus,
@@ -471,11 +531,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
+  const clearPasswordInputs = () => {
+    setPreviousPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+  };
+
   const avatarBase = profileSnapshot?.avatarUrl || session?.user?.image || null;
-  const avatarSrc =
+  const avatarSrc = normalizeAvatarUrl(
     avatarBase && profileSnapshot?.avatarUpdatedAt && !avatarBase.startsWith('data:')
       ? `${avatarBase}${avatarBase.includes('?') ? '&' : '?'}v=${profileSnapshot.avatarUpdatedAt}`
-      : avatarBase;
+      : avatarBase,
+  );
 
   useEffect(() => {
     if (sessionStatus !== 'authenticated') return;
@@ -490,6 +557,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             avatarUrl: string | null;
             avatarUpdatedAt: string | null;
             role: string | null;
+            hasPassword: boolean;
           };
         }>('/api/auth/profile/summary', {
           actionName: 'profile.summary.load',
@@ -500,6 +568,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           avatarUrl: payload.user.avatarUrl ?? null,
           avatarUpdatedAt: payload.user.avatarUpdatedAt ?? null,
           role: payload.user.role ?? null,
+          hasPassword: Boolean(payload.user.hasPassword),
         });
       } catch (error) {
         if (process.env.NODE_ENV !== 'production') {
@@ -533,6 +602,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           focusTags?: string[] | null;
           avatarUrl?: string | null;
           avatarUpdatedAt?: string | null;
+          hasPassword?: boolean;
         };
       }>('/api/auth/profile/summary', {
         actionName: 'profile.modal.load',
@@ -547,6 +617,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         avatarUrl:
           payload.user.avatarUrl ?? profileSnapshot?.avatarUrl ?? session?.user?.image ?? '',
         avatarUpdatedAt: payload.user.avatarUpdatedAt ?? profileSnapshot?.avatarUpdatedAt ?? null,
+        hasPassword: Boolean(
+          payload.user.hasPassword ?? profileSnapshot?.hasPassword ?? session?.user?.hasPassword,
+        ),
       });
       setFocusTagsInput(nextFocusTags.join(', '));
       setAvatarPreview(null);
@@ -556,11 +629,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const openProfileModal = async () => {
+    clearPasswordInputs();
     setProfileForm((prev) => ({
       ...prev,
       name: profileSnapshot?.name ?? session?.user?.name ?? prev.name,
       avatarUrl: profileSnapshot?.avatarUrl ?? session?.user?.image ?? prev.avatarUrl,
       avatarUpdatedAt: profileSnapshot?.avatarUpdatedAt ?? prev.avatarUpdatedAt,
+      hasPassword:
+        profileSnapshot?.hasPassword ?? Boolean(session?.user?.hasPassword ?? prev.hasPassword),
     }));
     setIsProfileModalOpen(true);
     await fetchProfileDetails();
@@ -657,6 +733,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return;
     }
 
+    const hasPreviousPassword = previousPassword.length > 0;
+    const hasNewPassword = newPassword.length > 0;
+    const hasConfirmPassword = confirmPassword.length > 0;
+    const hasAnyPasswordInput = hasPreviousPassword || hasNewPassword || hasConfirmPassword;
+
+    if (hasAnyPasswordInput) {
+      if (profileForm.hasPassword) {
+        if (!hasPreviousPassword) {
+          setProfileSaveError('Previous password is required to set a new password.');
+          return;
+        }
+        if (!hasNewPassword) {
+          setProfileSaveError('New password is required.');
+          return;
+        }
+      } else {
+        if (!hasNewPassword) {
+          setProfileSaveError('New password is required.');
+          return;
+        }
+        if (!hasConfirmPassword) {
+          setProfileSaveError('Confirm password is required.');
+          return;
+        }
+        if (newPassword !== confirmPassword) {
+          setProfileSaveError('Confirm password must match new password.');
+          return;
+        }
+      }
+
+      if (newPassword.length < 8 || newPassword.length > 128) {
+        setProfileSaveError('Password must be between 8 and 128 characters long.');
+        return;
+      }
+    }
+
     const avatarValue = avatarPreview || profileForm.avatarUrl || null;
     if (typeof avatarValue === 'string' && avatarValue.length > 5_000_000) {
       setProfileSaveError('Avatar payload is too large.');
@@ -674,6 +786,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           focusTags?: string[] | null;
           avatarUrl?: string | null;
           avatarUpdatedAt?: string | null;
+          hasPassword?: boolean;
         };
       }>('/api/auth/profile', {
         method: 'PATCH',
@@ -685,6 +798,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           bio: normalizedBio,
           focusTags: uniqueFocusTags,
           avatarUrl: avatarValue,
+          ...(hasPreviousPassword ? { previousPassword } : {}),
+          ...(hasNewPassword ? { newPassword } : {}),
+          ...(hasConfirmPassword ? { confirmPassword } : {}),
         }),
       });
       const nextFocusTags = payload.user.focusTags ?? [];
@@ -696,9 +812,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         focusTags: nextFocusTags,
         avatarUrl: payload.user.avatarUrl ?? '',
         avatarUpdatedAt: payload.user.avatarUpdatedAt ?? null,
+        hasPassword: Boolean(payload.user.hasPassword),
       });
       setFocusTagsInput(nextFocusTags.join(', '));
       setAvatarPreview(null);
+      clearPasswordInputs();
       setIsProfileModalOpen(false);
       window.dispatchEvent(new Event('profile-updated'));
     } catch (error) {
@@ -734,6 +852,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     newsletter: 'Newsletter',
     'contact-submissions': 'Contact Submissions',
     search: 'Search',
+    'custom-code': 'Custom Code',
     users: 'Users',
     members: 'Members',
     roles: 'Roles',
@@ -761,7 +880,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return pathname === href || pathname?.startsWith(`${href}/`);
   };
 
-  if (sessionStatus === 'loading') {
+  const isInitialSessionLoading = sessionStatus === 'loading' && !session;
+
+  if (isInitialSessionLoading) {
     return <div className="min-h-screen bg-[#f7f9fc]" />;
   }
 
@@ -802,7 +923,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               href="/"
               className={`flex items-center overflow-hidden transition-all duration-300 ${isDesktopSidebarCollapsed ? 'lg:w-0 lg:opacity-0' : 'w-[150px] opacity-100'}`}
             >
-              <Image
+              <ProgressiveImage
                 src={BRAND_LOGO_URL}
                 alt="Gemini Prompts"
                 width={200}
@@ -982,7 +1103,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <MdMenu size={24} className="text-[#0f1116]" />
             </button>
             <Link href="/" className="flex items-center lg:hidden">
-              <Image
+              <ProgressiveImage
                 src={BRAND_LOGO_URL}
                 alt="Gemini Prompts"
                 width={180}
@@ -1122,7 +1243,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         profileForm={profileForm}
         focusTagsInput={focusTagsInput}
         onRetryLoad={fetchProfileDetails}
-        onClose={() => setIsProfileModalOpen(false)}
+        onClose={() => {
+          clearPasswordInputs();
+          setIsProfileModalOpen(false);
+        }}
         onSubmit={saveProfile}
         onAvatarChange={handleAvatarChange}
         onRemoveAvatar={() => {
@@ -1136,6 +1260,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         onHandleChange={(value) => setProfileForm((prev) => ({ ...prev, handle: value }))}
         onFocusTagsInputChange={setFocusTagsInput}
         onBioChange={(value) => setProfileForm((prev) => ({ ...prev, bio: value }))}
+        previousPassword={previousPassword}
+        newPassword={newPassword}
+        confirmPassword={confirmPassword}
+        onPreviousPasswordChange={setPreviousPassword}
+        onNewPasswordChange={setNewPassword}
+        onConfirmPasswordChange={setConfirmPassword}
       />
     </div>
   );

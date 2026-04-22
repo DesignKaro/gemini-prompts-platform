@@ -15,6 +15,7 @@ describe('SEO integrations DTOs', () => {
       clarityProjectId: 'abcd12',
       customHeadScriptUrls: ['https://cdn.example.com/script.js'],
       customHeadInlineScript: 'window.featureFlag = true;',
+      customHeadInlineStyle: 'body { color: #111; }',
       customBodyStartInlineScript: 'window.bodyStart = 1;',
       customBodyEndInlineScript: 'window.bodyEnd = 1;',
     });

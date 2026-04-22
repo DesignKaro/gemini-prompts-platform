@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import { getBaseUrl, getNormalizedBaseUrl } from '../lib/seo';
-import { renderSitemapIndex, renderSitemapUrlSet } from '../lib/sitemap';
+import { buildSitemapIndexXml, renderSitemapIndex, renderSitemapUrlSet } from '../lib/sitemap';
 
 describe('seo base url helpers', () => {
   it('prefers canonicalBaseUrl when provided', () => {
@@ -52,5 +52,23 @@ describe('sitemap xml render helpers', () => {
     expect(xml).toContain('<loc>https://example.com/page-sitemap.xml</loc>');
     expect(xml).toContain('<lastmod>2026-03-28T10:00:00.000Z</lastmod>');
     expect(xml).toContain('<loc>https://example.com/prompt-sitemap.xml?x=1&amp;y=2</loc>');
+  });
+
+  it('returns custom sitemap xml override verbatim after trimming', () => {
+    const customXml = '  <?xml version="1.0" encoding="UTF-8"?><urlset></urlset>  ';
+    const xml = buildSitemapIndexXml(
+      { sitemapCustomXml: customXml },
+      [
+        {
+          key: 'page',
+          path: '/page-sitemap.xml',
+          url: 'https://example.com/page-sitemap.xml',
+          enabled: true,
+          entries: [{ loc: 'https://example.com/' }],
+        },
+      ],
+    );
+
+    expect(xml).toBe('<?xml version="1.0" encoding="UTF-8"?><urlset></urlset>');
   });
 });

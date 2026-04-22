@@ -14,6 +14,7 @@ import { bulkActionMessage, runBulkAction } from '../../../components/dashboard/
 import { InlineSpinner } from '../../../components/ui/inline-spinner';
 import { LoadingButton } from '../../../components/ui/loading-button';
 import { formatBytes, formatRelativeTimeOrDash } from '../../../../lib/utils/format';
+import { getFileStem } from '../../../../lib/utils/file-name';
 
 type MediaItem = {
   id: string;
@@ -42,6 +43,49 @@ const MEDIA_UPLOAD_PENDING_KEY = 'dashboard.media.upload';
 const MEDIA_BULK_DELETE_PENDING_KEY = 'dashboard.media.bulk.delete';
 const MEDIA_SAVE_PENDING_KEY_PREFIX = 'dashboard.media.save:';
 const MEDIA_DELETE_PENDING_KEY_PREFIX = 'dashboard.media.delete:';
+const MEDIA_TYPE_FILTERS = ['All', 'AVIF', 'WEBP', 'GIF', 'SVG', 'JPG', 'PNG'] as const;
+type MediaTypeFilter = (typeof MEDIA_TYPE_FILTERS)[number];
+type MediaDisplayType = Exclude<MediaTypeFilter, 'All'>;
+
+const MEDIA_TYPE_BY_EXTENSION: Record<string, MediaDisplayType> = {
+  avif: 'AVIF',
+  webp: 'WEBP',
+  gif: 'GIF',
+  svg: 'SVG',
+  jpg: 'JPG',
+  jpeg: 'JPG',
+  png: 'PNG',
+};
+
+function getMediaType(item: MediaItem): MediaDisplayType {
+  const mime = item.mime?.toLowerCase() ?? '';
+  if (mime.includes('svg')) return 'SVG';
+  if (mime.includes('avif')) return 'AVIF';
+  if (mime.includes('webp')) return 'WEBP';
+  if (mime.includes('gif')) return 'GIF';
+  if (mime.includes('jpeg') || mime.includes('jpg')) return 'JPG';
+  if (mime.includes('png')) return 'PNG';
+
+  const fileName = item.url.split('/').pop()?.split('?')[0]?.split('#')[0]?.toLowerCase();
+  const extension = fileName?.includes('.') ? fileName.split('.').pop() ?? '' : '';
+  return MEDIA_TYPE_BY_EXTENSION[extension] ?? 'JPG';
+}
+
+function getMediaFileLabel(item: MediaItem) {
+  const type = getMediaType(item).toLowerCase();
+  const title = item.title.trim();
+  if (!title) {
+    return `Untitled.${type}`;
+  }
+
+  const normalizedTitle = title.toLowerCase();
+  const matchingExtensions = type === 'jpg' ? ['jpg', 'jpeg'] : [type];
+  const hasMatchingExtension = matchingExtensions.some((extension) =>
+    normalizedTitle.endsWith(`.${extension}`),
+  );
+
+  return hasMatchingExtension ? title : `${title}.${type}`;
+}
 
 export default function MediaManagementPage() {
   const { request, status: authStatus, isPending } = useAdminApi();
@@ -50,7 +94,7 @@ export default function MediaManagementPage() {
   const [activeMediaId, setActiveMediaId] = useState<string | null>(null);
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'All' | 'JPG' | 'PNG'>('All');
+  const [typeFilter, setTypeFilter] = useState<MediaTypeFilter>('All');
   const [draftDetails, setDraftDetails] = useState({
     altText: '',
     title: '',
@@ -109,17 +153,6 @@ export default function MediaManagementPage() {
       title: activeMedia.title || '',
     });
   }, [activeMediaId, activeMedia?.altText, activeMedia?.title]);
-
-  const getMediaType = (item: MediaItem) => {
-    const mime = item.mime?.toLowerCase() ?? '';
-    if (mime.includes('png')) return 'PNG';
-    if (mime.includes('jpg') || mime.includes('jpeg')) return 'JPG';
-    const ext = item.url.split('.').pop()?.split('?')[0]?.toUpperCase();
-    if (ext === 'JPEG') return 'JPG';
-    if (ext === 'PNG') return 'PNG';
-    if (ext === 'JPG') return 'JPG';
-    return 'JPG';
-  };
 
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -243,7 +276,7 @@ export default function MediaManagementPage() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('title', file.name);
+      formData.append('title', getFileStem(file.name) || file.name);
 
       await request('/api/admin/media/upload', {
         method: 'POST',
@@ -402,14 +435,16 @@ export default function MediaManagementPage() {
                   />
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <select
+                    <select
                     value={typeFilter}
-                    onChange={(event) => setTypeFilter(event.target.value as 'All' | 'JPG' | 'PNG')}
+                    onChange={(event) => setTypeFilter(event.target.value as MediaTypeFilter)}
                     className="rounded-full border border-[#e1e5ee] bg-white px-4 py-2 text-[0.82rem] text-gray-600"
                   >
-                    <option value="All">All types</option>
-                    <option value="JPG">JPG</option>
-                    <option value="PNG">PNG</option>
+                    {MEDIA_TYPE_FILTERS.map((value) => (
+                      <option key={value} value={value}>
+                        {value === 'All' ? 'All types' : value}
+                      </option>
+                    ))}
                   </select>
                   {isSelectMode && (
                     <label className="flex items-center gap-2 text-[0.8rem] text-gray-500">
@@ -494,7 +529,7 @@ export default function MediaManagementPage() {
 
               <div className="space-y-1 mb-6 text-[0.8rem] text-gray-500">
                 <p className="font-medium text-[#0f1116] break-all">
-                  {activeMedia.title}.{getMediaType(activeMedia).toLowerCase()}
+                  {getMediaFileLabel(activeMedia)}
                 </p>
                 <div className="flex items-center justify-between">
                   <span>{formatRelativeTimeOrDash(activeMedia.uploadedAt)}</span>
