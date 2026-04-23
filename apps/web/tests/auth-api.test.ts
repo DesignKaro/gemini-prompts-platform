@@ -85,9 +85,9 @@ describe('logoutApiSession', () => {
     );
 
     await expect(logoutApiSession('refresh-token')).rejects.toMatchObject({
-        message: 'Refresh token is invalid or expired.',
-        status: 401,
-      });
+      message: 'Refresh token is invalid or expired.',
+      status: 401,
+    });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });

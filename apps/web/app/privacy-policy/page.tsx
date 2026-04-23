@@ -86,8 +86,8 @@ export default async function PrivacyPolicyPage() {
               Welcome to <strong>GeminiPrompts.io</strong> (&quot;we,&quot; &quot;our,&quot; or
               &quot;us&quot;). We are committed to protecting your personal information and your
               right to privacy. This Privacy Policy explains how we collect, use, disclose, and
-              safeguard your information when you visit our website <strong>geminiprompts.io</strong>{' '}
-              and use our services.
+              safeguard your information when you visit our website{' '}
+              <strong>geminiprompts.io</strong> and use our services.
             </p>
             <p>
               Please read this policy carefully. If you disagree with its terms, please discontinue
@@ -110,16 +110,16 @@ export default async function PrivacyPolicyPage() {
                 email or contact forms.
               </li>
               <li>
-                <strong>User-generated content</strong> — prompts, collections, or other content
-                you create or submit on the platform.
+                <strong>User-generated content</strong> — prompts, collections, or other content you
+                create or submit on the platform.
               </li>
             </ul>
 
             <h3>2.2 Information Collected Automatically</h3>
             <ul>
               <li>
-                <strong>Usage data</strong> — pages visited, features used, time spent, clicks,
-                and search queries.
+                <strong>Usage data</strong> — pages visited, features used, time spent, clicks, and
+                search queries.
               </li>
               <li>
                 <strong>Device &amp; technical data</strong> — IP address, browser type, operating
@@ -166,8 +166,7 @@ export default async function PrivacyPolicyPage() {
                 notices, and (with your consent) send promotional emails.
               </li>
               <li>
-                <strong>Improve our platform</strong> through analysis of usage trends and
-                feedback.
+                <strong>Improve our platform</strong> through analysis of usage trends and feedback.
               </li>
               <li>
                 <strong>Ensure security</strong> — detect fraud, prevent abuse, and enforce our
@@ -240,9 +239,9 @@ export default async function PrivacyPolicyPage() {
                 specify.
               </li>
               <li>
-                <strong>Business transfers</strong> — in the event of a merger, acquisition, or
-                sale of assets, your information may be transferred as part of that transaction. We
-                will notify you before your data becomes subject to a different privacy policy.
+                <strong>Business transfers</strong> — in the event of a merger, acquisition, or sale
+                of assets, your information may be transferred as part of that transaction. We will
+                notify you before your data becomes subject to a different privacy policy.
               </li>
               <li>
                 <strong>Legal requirements</strong> — when required by law, regulation, legal
@@ -257,10 +256,10 @@ export default async function PrivacyPolicyPage() {
 
             <h2>6. Data Retention</h2>
             <p>
-              We retain your personal information for as long as your account is active or as
-              needed to provide services, comply with legal obligations, resolve disputes, and
-              enforce agreements. When you delete your account, we will delete or anonymize your
-              data within <strong>30 days</strong>, except where retention is required by law.
+              We retain your personal information for as long as your account is active or as needed
+              to provide services, comply with legal obligations, resolve disputes, and enforce
+              agreements. When you delete your account, we will delete or anonymize your data within{' '}
+              <strong>30 days</strong>, except where retention is required by law.
             </p>
 
             <h2>7. Your Rights and Choices</h2>
@@ -316,8 +315,8 @@ export default async function PrivacyPolicyPage() {
             </ul>
             <p>
               No method of transmission over the internet is 100% secure. While we strive to use
-              commercially acceptable means to protect your information, we cannot guarantee absolute
-              security.
+              commercially acceptable means to protect your information, we cannot guarantee
+              absolute security.
             </p>
 
             <h2>9. Children&apos;s Privacy</h2>
@@ -348,11 +347,10 @@ export default async function PrivacyPolicyPage() {
             <h2>12. Changes to This Privacy Policy</h2>
             <p>
               We may update this Privacy Policy from time to time to reflect changes in our
-              practices or for legal, operational, or regulatory reasons. When we do, we will
-              revise the &quot;Last Updated&quot; date at the top of this page and, where
-              appropriate, notify you by email or by a prominent notice on our website. Your
-              continued use of the site after changes take effect constitutes acceptance of the
-              updated policy.
+              practices or for legal, operational, or regulatory reasons. When we do, we will revise
+              the &quot;Last Updated&quot; date at the top of this page and, where appropriate,
+              notify you by email or by a prominent notice on our website. Your continued use of the
+              site after changes take effect constitutes acceptance of the updated policy.
             </p>
 
             <h2>13. Contact Us</h2>
@@ -367,7 +365,9 @@ export default async function PrivacyPolicyPage() {
               <br />
               Website: <a href="https://geminiprompts.io">geminiprompts.io</a>
             </p>
-            <p>We aim to respond to all inquiries within <strong>5 business days</strong>.</p>
+            <p>
+              We aim to respond to all inquiries within <strong>5 business days</strong>.
+            </p>
             <p>
               <em>This Privacy Policy was last reviewed and updated on March 29, 2026.</em>
             </p>

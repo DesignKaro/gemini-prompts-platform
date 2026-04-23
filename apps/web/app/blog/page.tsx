@@ -28,7 +28,8 @@ export async function generateMetadata({ searchParams }: PageProps) {
 
   return buildPaginatedMetadata({
     title: 'Blog',
-    description: 'Read prompt engineering guides, AI workflow articles, and creator strategy posts.',
+    description:
+      'Read prompt engineering guides, AI workflow articles, and creator strategy posts.',
     basePath: '/blog',
     page,
     noIndex: settings.noindexBlogArchivePages,
@@ -83,7 +84,8 @@ async function BlogArchiveSection({
       schema: buildWebPageSchema({
         url: pageUrl,
         name: 'Blog',
-        description: 'Read prompt engineering guides, AI workflow articles, and creator strategy posts.',
+        description:
+          'Read prompt engineering guides, AI workflow articles, and creator strategy posts.',
       }),
     },
     {

@@ -66,11 +66,13 @@ export class SeoSettingsService {
   constructor(private readonly prisma: PrismaService) {}
 
   private get seoSettingsDelegate() {
-    return (this.prisma as PrismaService & {
-      seoSettings: {
-        upsert: (args: Record<string, unknown>) => Promise<Record<string, unknown>>;
-      };
-    }).seoSettings;
+    return (
+      this.prisma as PrismaService & {
+        seoSettings: {
+          upsert: (args: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        };
+      }
+    ).seoSettings;
   }
 
   async getSettings(): Promise<SeoSettingsPayload> {
@@ -133,14 +135,17 @@ export class SeoSettingsService {
           191,
         ),
         twitterCardType:
-          input.twitterCardType === 'summary' ? 'summary' : input.twitterCardType === 'summary_large_image' ? 'summary_large_image' : current.twitterCardType,
+          input.twitterCardType === 'summary'
+            ? 'summary'
+            : input.twitterCardType === 'summary_large_image'
+              ? 'summary_large_image'
+              : current.twitterCardType,
         schemaOrganizationEnabled:
           input.schemaOrganizationEnabled ?? current.schemaOrganizationEnabled,
         schemaWebsiteEnabled: input.schemaWebsiteEnabled ?? current.schemaWebsiteEnabled,
         schemaWebPageEnabled: input.schemaWebPageEnabled ?? current.schemaWebPageEnabled,
         schemaFaqEnabled: input.schemaFaqEnabled ?? current.schemaFaqEnabled,
-        schemaCollectionEnabled:
-          input.schemaCollectionEnabled ?? current.schemaCollectionEnabled,
+        schemaCollectionEnabled: input.schemaCollectionEnabled ?? current.schemaCollectionEnabled,
         schemaArticleEnabled: input.schemaArticleEnabled ?? current.schemaArticleEnabled,
         schemaProfileEnabled: input.schemaProfileEnabled ?? current.schemaProfileEnabled,
         schemaBreadcrumbEnabled: input.schemaBreadcrumbEnabled ?? current.schemaBreadcrumbEnabled,
@@ -194,8 +199,7 @@ export class SeoSettingsService {
         noindexAuthorPages: input.noindexAuthorPages ?? current.noindexAuthorPages,
         noindexTagPages: input.noindexTagPages ?? current.noindexTagPages,
         noindexCategoryPages: input.noindexCategoryPages ?? current.noindexCategoryPages,
-        noindexBlogArchivePages:
-          input.noindexBlogArchivePages ?? current.noindexBlogArchivePages,
+        noindexBlogArchivePages: input.noindexBlogArchivePages ?? current.noindexBlogArchivePages,
         noindexBlogPostPages: input.noindexBlogPostPages ?? current.noindexBlogPostPages,
         noindexStaticPages: input.noindexStaticPages ?? current.noindexStaticPages,
       },
@@ -248,7 +252,8 @@ export class SeoSettingsService {
       robotsBlockAiBots: Boolean(record.robotsBlockAiBots),
       robotsDisallowPaths: this.normalizePaths(record.robotsDisallowPaths),
       robotsAdditionalRules: this.normalizeAdditionalRobotRules(record.robotsAdditionalRules),
-      robotsCustomText: typeof record.robotsCustomText === 'string' ? record.robotsCustomText : null,
+      robotsCustomText:
+        typeof record.robotsCustomText === 'string' ? record.robotsCustomText : null,
       sitemapIncludePrompts: Boolean(record.sitemapIncludePrompts),
       sitemapIncludePages: Boolean(record.sitemapIncludePages),
       sitemapIncludePosts: Boolean(record.sitemapIncludePosts),
@@ -256,13 +261,16 @@ export class SeoSettingsService {
       sitemapIncludeTags: Boolean(record.sitemapIncludeTags),
       sitemapIncludeCategories: Boolean(record.sitemapIncludeCategories),
       sitemapIncludeAuthors: Boolean(record.sitemapIncludeAuthors),
-      sitemapCustomXml: typeof record.sitemapCustomXml === 'string' ? record.sitemapCustomXml : null,
-      canonicalBaseUrl: typeof record.canonicalBaseUrl === 'string' ? record.canonicalBaseUrl : null,
+      sitemapCustomXml:
+        typeof record.sitemapCustomXml === 'string' ? record.sitemapCustomXml : null,
+      canonicalBaseUrl:
+        typeof record.canonicalBaseUrl === 'string' ? record.canonicalBaseUrl : null,
       googleSiteVerification:
         typeof record.googleSiteVerification === 'string' ? record.googleSiteVerification : null,
       bingSiteVerification:
         typeof record.bingSiteVerification === 'string' ? record.bingSiteVerification : null,
-      organizationName: typeof record.organizationName === 'string' ? record.organizationName : null,
+      organizationName:
+        typeof record.organizationName === 'string' ? record.organizationName : null,
       organizationLogoUrl:
         typeof record.organizationLogoUrl === 'string' ? record.organizationLogoUrl : null,
       organizationSameAs: this.normalizeSameAsUrls(record.organizationSameAs),
@@ -297,9 +305,7 @@ export class SeoSettingsService {
     }
 
     const normalized = value
-      .flatMap((item) =>
-        typeof item === 'string' ? item.split(/\r?\n/) : [],
-      )
+      .flatMap((item) => (typeof item === 'string' ? item.split(/\r?\n/) : []))
       .map((item) => item.trim())
       .filter(Boolean)
       .filter((line) => {

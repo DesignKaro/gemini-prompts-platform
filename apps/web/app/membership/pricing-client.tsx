@@ -9,10 +9,7 @@ import {
   type MembershipCheckoutCycle,
   verifyMembershipCheckout,
 } from '../../lib/membership-checkout';
-import {
-  getMembershipSummary,
-  MembershipManagementError,
-} from '../../lib/membership-management';
+import { getMembershipSummary, MembershipManagementError } from '../../lib/membership-management';
 import { redirectToSignInModal } from '../../lib/utils/auth-redirect';
 import { refreshSession } from '../../lib/utils/session';
 import { LoadingButton } from '../components/ui/loading-button';
@@ -121,9 +118,13 @@ function ensureRazorpayScript() {
 
     if (existingScript) {
       existingScript.addEventListener('load', () => resolve(), { once: true });
-      existingScript.addEventListener('error', () => reject(new Error('Unable to load checkout.')), {
-        once: true,
-      });
+      existingScript.addEventListener(
+        'error',
+        () => reject(new Error('Unable to load checkout.')),
+        {
+          once: true,
+        },
+      );
       return;
     }
 

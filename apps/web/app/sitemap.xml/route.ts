@@ -1,8 +1,4 @@
-import {
-  createXmlResponse,
-  getSitemapIndexXml,
-  renderSitemapIndex,
-} from '../../lib/sitemap';
+import { createXmlResponse, getSitemapIndexXml, renderSitemapIndex } from '../../lib/sitemap';
 
 export const dynamic = 'force-dynamic';
 

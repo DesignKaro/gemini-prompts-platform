@@ -147,8 +147,8 @@ export function SiteFooter() {
               </Link>
 
               <p className="mt-5 text-[1.02rem] leading-[1.75] text-white/70">
-                Simple prompts for better AI images, cleaner edits, and faster creative results
-                for everyday creators and small teams.
+                Simple prompts for better AI images, cleaner edits, and faster creative results for
+                everyday creators and small teams.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">

@@ -308,11 +308,14 @@ export default function UsersPage() {
     setLoadError(null);
     try {
       const pendingKey =
-        nextAction === 'suspend' ? USER_PENDING_KEY.suspend(user.id) : USER_PENDING_KEY.activate(user.id);
+        nextAction === 'suspend'
+          ? USER_PENDING_KEY.suspend(user.id)
+          : USER_PENDING_KEY.activate(user.id);
       if (isPending(pendingKey)) return;
       const updated = await request<ApiUser>(`/api/admin/users/${user.id}/${nextAction}`, {
         method: 'PATCH',
-        actionName: nextAction === 'suspend' ? 'dashboard.users.suspend' : 'dashboard.users.activate',
+        actionName:
+          nextAction === 'suspend' ? 'dashboard.users.suspend' : 'dashboard.users.activate',
         pendingKey,
       });
       setUsers((prev) => prev.map((item) => (item.id === user.id ? mapUser(updated) : item)));
@@ -654,7 +657,9 @@ export default function UsersPage() {
                           </select>
                         ) : (
                           <div className="rounded-xl border border-dashed border-[#e1e5ee] px-3 py-2 text-[0.8rem] text-gray-500">
-                            {isProtectedUser ? 'superadmin only' : 'Role editing requires `users:manage`.'}
+                            {isProtectedUser
+                              ? 'superadmin only'
+                              : 'Role editing requires `users:manage`.'}
                           </div>
                         )}
                       </td>
@@ -862,13 +867,13 @@ export default function UsersPage() {
                           </select>
                           {transferCandidates.length === 0 ? (
                             <p className="text-[0.78rem] text-red-600">
-                              Add another user account before deleting this one so the owned
-                              records have somewhere to transfer.
+                              Add another user account before deleting this one so the owned records
+                              have somewhere to transfer.
                             </p>
                           ) : (
                             <p className="text-[0.78rem] text-gray-500">
-                              Prompts, posts, collabs, submissions, transactions, and
-                              subscriptions owned by this account will move to the selected user.
+                              Prompts, posts, collabs, submissions, transactions, and subscriptions
+                              owned by this account will move to the selected user.
                             </p>
                           )}
                         </div>
@@ -892,7 +897,9 @@ export default function UsersPage() {
                   <LoadingButton
                     type="button"
                     onClick={submitDeleteUser}
-                    pending={deleteTarget ? isPending(USER_PENDING_KEY.delete(deleteTarget.id)) : false}
+                    pending={
+                      deleteTarget ? isPending(USER_PENDING_KEY.delete(deleteTarget.id)) : false
+                    }
                     pendingLabel={
                       deleteImpact?.requiresTransfer ? 'Transferring...' : 'Deleting...'
                     }

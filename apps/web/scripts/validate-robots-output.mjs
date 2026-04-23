@@ -13,7 +13,9 @@ const validDirectives = new Set([
 
 const response = await fetch(robotsUrl);
 if (!response.ok) {
-  throw new Error(`[robots-check] Failed to fetch robots.txt (${response.status}) from ${robotsUrl}`);
+  throw new Error(
+    `[robots-check] Failed to fetch robots.txt (${response.status}) from ${robotsUrl}`,
+  );
 }
 
 const content = await response.text();

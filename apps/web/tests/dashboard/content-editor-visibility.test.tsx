@@ -11,10 +11,7 @@ const { requestMock, replaceMock, searchParamsState } = vi.hoisted(() => ({
 
 vi.mock('next/dynamic', () => ({
   default: () =>
-    function MockRichTextEditor(props: {
-      value: string;
-      onChange: (nextValue: string) => void;
-    }) {
+    function MockRichTextEditor(props: { value: string; onChange: (nextValue: string) => void }) {
       return (
         <textarea
           aria-label="Prompt body"
@@ -248,9 +245,14 @@ describe('Content editor visibility controls', () => {
 
     await screen.findByDisplayValue('Follow-up Prompt');
     const promptReadCalls = requestMock.mock.calls.filter(
-      (call) => call[0] === '/api/admin/prompts/prompt_1' || call[0] === '/api/admin/prompts/prompt_2',
+      (call) =>
+        call[0] === '/api/admin/prompts/prompt_1' || call[0] === '/api/admin/prompts/prompt_2',
     );
-    expect(promptReadCalls.filter((call) => call[0] === '/api/admin/prompts/prompt_1')).toHaveLength(1);
-    expect(promptReadCalls.filter((call) => call[0] === '/api/admin/prompts/prompt_2')).toHaveLength(1);
+    expect(
+      promptReadCalls.filter((call) => call[0] === '/api/admin/prompts/prompt_1'),
+    ).toHaveLength(1);
+    expect(
+      promptReadCalls.filter((call) => call[0] === '/api/admin/prompts/prompt_2'),
+    ).toHaveLength(1);
   });
 });

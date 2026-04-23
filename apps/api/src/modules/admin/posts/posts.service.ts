@@ -450,32 +450,32 @@ export class PostsService {
     ).html;
 
     const createData: Prisma.PostCreateInput = {
-        author: { connect: { id: authorId } },
-        title,
-        slug,
-        excerpt: data.excerpt ?? null,
-        content: normalizedContent,
-        status: publicationState.status,
-        visibility: data.visibility ?? 'FREE',
-        postType: this.normalizePostType(data.postType) ?? 'POST',
-        postFormat: this.normalizePostFormat(data.postFormat) ?? 'STANDARD',
-        featuredImageUrl: hostedFeaturedImage ?? null,
-        metaTitle: data.metaTitle ?? null,
-        metaDescription: data.metaDescription ?? null,
-        seoTitle: data.seoTitle ?? null,
-        seoDescription: data.seoDescription ?? null,
-        seoFocusKeyword: data.seoFocusKeyword ?? null,
-        seoCanonicalUrl: data.seoCanonicalUrl ?? null,
-        seoNoIndex: data.seoNoIndex ?? false,
-        scheduledAt: publicationState.scheduledAt,
-        publishedAt: publicationState.publishedAt,
-        primaryCategory: categoryResult.primaryCategoryId
-          ? { connect: { id: categoryResult.primaryCategoryId } }
-          : undefined,
-        categories: categoryResult.categoryIds.length
-          ? { connect: categoryResult.categoryIds.map((id) => ({ id })) }
-          : undefined,
-        tags: tagIds.length ? { connect: tagIds.map((id) => ({ id })) } : undefined,
+      author: { connect: { id: authorId } },
+      title,
+      slug,
+      excerpt: data.excerpt ?? null,
+      content: normalizedContent,
+      status: publicationState.status,
+      visibility: data.visibility ?? 'FREE',
+      postType: this.normalizePostType(data.postType) ?? 'POST',
+      postFormat: this.normalizePostFormat(data.postFormat) ?? 'STANDARD',
+      featuredImageUrl: hostedFeaturedImage ?? null,
+      metaTitle: data.metaTitle ?? null,
+      metaDescription: data.metaDescription ?? null,
+      seoTitle: data.seoTitle ?? null,
+      seoDescription: data.seoDescription ?? null,
+      seoFocusKeyword: data.seoFocusKeyword ?? null,
+      seoCanonicalUrl: data.seoCanonicalUrl ?? null,
+      seoNoIndex: data.seoNoIndex ?? false,
+      scheduledAt: publicationState.scheduledAt,
+      publishedAt: publicationState.publishedAt,
+      primaryCategory: categoryResult.primaryCategoryId
+        ? { connect: { id: categoryResult.primaryCategoryId } }
+        : undefined,
+      categories: categoryResult.categoryIds.length
+        ? { connect: categoryResult.categoryIds.map((id) => ({ id })) }
+        : undefined,
+      tags: tagIds.length ? { connect: tagIds.map((id) => ({ id })) } : undefined,
     };
 
     const created = await this.prisma.post.create({
@@ -547,34 +547,34 @@ export class PostsService {
         : (await this.mediaStorageService.replaceInlineImageDataUrls(data.content, 'editor')).html;
 
     const updateData: Prisma.PostUpdateInput = {
-        title: data.title?.trim(),
-        slug: data.slug?.trim(),
-        excerpt: data.excerpt,
-        content: normalizedContent,
-        status: publicationState.status,
-        visibility: data.visibility,
-        postType: this.normalizePostType(data.postType),
-        postFormat: this.normalizePostFormat(data.postFormat),
-        featuredImageUrl: hostedFeaturedImage,
-        metaTitle: data.metaTitle,
-        metaDescription: data.metaDescription,
-        seoTitle: data.seoTitle,
-        seoDescription: data.seoDescription,
-        seoFocusKeyword: data.seoFocusKeyword,
-        seoCanonicalUrl: data.seoCanonicalUrl,
-        seoNoIndex: data.seoNoIndex,
-        scheduledAt: publicationState.scheduledAt,
-        publishedAt: publicationState.publishedAt,
-        primaryCategory:
-          data.primaryCategoryId === undefined
-            ? undefined
-            : categoryResult.primaryCategoryId
-              ? { connect: { id: categoryResult.primaryCategoryId } }
-              : { disconnect: true },
-        categories: data.categoryIds
-          ? { set: categoryResult.categoryIds.map((cid) => ({ id: cid })) }
-          : undefined,
-        tags: data.tagIds ? { set: tagIds.map((tid) => ({ id: tid })) } : undefined,
+      title: data.title?.trim(),
+      slug: data.slug?.trim(),
+      excerpt: data.excerpt,
+      content: normalizedContent,
+      status: publicationState.status,
+      visibility: data.visibility,
+      postType: this.normalizePostType(data.postType),
+      postFormat: this.normalizePostFormat(data.postFormat),
+      featuredImageUrl: hostedFeaturedImage,
+      metaTitle: data.metaTitle,
+      metaDescription: data.metaDescription,
+      seoTitle: data.seoTitle,
+      seoDescription: data.seoDescription,
+      seoFocusKeyword: data.seoFocusKeyword,
+      seoCanonicalUrl: data.seoCanonicalUrl,
+      seoNoIndex: data.seoNoIndex,
+      scheduledAt: publicationState.scheduledAt,
+      publishedAt: publicationState.publishedAt,
+      primaryCategory:
+        data.primaryCategoryId === undefined
+          ? undefined
+          : categoryResult.primaryCategoryId
+            ? { connect: { id: categoryResult.primaryCategoryId } }
+            : { disconnect: true },
+      categories: data.categoryIds
+        ? { set: categoryResult.categoryIds.map((cid) => ({ id: cid })) }
+        : undefined,
+      tags: data.tagIds ? { set: tagIds.map((tid) => ({ id: tid })) } : undefined,
     };
 
     const updated = await this.prisma.post.update({

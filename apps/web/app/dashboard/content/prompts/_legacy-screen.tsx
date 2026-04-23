@@ -504,7 +504,9 @@ export default function PromptsManagementPage() {
                   className="rounded-full border border-[#e1e5ee] px-3 py-1.5 text-[0.78rem] text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span className="inline-flex items-center gap-2">
-                    {isBulkCategoryPending ? <InlineSpinner size="xs" className="text-gray-600" /> : null}
+                    {isBulkCategoryPending ? (
+                      <InlineSpinner size="xs" className="text-gray-600" />
+                    ) : null}
                     <span>Edit Category</span>
                   </span>
                 </button>
@@ -544,7 +546,9 @@ export default function PromptsManagementPage() {
                   className="rounded-full border border-[#e1e5ee] px-3 py-1.5 text-[0.78rem] text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span className="inline-flex items-center gap-2">
-                    {isBulkStatusPending ? <InlineSpinner size="xs" className="text-gray-600" /> : null}
+                    {isBulkStatusPending ? (
+                      <InlineSpinner size="xs" className="text-gray-600" />
+                    ) : null}
                     <span>Edit Status</span>
                   </span>
                 </button>

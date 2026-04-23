@@ -5,14 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { ActionError } from '@/app/components/dashboard/action-error';
 import { useAdminApi } from '@/app/components/dashboard/use-admin-api';
-import {
-  DEFAULT_DASHBOARD_SEO_INTEGRATIONS,
-  DEFAULT_DASHBOARD_SEO_SETTINGS,
-} from '../api';
-import {
-  SEO_INTEGRATION_SCOPES,
-  type SeoIntegrationScope,
-} from '@/lib/seo-integrations';
+import { DEFAULT_DASHBOARD_SEO_INTEGRATIONS, DEFAULT_DASHBOARD_SEO_SETTINGS } from '../api';
+import { SEO_INTEGRATION_SCOPES, type SeoIntegrationScope } from '@/lib/seo-integrations';
 import { getBaseUrl } from '@/lib/seo';
 import { hasAnyPermission, isProtectedSuperadminEmail } from '@/lib/utils/permissions';
 import type {
@@ -76,7 +70,9 @@ function buildRobotsPreview(
   const rules = [
     'User-agent: *',
     ...(settings.robotsSiteIndex ? ['Allow: /'] : []),
-    ...(settings.robotsSiteIndex ? robotsDisallowPaths.map((path) => `Disallow: ${path}`) : ['Disallow: /']),
+    ...(settings.robotsSiteIndex
+      ? robotsDisallowPaths.map((path) => `Disallow: ${path}`)
+      : ['Disallow: /']),
   ];
 
   if (settings.robotsBlockAiBots) {
@@ -89,7 +85,9 @@ function buildRobotsPreview(
     rules.push('', ...robotsAdditionalRules);
   }
 
-  const hasCustomSitemap = robotsAdditionalRules.some((rule) => hasRobotsDirective(rule, 'sitemap'));
+  const hasCustomSitemap = robotsAdditionalRules.some((rule) =>
+    hasRobotsDirective(rule, 'sitemap'),
+  );
   const hasCustomHost = robotsAdditionalRules.some((rule) => hasRobotsDirective(rule, 'host'));
   if (!hasCustomSitemap || !hasCustomHost) {
     rules.push('');
@@ -185,9 +183,19 @@ export function SeoScreen({ section }: { section: SeoSection }) {
       canManageSeo
         ? [
             ...SEO_NAV_BASE,
-            { href: '/dashboard/seo/custom-code', label: 'Custom Code', section: 'custom-code' as const },
+            {
+              href: '/dashboard/seo/custom-code',
+              label: 'Custom Code',
+              section: 'custom-code' as const,
+            },
             ...(isSuperadmin
-              ? [{ href: '/dashboard/seo/integrations', label: 'Integrations', section: 'integrations' as const }]
+              ? [
+                  {
+                    href: '/dashboard/seo/integrations',
+                    label: 'Integrations',
+                    section: 'integrations' as const,
+                  },
+                ]
               : []),
             { href: '/dashboard/seo/redirects', label: 'Redirects', section: 'redirects' as const },
           ]
@@ -210,7 +218,9 @@ export function SeoScreen({ section }: { section: SeoSection }) {
         ),
       );
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Unable to load SEO settings.');
+      setError(
+        requestError instanceof Error ? requestError.message : 'Unable to load SEO settings.',
+      );
     } finally {
       setLoading(false);
     }
@@ -312,9 +322,12 @@ export function SeoScreen({ section }: { section: SeoSection }) {
     setError(null);
     setSaveMessage(null);
     try {
-      const endpoint = section === 'custom-code' ? '/api/admin/seo/custom-code' : '/api/admin/seo/integrations';
+      const endpoint =
+        section === 'custom-code' ? '/api/admin/seo/custom-code' : '/api/admin/seo/integrations';
       const actionName =
-        section === 'custom-code' ? 'admin.seo.custom-code.update' : 'admin.seo.integrations.update';
+        section === 'custom-code'
+          ? 'admin.seo.custom-code.update'
+          : 'admin.seo.integrations.update';
       const payloadInput: DashboardSeoIntegrationSettingsUpdateInput = {
         googleSiteVerification: integrationSettings.googleSiteVerification,
         bingSiteVerification: integrationSettings.bingSiteVerification,
@@ -365,11 +378,7 @@ export function SeoScreen({ section }: { section: SeoSection }) {
 
   const robotsPreviewText = settings.robotsCustomText?.trim()
     ? settings.robotsCustomText
-    : buildRobotsPreview(
-        settings,
-        settings.robotsDisallowPaths,
-        settings.robotsAdditionalRules,
-      );
+    : buildRobotsPreview(settings, settings.robotsDisallowPaths, settings.robotsAdditionalRules);
 
   const saveSettings = useCallback(
     async (partial?: Partial<DashboardSeoSettingsUpdateInput>) => {
@@ -384,7 +393,7 @@ export function SeoScreen({ section }: { section: SeoSection }) {
       if (robotsEditorOpen) {
         if (robotsInput.trim().length > 0) {
           nextRobotsCustomText =
-            (settings.robotsCustomText?.trim() || robotsInput !== robotsPreviewText)
+            settings.robotsCustomText?.trim() || robotsInput !== robotsPreviewText
               ? robotsInput
               : null;
         } else {
@@ -416,7 +425,9 @@ export function SeoScreen({ section }: { section: SeoSection }) {
         setRobotsEditorOpen(false);
         setSaveMessage('Saved.');
       } catch (requestError) {
-        setError(requestError instanceof Error ? requestError.message : 'Unable to save SEO settings.');
+        setError(
+          requestError instanceof Error ? requestError.message : 'Unable to save SEO settings.',
+        );
       } finally {
         setSaving(false);
       }
@@ -443,7 +454,8 @@ export function SeoScreen({ section }: { section: SeoSection }) {
     const files: string[] = [];
     if (settings.sitemapIncludePages) files.push('/page-sitemap.xml');
     if (settings.sitemapIncludePrompts) files.push('/prompt-sitemap.xml');
-    if (settings.sitemapIncludePosts && !settings.noindexBlogPostPages) files.push('/post-sitemap.xml');
+    if (settings.sitemapIncludePosts && !settings.noindexBlogPostPages)
+      files.push('/post-sitemap.xml');
     if (settings.sitemapIncludeNewsletter) files.push('/newsletter-sitemap.xml');
     if (settings.sitemapIncludeCategories && !settings.noindexCategoryPages) {
       files.push('/category-sitemap.xml');
@@ -498,12 +510,7 @@ export function SeoScreen({ section }: { section: SeoSection }) {
     } finally {
       setSaving(false);
     }
-  }, [
-    redirectDestinationPath,
-    redirectIsActive,
-    redirectIsPermanent,
-    redirectSourcePath,
-  ]);
+  }, [redirectDestinationPath, redirectIsActive, redirectIsPermanent, redirectSourcePath]);
 
   const updateRedirectRule = useCallback(
     async (rule: RedirectRule, patch: Partial<RedirectRule>) => {
@@ -520,26 +527,25 @@ export function SeoScreen({ section }: { section: SeoSection }) {
           current.map((item) => (item.id === updated.id ? updated : item)),
         );
       } catch (requestError) {
-        setError(requestError instanceof Error ? requestError.message : 'Unable to update redirect.');
+        setError(
+          requestError instanceof Error ? requestError.message : 'Unable to update redirect.',
+        );
       }
     },
     [],
   );
 
-  const removeRedirectRule = useCallback(
-    async (ruleId: string) => {
-      try {
-        await adminRequestRef.current(`/api/admin/seo/redirects/${ruleId}`, {
-          method: 'DELETE',
-          actionName: 'admin.seo.redirects.delete',
-        });
-        setRedirectRules((current) => current.filter((item) => item.id !== ruleId));
-      } catch (requestError) {
-        setError(requestError instanceof Error ? requestError.message : 'Unable to delete redirect.');
-      }
-    },
-    [],
-  );
+  const removeRedirectRule = useCallback(async (ruleId: string) => {
+    try {
+      await adminRequestRef.current(`/api/admin/seo/redirects/${ruleId}`, {
+        method: 'DELETE',
+        actionName: 'admin.seo.redirects.delete',
+      });
+      setRedirectRules((current) => current.filter((item) => item.id !== ruleId));
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Unable to delete redirect.');
+    }
+  }, []);
 
   const activeUpdatedAt =
     section === 'integrations' || section === 'custom-code'
@@ -620,7 +626,10 @@ export function SeoScreen({ section }: { section: SeoSection }) {
         <div className="space-y-5">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <SummaryCard label="Site title" value={settings.siteTitle} />
-            <SummaryCard label="Robots" value={settings.robotsSiteIndex ? 'Indexing on' : 'Indexing off'} />
+            <SummaryCard
+              label="Robots"
+              value={settings.robotsSiteIndex ? 'Indexing on' : 'Indexing off'}
+            />
             <SummaryCard label="Twitter card" value={settings.twitterCardType} />
             <SummaryCard
               label="Sitemap"
@@ -636,7 +645,10 @@ export function SeoScreen({ section }: { section: SeoSection }) {
             <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
               <h2 className="text-[1.1rem] font-semibold text-[#0f1116]">Search appearance</h2>
               <dl className="mt-4 space-y-3 text-[0.9rem] text-[#4a5363]">
-                <MetaRow label="Homepage title" value={settings.homepageTitle || settings.siteTitle} />
+                <MetaRow
+                  label="Homepage title"
+                  value={settings.homepageTitle || settings.siteTitle}
+                />
                 <MetaRow
                   label="Homepage description"
                   value={settings.homepageDescription || settings.defaultMetaDescription}
@@ -655,14 +667,54 @@ export function SeoScreen({ section }: { section: SeoSection }) {
             <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
               <h2 className="text-[1.1rem] font-semibold text-[#0f1116]">Indexing rules</h2>
               <div className="mt-4 space-y-2 text-[0.88rem] text-[#4a5363]">
-                <RulePill label="Search pages" enabled={!settings.noindexSearchPages} positiveLabel="Indexed" negativeLabel="Noindex" />
-                <RulePill label="Paginated archives" enabled={!settings.noindexPaginatedArchives} positiveLabel="Indexed" negativeLabel="Noindex" />
-                <RulePill label="Author archives" enabled={!settings.noindexAuthorPages} positiveLabel="Indexed" negativeLabel="Noindex" />
-                <RulePill label="Tag archives" enabled={!settings.noindexTagPages} positiveLabel="Indexed" negativeLabel="Noindex" />
-                <RulePill label="Category archives" enabled={!settings.noindexCategoryPages} positiveLabel="Indexed" negativeLabel="Noindex" />
-                <RulePill label="Blog archive" enabled={!settings.noindexBlogArchivePages} positiveLabel="Indexed" negativeLabel="Noindex" />
-                <RulePill label="Blog posts" enabled={!settings.noindexBlogPostPages} positiveLabel="Indexed" negativeLabel="Noindex" />
-                <RulePill label="Static pages" enabled={!settings.noindexStaticPages} positiveLabel="Indexed" negativeLabel="Noindex" />
+                <RulePill
+                  label="Search pages"
+                  enabled={!settings.noindexSearchPages}
+                  positiveLabel="Indexed"
+                  negativeLabel="Noindex"
+                />
+                <RulePill
+                  label="Paginated archives"
+                  enabled={!settings.noindexPaginatedArchives}
+                  positiveLabel="Indexed"
+                  negativeLabel="Noindex"
+                />
+                <RulePill
+                  label="Author archives"
+                  enabled={!settings.noindexAuthorPages}
+                  positiveLabel="Indexed"
+                  negativeLabel="Noindex"
+                />
+                <RulePill
+                  label="Tag archives"
+                  enabled={!settings.noindexTagPages}
+                  positiveLabel="Indexed"
+                  negativeLabel="Noindex"
+                />
+                <RulePill
+                  label="Category archives"
+                  enabled={!settings.noindexCategoryPages}
+                  positiveLabel="Indexed"
+                  negativeLabel="Noindex"
+                />
+                <RulePill
+                  label="Blog archive"
+                  enabled={!settings.noindexBlogArchivePages}
+                  positiveLabel="Indexed"
+                  negativeLabel="Noindex"
+                />
+                <RulePill
+                  label="Blog posts"
+                  enabled={!settings.noindexBlogPostPages}
+                  positiveLabel="Indexed"
+                  negativeLabel="Noindex"
+                />
+                <RulePill
+                  label="Static pages"
+                  enabled={!settings.noindexStaticPages}
+                  positiveLabel="Indexed"
+                  negativeLabel="Noindex"
+                />
               </div>
             </div>
           </div>
@@ -788,8 +840,8 @@ export function SeoScreen({ section }: { section: SeoSection }) {
               <div>
                 <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">robots.txt preview</h2>
                 <p className="mt-2 max-w-3xl text-[0.84rem] leading-6 text-gray-500">
-                  This is the live output for robots.txt. Click the edit icon to make changes
-                  inline and save them directly.
+                  This is the live output for robots.txt. Click the edit icon to make changes inline
+                  and save them directly.
                 </p>
               </div>
               <button
@@ -866,7 +918,9 @@ export function SeoScreen({ section }: { section: SeoSection }) {
               <Field label="Custom sitemap XML">
                 <textarea
                   value={settings.sitemapCustomXml ?? ''}
-                  onChange={(event) => updateSetting('sitemapCustomXml', event.target.value || null)}
+                  onChange={(event) =>
+                    updateSetting('sitemapCustomXml', event.target.value || null)
+                  }
                   rows={18}
                   spellCheck={false}
                   className="min-h-[320px] rounded-xl border border-[#e3e8f3] px-3 py-3 font-mono text-[0.82rem] leading-6 text-[#0f1116] outline-none focus:border-[#c9d5f0]"
@@ -896,7 +950,9 @@ export function SeoScreen({ section }: { section: SeoSection }) {
           <div className="rounded-[20px] border border-[#e8ecf4] bg-white p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">Automatic sitemap builder</h2>
+                <h2 className="text-[1.05rem] font-semibold text-[#0f1116]">
+                  Automatic sitemap builder
+                </h2>
                 <p className="mt-2 max-w-3xl text-[0.84rem] leading-6 text-gray-500">
                   These toggles only affect the generated sitemap when the custom XML override is
                   empty.
@@ -1006,7 +1062,9 @@ export function SeoScreen({ section }: { section: SeoSection }) {
               <Field label="Default Open Graph image URL">
                 <input
                   value={settings.defaultOgImageUrl ?? ''}
-                  onChange={(event) => updateSetting('defaultOgImageUrl', event.target.value || null)}
+                  onChange={(event) =>
+                    updateSetting('defaultOgImageUrl', event.target.value || null)
+                  }
                   placeholder="https://example.com/og-image.jpg"
                   className="h-11 rounded-xl border border-[#e3e8f3] px-3 text-[0.92rem] text-[#0f1116] outline-none focus:border-[#c9d5f0]"
                 />
@@ -1015,7 +1073,9 @@ export function SeoScreen({ section }: { section: SeoSection }) {
               <Field label="Default Open Graph image alt">
                 <input
                   value={settings.defaultOgImageAlt ?? ''}
-                  onChange={(event) => updateSetting('defaultOgImageAlt', event.target.value || null)}
+                  onChange={(event) =>
+                    updateSetting('defaultOgImageAlt', event.target.value || null)
+                  }
                   className="h-11 rounded-xl border border-[#e3e8f3] px-3 text-[0.92rem] text-[#0f1116] outline-none focus:border-[#c9d5f0]"
                 />
               </Field>
@@ -1100,14 +1160,18 @@ export function SeoScreen({ section }: { section: SeoSection }) {
               <Field label="Organization name">
                 <input
                   value={settings.organizationName ?? ''}
-                  onChange={(event) => updateSetting('organizationName', event.target.value || null)}
+                  onChange={(event) =>
+                    updateSetting('organizationName', event.target.value || null)
+                  }
                   className="h-11 rounded-xl border border-[#e3e8f3] px-3 text-[0.92rem] text-[#0f1116] outline-none focus:border-[#c9d5f0]"
                 />
               </Field>
               <Field label="Organization logo URL">
                 <input
                   value={settings.organizationLogoUrl ?? ''}
-                  onChange={(event) => updateSetting('organizationLogoUrl', event.target.value || null)}
+                  onChange={(event) =>
+                    updateSetting('organizationLogoUrl', event.target.value || null)
+                  }
                   placeholder="https://example.com/logo.png"
                   className="h-11 rounded-xl border border-[#e3e8f3] px-3 text-[0.92rem] text-[#0f1116] outline-none focus:border-[#c9d5f0]"
                 />
@@ -1141,7 +1205,9 @@ export function SeoScreen({ section }: { section: SeoSection }) {
               <Field label="Bing verification token">
                 <input
                   value={settings.bingSiteVerification ?? ''}
-                  onChange={(event) => updateSetting('bingSiteVerification', event.target.value || null)}
+                  onChange={(event) =>
+                    updateSetting('bingSiteVerification', event.target.value || null)
+                  }
                   className="h-11 rounded-xl border border-[#e3e8f3] px-3 text-[0.92rem] text-[#0f1116] outline-none focus:border-[#c9d5f0]"
                 />
               </Field>
@@ -1462,11 +1528,7 @@ export function SeoScreen({ section }: { section: SeoSection }) {
                 checked={redirectIsPermanent}
                 onChange={setRedirectIsPermanent}
               />
-              <Toggle
-                label="Active"
-                checked={redirectIsActive}
-                onChange={setRedirectIsActive}
-              />
+              <Toggle label="Active" checked={redirectIsActive} onChange={setRedirectIsActive} />
             </div>
             <div className="mt-4 flex justify-end">
               <button
@@ -1501,8 +1563,12 @@ export function SeoScreen({ section }: { section: SeoSection }) {
                   <div key={rule.id} className="rounded-[16px] border border-[#edf1f8] p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="space-y-1">
-                        <div className="font-mono text-[0.82rem] text-[#111111]">{rule.sourcePath}</div>
-                        <div className="font-mono text-[0.8rem] text-[#4b5563]">{rule.destinationPath}</div>
+                        <div className="font-mono text-[0.82rem] text-[#111111]">
+                          {rule.sourcePath}
+                        </div>
+                        <div className="font-mono text-[0.8rem] text-[#4b5563]">
+                          {rule.destinationPath}
+                        </div>
                         <div className="flex flex-wrap gap-2 pt-1 text-[0.72rem] text-[#6b7280]">
                           <span className="rounded-full bg-[#f3f4f6] px-2 py-1">
                             {rule.isPermanent ? '301 Permanent' : '302 Temporary'}
@@ -1557,7 +1623,9 @@ export function SeoScreen({ section }: { section: SeoSection }) {
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[18px] border border-[#e8ecf4] bg-white p-4">
-      <div className="text-[0.78rem] font-semibold uppercase tracking-wide text-gray-500">{label}</div>
+      <div className="text-[0.78rem] font-semibold uppercase tracking-wide text-gray-500">
+        {label}
+      </div>
       <div className="mt-2 text-[1rem] font-semibold text-[#0f1116]">{value}</div>
     </div>
   );
@@ -1566,7 +1634,9 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
 function MetaRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-[0.75rem] font-semibold uppercase tracking-wide text-gray-500">{label}</dt>
+      <dt className="text-[0.75rem] font-semibold uppercase tracking-wide text-gray-500">
+        {label}
+      </dt>
       <dd className="mt-1 text-[#111111]">{value}</dd>
     </div>
   );
@@ -1586,7 +1656,9 @@ function RulePill({
   return (
     <div className="flex items-center justify-between rounded-[14px] border border-[#edf1f8] bg-[#f9fbff] px-3 py-2">
       <span>{label}</span>
-      <span className={`rounded-full px-2.5 py-1 text-[0.75rem] font-medium ${enabled ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+      <span
+        className={`rounded-full px-2.5 py-1 text-[0.75rem] font-medium ${enabled ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}
+      >
         {enabled ? positiveLabel : negativeLabel}
       </span>
     </div>

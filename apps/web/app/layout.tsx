@@ -41,7 +41,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = getBaseUrl(settings);
   const siteTitle = settings.siteTitle || DEFAULT_SEO_SETTINGS.siteTitle;
   const titleSeparator = settings.titleSeparator || DEFAULT_SEO_SETTINGS.titleSeparator;
-  const description = settings.defaultMetaDescription || DEFAULT_SEO_SETTINGS.defaultMetaDescription;
+  const description =
+    settings.defaultMetaDescription || DEFAULT_SEO_SETTINGS.defaultMetaDescription;
   const defaultOgImage = settings.defaultOgImageUrl || getDefaultOgImage(baseUrl);
   const integrationBundle = buildSeoIntegrationScriptBundle(settings.integrations);
   const googleVerification =

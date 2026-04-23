@@ -4,9 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const scanRoots = ['apps/web/app/dashboard', 'apps/web/features/dashboard'];
-const allow = new Set([
-  path.normalize('apps/web/app/components/dashboard/use-admin-api.ts'),
-]);
+const allow = new Set([path.normalize('apps/web/app/components/dashboard/use-admin-api.ts')]);
 
 const violations = [];
 

@@ -180,12 +180,12 @@ const DRAFT_STORAGE_PREFIX = 'gp:dashboard-content-draft:v1';
 function hasMeaningfulDraftContent(draft: EditorDraft) {
   return Boolean(
     draft.title.trim() ||
-      draft.body.trim() ||
-      draft.excerpt.trim() ||
-      draft.tags.length > 0 ||
-      draft.categories.length > 0 ||
-      draft.featuredImage ||
-      draft.featuredImageValue,
+    draft.body.trim() ||
+    draft.excerpt.trim() ||
+    draft.tags.length > 0 ||
+    draft.categories.length > 0 ||
+    draft.featuredImage ||
+    draft.featuredImageValue,
   );
 }
 
@@ -381,8 +381,7 @@ export default function CreateContentPage() {
     setLoadError(null);
     setIsEditHydrating(true);
 
-    const isCurrentRequest = () =>
-      isActive && latestHydrationRequestRef.current === requestId;
+    const isCurrentRequest = () => isActive && latestHydrationRequestRef.current === requestId;
 
     const completeHydration = () => {
       if (!isCurrentRequest()) return;
@@ -408,12 +407,12 @@ export default function CreateContentPage() {
       setIsSeoPanelOpen(
         Boolean(
           payload.seoTitle?.trim() ||
-            payload.metaTitle?.trim() ||
-            payload.seoDescription?.trim() ||
-            payload.metaDescription?.trim() ||
-            payload.seoFocusKeyword?.trim() ||
-            payload.seoCanonicalUrl?.trim() ||
-            payload.seoNoIndex,
+          payload.metaTitle?.trim() ||
+          payload.seoDescription?.trim() ||
+          payload.metaDescription?.trim() ||
+          payload.seoFocusKeyword?.trim() ||
+          payload.seoCanonicalUrl?.trim() ||
+          payload.seoNoIndex,
         ),
       );
       setFeaturedImage(payload.featuredImageUrl ?? null);
@@ -486,12 +485,12 @@ export default function CreateContentPage() {
       setIsSeoPanelOpen(
         Boolean(
           payload.seoTitle?.trim() ||
-            payload.metaTitle?.trim() ||
-            payload.seoDescription?.trim() ||
-            payload.metaDescription?.trim() ||
-            payload.seoFocusKeyword?.trim() ||
-            payload.seoCanonicalUrl?.trim() ||
-            payload.seoNoIndex,
+          payload.metaTitle?.trim() ||
+          payload.seoDescription?.trim() ||
+          payload.metaDescription?.trim() ||
+          payload.seoFocusKeyword?.trim() ||
+          payload.seoCanonicalUrl?.trim() ||
+          payload.seoNoIndex,
         ),
       );
       setFeaturedImage(payload.featuredImageUrl ?? null);
@@ -683,7 +682,9 @@ export default function CreateContentPage() {
   }, [seoTitle, title]);
   const seoPreviewDescription = useMemo(() => {
     const fallback = excerpt.trim() || stripHtml(body).slice(0, 160);
-    return seoDescription.trim() || fallback || 'Add a meta description to improve search previews.';
+    return (
+      seoDescription.trim() || fallback || 'Add a meta description to improve search previews.'
+    );
   }, [body, excerpt, seoDescription]);
   const seoChecks = useMemo(() => {
     const focus = seoFocusKeyword.trim().toLowerCase();
@@ -705,17 +706,24 @@ export default function CreateContentPage() {
       {
         label: 'Featured image selected',
         ok: Boolean(featuredImage || featuredImageValue),
-        hint: featuredImage || featuredImageValue ? 'Image ready for sharing cards.' : 'Add a featured image for better sharing previews.',
+        hint:
+          featuredImage || featuredImageValue
+            ? 'Image ready for sharing cards.'
+            : 'Add a featured image for better sharing previews.',
       },
       {
         label: 'Focus keyword in title',
         ok: !focus || titleValue.includes(focus),
-        hint: focus ? 'Include the focus keyword naturally in the title.' : 'Optional but helpful for editorial targeting.',
+        hint: focus
+          ? 'Include the focus keyword naturally in the title.'
+          : 'Optional but helpful for editorial targeting.',
       },
       {
         label: 'Focus keyword in description/body',
         ok: !focus || descriptionValue.includes(focus) || bodyValue.includes(focus),
-        hint: focus ? 'Mention the focus keyword in the description or body.' : 'Optional but helpful for consistency.',
+        hint: focus
+          ? 'Mention the focus keyword in the description or body.'
+          : 'Optional but helpful for consistency.',
       },
     ];
   }, [
@@ -894,7 +902,9 @@ export default function CreateContentPage() {
         setMediaLibraryItems(payload.items ?? []);
       } catch (error) {
         if (!isActive) return;
-        setValidationError(error instanceof Error ? error.message : 'Unable to load media library.');
+        setValidationError(
+          error instanceof Error ? error.message : 'Unable to load media library.',
+        );
       } finally {
         if (isActive) {
           setIsMediaLibraryLoading(false);
@@ -942,11 +952,14 @@ export default function CreateContentPage() {
     formData.append('file', file);
     formData.append('title', fileTitle);
 
-    const uploaded = await request<{ id?: string; url?: string | null }>('/api/admin/media/upload', {
-      method: 'POST',
-      actionName: 'dashboard.media.create',
-      body: formData,
-    });
+    const uploaded = await request<{ id?: string; url?: string | null }>(
+      '/api/admin/media/upload',
+      {
+        method: 'POST',
+        actionName: 'dashboard.media.create',
+        body: formData,
+      },
+    );
 
     const uploadedUrl = uploaded.url?.trim();
     if (!uploadedUrl) {
@@ -1178,9 +1191,7 @@ export default function CreateContentPage() {
 
       if (unresolvedNames.length > 0 || (trimmed.length > 0 && ids.length === 0)) {
         throw new Error(
-          `Unable to resolve category IDs for: ${
-            unresolvedNames.join(', ') || trimmed.join(', ')
-          }`,
+          `Unable to resolve category IDs for: ${unresolvedNames.join(', ') || trimmed.join(', ')}`,
         );
       }
 
@@ -1524,566 +1535,571 @@ export default function CreateContentPage() {
         <div className="mt-2 grid min-w-0 gap-6 lg:grid-cols-[0.65fr_0.35fr] lg:items-start lg:gap-8">
           {/* —— LEFT COLUMN —— */}
           <div className="min-w-0 space-y-6 sm:space-y-8">
-          {/* Featured image */}
-          <div>
-            <p className="text-[0.9rem] text-[#2f3440]">Featured image</p>
-            {featuredImage ? (
-              <div className="relative mt-3">
-                <div
-                  className="h-auto w-full rounded-[20px] bg-cover bg-center"
-                  style={{ backgroundImage: `url(${featuredImage})`, aspectRatio: '16 / 9' }}
-                />
+            {/* Featured image */}
+            <div>
+              <p className="text-[0.9rem] text-[#2f3440]">Featured image</p>
+              {featuredImage ? (
+                <div className="relative mt-3">
+                  <div
+                    className="h-auto w-full rounded-[20px] bg-cover bg-center"
+                    style={{ backgroundImage: `url(${featuredImage})`, aspectRatio: '16 / 9' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFeaturedImage(null);
+                      setFeaturedImageValue(null);
+                    }}
+                    className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-[0.78rem] font-medium text-white backdrop-blur-sm hover:bg-black/80 transition-colors"
+                  >
+                    <MdClose size={14} />
+                    Remove
+                  </button>
+                </div>
+              ) : (
                 <button
                   type="button"
-                  onClick={() => {
-                    setFeaturedImage(null);
-                    setFeaturedImageValue(null);
-                  }}
-                  className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-[0.78rem] font-medium text-white backdrop-blur-sm hover:bg-black/80 transition-colors"
+                  onClick={() => openMediaModal('featured')}
+                  className="mt-3 flex min-h-[150px] w-full cursor-pointer flex-col items-center justify-center rounded-[18px] border border-dashed border-[#d9dde6] bg-white px-4 py-7 text-center transition-colors hover:border-[#0f1116] hover:bg-[#f7f8fb] sm:min-h-[180px] sm:rounded-[20px] sm:px-6 sm:py-10"
                 >
-                  <MdClose size={14} />
-                  Remove
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => openMediaModal('featured')}
-                className="mt-3 flex min-h-[150px] w-full cursor-pointer flex-col items-center justify-center rounded-[18px] border border-dashed border-[#d9dde6] bg-white px-4 py-7 text-center transition-colors hover:border-[#0f1116] hover:bg-[#f7f8fb] sm:min-h-[180px] sm:rounded-[20px] sm:px-6 sm:py-10"
-              >
-                <div className="space-y-2">
-                  <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-[#d9dde6] text-[#7a8292]">
-                    <FaCloudArrowUp className="h-4 w-4" />
+                  <div className="space-y-2">
+                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-[#d9dde6] text-[#7a8292]">
+                      <FaCloudArrowUp className="h-4 w-4" />
+                    </div>
+                    <p className="text-[0.86rem] text-[#2f3440] sm:text-[0.9rem]">
+                      <span className="text-[#1e4fd2]">Choose image</span>
+                      <span className="block sm:inline"> (Upload, Library, or URL)</span>
+                    </p>
+                    <p className="text-[0.78rem] text-[#9aa1ae]">PNG, JPG, GIF up to 5 MB</p>
                   </div>
-                  <p className="text-[0.86rem] text-[#2f3440] sm:text-[0.9rem]">
-                    <span className="text-[#1e4fd2]">Choose image</span>
-                    <span className="block sm:inline"> (Upload, Library, or URL)</span>
-                  </p>
-                  <p className="text-[0.78rem] text-[#9aa1ae]">PNG, JPG, GIF up to 5 MB</p>
-                </div>
-              </button>
-            )}
+                </button>
+              )}
 
-            {postType === 'Prompt' ? (
-              <div className="mt-4">
-                <p className="text-[0.82rem] text-[#7a8292]">
-                  Gallery images (up to {MAX_GALLERY_IMAGES})
-                </p>
-                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-                  {galleryImageSlots.map((slot, index) => {
-                    return (
-                      <div key={`prompt-gallery-slot-${index}`} className="relative">
-                        <button
-                          type="button"
-                          onClick={() => openMediaModal(index)}
-                          className="group relative flex aspect-square w-full cursor-pointer items-center justify-center overflow-hidden rounded-[16px] border border-[#d9dde6] bg-white"
-                        >
-                          {slot.previewUrl ? (
-                            <img
-                              src={slot.previewUrl}
-                              alt={`Gallery image ${index + 1}`}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="space-y-1 text-center">
-                              <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full border border-[#d9dde6] text-[#7a8292]">
-                                <FaCloudArrowUp className="h-3.5 w-3.5" />
-                              </div>
-                              <p className="text-[0.72rem] text-[#7a8292]">Add image</p>
-                            </div>
-                          )}
-                          <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/70 px-2 py-1 text-[0.64rem] font-medium text-white">
-                            {slot.previewUrl ? 'Replace' : 'Upload'}
-                          </span>
-                        </button>
-                        {slot.previewUrl ? (
+              {postType === 'Prompt' ? (
+                <div className="mt-4">
+                  <p className="text-[0.82rem] text-[#7a8292]">
+                    Gallery images (up to {MAX_GALLERY_IMAGES})
+                  </p>
+                  <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                    {galleryImageSlots.map((slot, index) => {
+                      return (
+                        <div key={`prompt-gallery-slot-${index}`} className="relative">
                           <button
                             type="button"
-                            onClick={() => removeGalleryImage(index)}
-                            className="absolute right-1.5 top-1.5 rounded-full bg-black/65 p-1 text-white transition-colors hover:bg-black/85"
-                            aria-label={`Remove gallery image ${index + 1}`}
+                            onClick={() => openMediaModal(index)}
+                            className="group relative flex aspect-square w-full cursor-pointer items-center justify-center overflow-hidden rounded-[16px] border border-[#d9dde6] bg-white"
                           >
-                            <MdClose size={12} />
+                            {slot.previewUrl ? (
+                              <img
+                                src={slot.previewUrl}
+                                alt={`Gallery image ${index + 1}`}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="space-y-1 text-center">
+                                <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full border border-[#d9dde6] text-[#7a8292]">
+                                  <FaCloudArrowUp className="h-3.5 w-3.5" />
+                                </div>
+                                <p className="text-[0.72rem] text-[#7a8292]">Add image</p>
+                              </div>
+                            )}
+                            <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/70 px-2 py-1 text-[0.64rem] font-medium text-white">
+                              {slot.previewUrl ? 'Replace' : 'Upload'}
+                            </span>
                           </button>
-                        ) : null}
-                      </div>
-                    );
-                  })}
+                          {slot.previewUrl ? (
+                            <button
+                              type="button"
+                              onClick={() => removeGalleryImage(index)}
+                              className="absolute right-1.5 top-1.5 rounded-full bg-black/65 p-1 text-white transition-colors hover:bg-black/85"
+                              aria-label={`Remove gallery image ${index + 1}`}
+                            >
+                              <MdClose size={12} />
+                            </button>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ) : null}
-          </div>
+              ) : null}
+            </div>
 
-          {/* Title */}
-          <div>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => {
-                if (isEditHydrating) return;
-                setTitle(e.target.value);
-              }}
-              disabled={isEditHydrating}
-              placeholder="Write a title..."
-              className={`w-full border-none bg-transparent text-[1.6rem] font-medium text-[#0f1116] outline-none placeholder:text-[#b5bac6] sm:text-[2.4rem] ${
-                validationError && !title.trim() ? 'placeholder:text-red-300' : ''
-              }`}
-            />
+            {/* Title */}
+            <div>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => {
+                  if (isEditHydrating) return;
+                  setTitle(e.target.value);
+                }}
+                disabled={isEditHydrating}
+                placeholder="Write a title..."
+                className={`w-full border-none bg-transparent text-[1.6rem] font-medium text-[#0f1116] outline-none placeholder:text-[#b5bac6] sm:text-[2.4rem] ${
+                  validationError && !title.trim() ? 'placeholder:text-red-300' : ''
+                }`}
+              />
 
-            {/* Tags */}
-            <div className="mt-6">
-              <p className="text-[0.95rem] text-[#6b7280]">Add up to 15 tags...</p>
-              <div className="mt-3 flex flex-wrap items-center gap-2 rounded-[16px] border border-[#e1e5ee] px-3 py-3">
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="flex items-center gap-1 rounded-full bg-[#f1f3f8] px-3 py-1 text-[0.75rem] text-[#2f3440]"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="ml-0.5 text-gray-400 hover:text-gray-700 transition-colors"
-                      aria-label={`Remove tag ${tag}`}
+              {/* Tags */}
+              <div className="mt-6">
+                <p className="text-[0.95rem] text-[#6b7280]">Add up to 15 tags...</p>
+                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-[16px] border border-[#e1e5ee] px-3 py-3">
+                  {tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="flex items-center gap-1 rounded-full bg-[#f1f3f8] px-3 py-1 text-[0.75rem] text-[#2f3440]"
                     >
-                      <MdClose size={12} />
-                    </button>
-                  </span>
-                ))}
-                <input
-                  type="text"
-                  value={tagsInput}
-                  onChange={(e) => handleTagInputChange(e.target.value)}
-                  onKeyDown={handleTagKeyDown}
-                  onBlur={() => {
-                    if (!tagsInput.trim()) return;
-                    addTags(tagsInput);
-                    setTagsInput('');
-                  }}
-                  placeholder={remainingTags > 0 ? 'Add a tag' : 'Tag limit reached'}
-                  className="min-w-[140px] flex-1 border-none bg-transparent text-[0.85rem] text-[#0f1116] outline-none"
-                  disabled={remainingTags <= 0}
-                />
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="ml-0.5 text-gray-400 hover:text-gray-700 transition-colors"
+                        aria-label={`Remove tag ${tag}`}
+                      >
+                        <MdClose size={12} />
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    type="text"
+                    value={tagsInput}
+                    onChange={(e) => handleTagInputChange(e.target.value)}
+                    onKeyDown={handleTagKeyDown}
+                    onBlur={() => {
+                      if (!tagsInput.trim()) return;
+                      addTags(tagsInput);
+                      setTagsInput('');
+                    }}
+                    placeholder={remainingTags > 0 ? 'Add a tag' : 'Tag limit reached'}
+                    className="min-w-[140px] flex-1 border-none bg-transparent text-[0.85rem] text-[#0f1116] outline-none"
+                    disabled={remainingTags <= 0}
+                  />
+                </div>
+                <p className="mt-2 text-[0.75rem] text-[#9aa1ae]">
+                  {tagCountLabel}. Press Enter or comma to add. Backspace to remove last tag.
+                </p>
               </div>
-              <p className="mt-2 text-[0.75rem] text-[#9aa1ae]">
-                {tagCountLabel}. Press Enter or comma to add. Backspace to remove last tag.
-              </p>
+            </div>
+
+            {/* Body */}
+            <div>
+              <RichTextEditor value={body} onChange={handleBodyChange} />
             </div>
           </div>
-
-          {/* Body */}
-          <div>
-            <RichTextEditor value={body} onChange={handleBodyChange} />
-          </div>
-        </div>
 
           {/* —— RIGHT COLUMN / SIDEBAR —— */}
           <aside className="min-w-0 rounded-[20px] border border-[#e2e6ee] bg-white p-4 sm:rounded-[24px] sm:p-6 lg:sticky lg:top-6">
-          <div>
-            <h3 className="text-[1.1rem] text-[#0f1116]">Post options</h3>
-            <p className="mt-1 text-[0.82rem] text-[#7a8292]">
-              Configure settings before publishing.
-            </p>
-          </div>
-
-          <div className="mt-6 space-y-6">
-            <div className="rounded-[16px] border border-[#e4e9f2] bg-[#fafbfd] p-4">
-              <p className="text-[0.76rem] font-medium uppercase tracking-[0.08em] text-[#7a8292]">
-                Quick settings
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="rounded-full bg-white px-3 py-1.5 text-[0.75rem] text-[#2f3440]">
-                  Status: <span className="font-medium text-[#0f1116]">{status}</span>
-                </span>
-                <span className="rounded-full bg-white px-3 py-1.5 text-[0.75rem] text-[#2f3440]">
-                  Visibility:{' '}
-                  <span className="font-medium text-[#0f1116]">
-                    {visibility === 'EXCLUSIVE' ? 'Exclusive' : 'Free'}
-                  </span>
-                </span>
-                <span className="rounded-full bg-white px-3 py-1.5 text-[0.75rem] text-[#2f3440]">
-                  Type: <span className="font-medium text-[#0f1116]">{postType}</span>
-                </span>
-              </div>
-            </div>
-
-            {/* Slug */}
-            <div className="grid gap-3 rounded-[16px] border border-[#e4e9f2] bg-[#fafbfd] p-4">
-              <p className="text-[0.85rem] text-[#2f3440]">Slug</p>
-              <input
-                type="text"
-                value={slug}
-                onChange={(e) => {
-                  setSlugManuallyEdited(true);
-                  setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'));
-                }}
-                placeholder="my-awesome-post"
-                className="w-full rounded-[12px] border border-[#e1e5ee] px-3.5 py-2.5 text-[0.9rem]"
-              />
-              <p className="text-[0.78rem] text-[#7a8292]">
-                Link preview:{' '}
-                <span className="text-[#1e4fd2] break-all">
-                  /{primaryCategory?.toLowerCase().replace(/[^a-z0-9-]/g, '-') || 'category'}/
-                  {slug || 'your-slug'}
-                </span>
+            <div>
+              <h3 className="text-[1.1rem] text-[#0f1116]">Post options</h3>
+              <p className="mt-1 text-[0.82rem] text-[#7a8292]">
+                Configure settings before publishing.
               </p>
             </div>
 
-            {/* Excerpt */}
-            <div className="grid gap-3 rounded-[16px] border border-[#e4e9f2] bg-[#fafbfd] p-4">
-              <p className="text-[0.85rem] text-[#2f3440]">Excerpt</p>
-              <textarea
-                rows={3}
-                value={excerpt}
-                onChange={(e) => setExcerpt(e.target.value)}
-                placeholder="Short description for search and previews…"
-                className="w-full rounded-[12px] border border-[#e1e5ee] px-3.5 py-2.5 text-[0.9rem]"
-              />
-            </div>
-
-            {/* Publishing */}
-            <div className="grid gap-4 rounded-[16px] border border-[#e4e9f2] bg-[#fafbfd] p-4">
-              <div>
-                <p className="text-[0.85rem] text-[#2f3440]">Publishing</p>
-                <p className="mt-1 text-[0.78rem] text-[#7a8292]">
-                  Set status and audience before you publish.
+            <div className="mt-6 space-y-6">
+              <div className="rounded-[16px] border border-[#e4e9f2] bg-[#fafbfd] p-4">
+                <p className="text-[0.76rem] font-medium uppercase tracking-[0.08em] text-[#7a8292]">
+                  Quick settings
                 </p>
-              </div>
-
-              <div className="grid gap-3">
-                <p className="text-[0.82rem] text-[#2f3440]">Status</p>
-                <div className="flex flex-wrap gap-2 sm:gap-3 text-[0.85rem] text-[#2f3440]">
-                  {optionStatusItems.map((option) => (
-                    <label key={option} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="post-status"
-                        checked={status === option}
-                        onChange={() => setStatus(option)}
-                        className="accent-[#0f1116]"
-                      />
-                      {option}
-                    </label>
-                  ))}
-                </div>
-                {status === 'Scheduled' ? (
-                  <div className="mt-1">
-                    <label className="mb-1 flex items-center gap-2 text-[0.82rem] text-[#7a8292]">
-                      <MdSchedule size={14} />
-                      Schedule date & time
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={scheduledAt}
-                      onChange={(e) => setScheduledAt(e.target.value)}
-                      className="w-full rounded-[12px] border border-[#e1e5ee] px-3.5 py-2.5 text-[0.9rem]"
-                    />
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="grid gap-3">
-                <p className="text-[0.82rem] text-[#2f3440]">Visibility</p>
-                <div className="flex flex-wrap gap-2 sm:gap-3 text-[0.85rem] text-[#2f3440]">
-                  {(
-                    [
-                      { label: 'Free', value: 'FREE' as const },
-                      { label: 'Exclusive', value: 'EXCLUSIVE' as const },
-                    ] as const
-                  ).map((option) => (
-                    <label key={option.value} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="post-visibility"
-                        checked={visibility === option.value}
-                        onChange={() => setVisibility(option.value)}
-                        className="accent-[#0f1116]"
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-                <p className="text-[0.78rem] text-[#7a8292]">
-                  Choose <span className="font-medium text-[#2f3440]">Free</span> for public access
-                  or <span className="font-medium text-[#2f3440]">Exclusive</span> for member-only
-                  access.
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-[16px] border border-[#e4e9f2] bg-[#fafbfd] p-4">
-              <button
-                type="button"
-                onClick={() => setIsSeoPanelOpen((current) => !current)}
-                className="flex w-full items-center justify-between gap-3 text-left"
-              >
-                <div>
-                  <p className="text-[0.85rem] text-[#2f3440]">SEO</p>
-                  <p className="mt-1 text-[0.78rem] text-[#7a8292]">
-                    Optional search optimization settings.
-                  </p>
-                </div>
-                <span className="rounded-full border border-[#d8dfe8] bg-white px-3 py-1 text-[0.74rem] font-medium text-[#2f3440]">
-                  {isSeoPanelOpen ? 'Hide' : 'Show'}
-                </span>
-              </button>
-
-              {isSeoPanelOpen ? (
-                <div className="mt-4 grid gap-4 border-t border-[#e6ebf4] pt-4">
-                  <div className="grid gap-2">
-                    <label className="text-[0.78rem] text-[#6b7280]">SEO title</label>
-                    <input
-                      type="text"
-                      value={seoTitle}
-                      onChange={(e) => setSeoTitle(e.target.value)}
-                      placeholder="Optional custom title for search results"
-                      className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem]"
-                    />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <label className="text-[0.78rem] text-[#6b7280]">Meta title</label>
-                    <input
-                      type="text"
-                      value={metaTitle}
-                      onChange={(e) => setMetaTitle(e.target.value)}
-                      placeholder="Optional meta title"
-                      className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem]"
-                    />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <label className="text-[0.78rem] text-[#6b7280]">SEO description</label>
-                    <textarea
-                      rows={4}
-                      value={seoDescription}
-                      onChange={(e) => setSeoDescription(e.target.value)}
-                      placeholder="Optional custom description for search and social previews"
-                      className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem]"
-                    />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <label className="text-[0.78rem] text-[#6b7280]">
-                      Meta description (secondary)
-                    </label>
-                    <textarea
-                      rows={4}
-                      value={metaDescription}
-                      onChange={(e) => setMetaDescription(e.target.value)}
-                      placeholder="Optional additional meta description"
-                      className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem]"
-                    />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <label className="text-[0.78rem] text-[#6b7280]">Focus keyword</label>
-                    <input
-                      type="text"
-                      value={seoFocusKeyword}
-                      onChange={(e) => setSeoFocusKeyword(e.target.value)}
-                      placeholder="Primary phrase you want this content to target"
-                      className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem]"
-                    />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <label className="text-[0.78rem] text-[#6b7280]">Canonical URL</label>
-                    <input
-                      type="url"
-                      value={seoCanonicalUrl}
-                      onChange={(e) => setSeoCanonicalUrl(e.target.value)}
-                      placeholder="https://example.com/preferred-url"
-                      className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem]"
-                    />
-                  </div>
-
-                  <label className="flex items-center justify-between gap-3 rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-3 text-[0.85rem] text-[#2f3440]">
-                    <span>Noindex this content</span>
-                    <input
-                      type="checkbox"
-                      checked={seoNoIndex}
-                      onChange={(e) => setSeoNoIndex(e.target.checked)}
-                      className="h-4 w-4 accent-[#111111]"
-                    />
-                  </label>
-
-                  <div className="rounded-[16px] border border-[#e8ecf4] bg-white p-4">
-                    <p className="text-[0.75rem] font-medium uppercase tracking-wide text-[#7a8292]">
-                      Search preview
-                    </p>
-                    <p className="mt-3 text-[0.82rem] text-[#1a0dab]">{seoPreviewTitle}</p>
-                    <p className="mt-1 break-all text-[0.74rem] text-[#188038]">
-                      {seoCanonicalUrl.trim() || `/${primaryCategory?.toLowerCase().replace(/[^a-z0-9-]/g, '-') || 'category'}/${slug || 'your-slug'}`}
-                    </p>
-                    <p className="mt-2 text-[0.78rem] leading-relaxed text-[#4d5156]">
-                      {seoPreviewDescription}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2 rounded-[16px] border border-[#e8ecf4] bg-white p-4">
-                    <p className="text-[0.75rem] font-medium uppercase tracking-wide text-[#7a8292]">
-                      SEO checks
-                    </p>
-                    {seoChecks.map((item) => (
-                      <div
-                        key={item.label}
-                        className="rounded-[12px] border border-[#eef1f6] px-3 py-2.5"
-                      >
-                        <div className="flex items-center justify-between gap-3 text-[0.82rem]">
-                          <span className="text-[#2f3440]">{item.label}</span>
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-[0.7rem] font-medium ${
-                              item.ok
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-amber-100 text-amber-800'
-                            }`}
-                          >
-                            {item.ok ? 'Good' : 'Needs work'}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-[0.74rem] leading-relaxed text-[#7a8292]">
-                          {item.hint}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="mt-3 text-[0.78rem] leading-relaxed text-[#7a8292]">
-                  Add SEO title, description, canonical URL, and index controls when needed.
-                </p>
-              )}
-            </div>
-
-            {/* Categories */}
-            <div className="relative grid gap-3 rounded-[16px] border border-[#e4e9f2] bg-[#fafbfd] p-4">
-              <p className="text-[0.85rem] text-[#2f3440]">Categories</p>
-              <div
-                className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3 py-2 text-[0.9rem] flex flex-wrap gap-2 items-center focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all cursor-text"
-                onClick={() => setIsCategoryDropdownOpen(true)}
-              >
-                {categories.map((cat) => (
-                  <span
-                    key={cat}
-                    title={primaryCategory === cat ? 'Primary Category' : 'Click to set as Primary'}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPrimaryCategory(cat);
-                    }}
-                    className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.8rem] font-medium border cursor-pointer transition-colors ${
-                      primaryCategory === cat
-                        ? 'bg-blue-100 text-blue-800 border-blue-200'
-                        : 'bg-blue-50 text-blue-700 border-blue-100/50 hover:bg-blue-100/50'
-                    }`}
-                  >
-                    {primaryCategory === cat && <span className="text-[0.7rem]">★</span>}
-                    {cat}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeCategory(cat);
-                      }}
-                      className={`hover:text-blue-900 focus:outline-none transition-colors ${primaryCategory === cat ? 'text-blue-500' : 'text-blue-400'}`}
-                    >
-                      &times;
-                    </button>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="rounded-full bg-white px-3 py-1.5 text-[0.75rem] text-[#2f3440]">
+                    Status: <span className="font-medium text-[#0f1116]">{status}</span>
                   </span>
-                ))}
+                  <span className="rounded-full bg-white px-3 py-1.5 text-[0.75rem] text-[#2f3440]">
+                    Visibility:{' '}
+                    <span className="font-medium text-[#0f1116]">
+                      {visibility === 'EXCLUSIVE' ? 'Exclusive' : 'Free'}
+                    </span>
+                  </span>
+                  <span className="rounded-full bg-white px-3 py-1.5 text-[0.75rem] text-[#2f3440]">
+                    Type: <span className="font-medium text-[#0f1116]">{postType}</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Slug */}
+              <div className="grid gap-3 rounded-[16px] border border-[#e4e9f2] bg-[#fafbfd] p-4">
+                <p className="text-[0.85rem] text-[#2f3440]">Slug</p>
                 <input
                   type="text"
-                  value={categoryInput}
+                  value={slug}
                   onChange={(e) => {
-                    setCategoryInput(e.target.value);
-                    setIsCategoryDropdownOpen(true);
+                    setSlugManuallyEdited(true);
+                    setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'));
                   }}
-                  onFocus={() => setIsCategoryDropdownOpen(true)}
-                  onBlur={() => {
-                    const pending = categoryInput.trim();
-                    if (pending) {
-                      addCategory(pending);
-                    }
-                    setTimeout(() => setIsCategoryDropdownOpen(false), 200);
-                  }}
-                  onKeyDown={handleCategoryKeyDown}
-                  placeholder={categories.length === 0 ? 'Select or add categories...' : ''}
-                  className="flex-1 min-w-[120px] bg-transparent outline-none py-0.5 text-[0.85rem] placeholder:text-gray-400"
-                  disabled={categories.length >= 15}
+                  placeholder="my-awesome-post"
+                  className="w-full rounded-[12px] border border-[#e1e5ee] px-3.5 py-2.5 text-[0.9rem]"
+                />
+                <p className="text-[0.78rem] text-[#7a8292]">
+                  Link preview:{' '}
+                  <span className="text-[#1e4fd2] break-all">
+                    /{primaryCategory?.toLowerCase().replace(/[^a-z0-9-]/g, '-') || 'category'}/
+                    {slug || 'your-slug'}
+                  </span>
+                </p>
+              </div>
+
+              {/* Excerpt */}
+              <div className="grid gap-3 rounded-[16px] border border-[#e4e9f2] bg-[#fafbfd] p-4">
+                <p className="text-[0.85rem] text-[#2f3440]">Excerpt</p>
+                <textarea
+                  rows={3}
+                  value={excerpt}
+                  onChange={(e) => setExcerpt(e.target.value)}
+                  placeholder="Short description for search and previews…"
+                  className="w-full rounded-[12px] border border-[#e1e5ee] px-3.5 py-2.5 text-[0.9rem]"
                 />
               </div>
-              {isCategoryDropdownOpen && (
-                <div className="absolute top-[100%] left-0 w-full mt-1 bg-white border border-gray-200 rounded-[12px] shadow-lg overflow-hidden z-50">
-                  <ul className="max-h-[200px] overflow-y-auto pt-1">
-                    {filteredCategories.length > 0
-                      ? filteredCategories.map((cat) => (
-                          <li
-                            key={cat}
-                            className="px-4 py-2.5 text-[0.85rem] text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors"
-                            onClick={() => addCategory(cat)}
-                          >
-                            {cat}
-                          </li>
-                        ))
-                      : categoryInput.trim() === '' && (
-                          <li className="px-4 py-3 text-[0.85rem] text-gray-500 italic text-center">
-                            Start typing to search or create
-                          </li>
-                        )}
-                  </ul>
-                  {categoryInput.trim() &&
-                    !filteredCategories.find(
-                      (c) => c.toLowerCase() === categoryInput.trim().toLowerCase(),
-                    ) && (
-                      <div
-                        className="px-4 py-3 bg-blue-50/50 border-t border-gray-100 text-[0.85rem] text-blue-700 cursor-pointer hover:bg-blue-50 transition-colors font-medium flex items-center gap-2"
-                        onClick={() => addCategory(categoryInput.trim())}
-                      >
-                        <span className="bg-blue-100 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-[0.9rem] leading-none">
-                          +
-                        </span>
-                        Add &ldquo;{categoryInput}&rdquo;
-                      </div>
-                    )}
-                </div>
-              )}
-              <p className="text-[0.78rem] text-[#7a8292]">Multiple categories allowed. Max 15.</p>
-            </div>
 
-            <div className="grid gap-4 min-w-0 rounded-[16px] border border-[#e4e9f2] bg-[#fafbfd] p-4">
-              <p className="text-[0.85rem] text-[#2f3440]">Content type</p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="grid gap-2">
-                  <label className="text-[0.78rem] text-[#6b7280]">Post type</label>
-                  <select
-                    value={postType}
-                    onChange={(e) => setPostType(e.target.value as typeof postType)}
-                    className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem]"
-                  >
-                    {optionPostTypes.map((o) => (
-                      <option key={o} value={o}>
-                        {o}
-                      </option>
-                    ))}
-                  </select>
+              {/* Publishing */}
+              <div className="grid gap-4 rounded-[16px] border border-[#e4e9f2] bg-[#fafbfd] p-4">
+                <div>
+                  <p className="text-[0.85rem] text-[#2f3440]">Publishing</p>
+                  <p className="mt-1 text-[0.78rem] text-[#7a8292]">
+                    Set status and audience before you publish.
+                  </p>
                 </div>
-                <div className="grid gap-2">
-                  <label className="text-[0.78rem] text-[#6b7280]">Post format</label>
-                  <select
-                    value={postFormat}
-                    onChange={(e) => setPostFormat(e.target.value as typeof postFormat)}
-                    className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem]"
-                  >
-                    {optionPostFormats.map((o) => (
-                      <option key={o} value={o}>
-                        {o}
-                      </option>
+
+                <div className="grid gap-3">
+                  <p className="text-[0.82rem] text-[#2f3440]">Status</p>
+                  <div className="flex flex-wrap gap-2 sm:gap-3 text-[0.85rem] text-[#2f3440]">
+                    {optionStatusItems.map((option) => (
+                      <label key={option} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="post-status"
+                          checked={status === option}
+                          onChange={() => setStatus(option)}
+                          className="accent-[#0f1116]"
+                        />
+                        {option}
+                      </label>
                     ))}
-                  </select>
+                  </div>
+                  {status === 'Scheduled' ? (
+                    <div className="mt-1">
+                      <label className="mb-1 flex items-center gap-2 text-[0.82rem] text-[#7a8292]">
+                        <MdSchedule size={14} />
+                        Schedule date & time
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={scheduledAt}
+                        onChange={(e) => setScheduledAt(e.target.value)}
+                        className="w-full rounded-[12px] border border-[#e1e5ee] px-3.5 py-2.5 text-[0.9rem]"
+                      />
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="grid gap-3">
+                  <p className="text-[0.82rem] text-[#2f3440]">Visibility</p>
+                  <div className="flex flex-wrap gap-2 sm:gap-3 text-[0.85rem] text-[#2f3440]">
+                    {(
+                      [
+                        { label: 'Free', value: 'FREE' as const },
+                        { label: 'Exclusive', value: 'EXCLUSIVE' as const },
+                      ] as const
+                    ).map((option) => (
+                      <label key={option.value} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="post-visibility"
+                          checked={visibility === option.value}
+                          onChange={() => setVisibility(option.value)}
+                          className="accent-[#0f1116]"
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-[0.78rem] text-[#7a8292]">
+                    Choose <span className="font-medium text-[#2f3440]">Free</span> for public
+                    access or <span className="font-medium text-[#2f3440]">Exclusive</span> for
+                    member-only access.
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-[16px] border border-[#e4e9f2] bg-[#fafbfd] p-4">
+                <button
+                  type="button"
+                  onClick={() => setIsSeoPanelOpen((current) => !current)}
+                  className="flex w-full items-center justify-between gap-3 text-left"
+                >
+                  <div>
+                    <p className="text-[0.85rem] text-[#2f3440]">SEO</p>
+                    <p className="mt-1 text-[0.78rem] text-[#7a8292]">
+                      Optional search optimization settings.
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-[#d8dfe8] bg-white px-3 py-1 text-[0.74rem] font-medium text-[#2f3440]">
+                    {isSeoPanelOpen ? 'Hide' : 'Show'}
+                  </span>
+                </button>
+
+                {isSeoPanelOpen ? (
+                  <div className="mt-4 grid gap-4 border-t border-[#e6ebf4] pt-4">
+                    <div className="grid gap-2">
+                      <label className="text-[0.78rem] text-[#6b7280]">SEO title</label>
+                      <input
+                        type="text"
+                        value={seoTitle}
+                        onChange={(e) => setSeoTitle(e.target.value)}
+                        placeholder="Optional custom title for search results"
+                        className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem]"
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <label className="text-[0.78rem] text-[#6b7280]">Meta title</label>
+                      <input
+                        type="text"
+                        value={metaTitle}
+                        onChange={(e) => setMetaTitle(e.target.value)}
+                        placeholder="Optional meta title"
+                        className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem]"
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <label className="text-[0.78rem] text-[#6b7280]">SEO description</label>
+                      <textarea
+                        rows={4}
+                        value={seoDescription}
+                        onChange={(e) => setSeoDescription(e.target.value)}
+                        placeholder="Optional custom description for search and social previews"
+                        className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem]"
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <label className="text-[0.78rem] text-[#6b7280]">
+                        Meta description (secondary)
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={metaDescription}
+                        onChange={(e) => setMetaDescription(e.target.value)}
+                        placeholder="Optional additional meta description"
+                        className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem]"
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <label className="text-[0.78rem] text-[#6b7280]">Focus keyword</label>
+                      <input
+                        type="text"
+                        value={seoFocusKeyword}
+                        onChange={(e) => setSeoFocusKeyword(e.target.value)}
+                        placeholder="Primary phrase you want this content to target"
+                        className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem]"
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <label className="text-[0.78rem] text-[#6b7280]">Canonical URL</label>
+                      <input
+                        type="url"
+                        value={seoCanonicalUrl}
+                        onChange={(e) => setSeoCanonicalUrl(e.target.value)}
+                        placeholder="https://example.com/preferred-url"
+                        className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem]"
+                      />
+                    </div>
+
+                    <label className="flex items-center justify-between gap-3 rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-3 text-[0.85rem] text-[#2f3440]">
+                      <span>Noindex this content</span>
+                      <input
+                        type="checkbox"
+                        checked={seoNoIndex}
+                        onChange={(e) => setSeoNoIndex(e.target.checked)}
+                        className="h-4 w-4 accent-[#111111]"
+                      />
+                    </label>
+
+                    <div className="rounded-[16px] border border-[#e8ecf4] bg-white p-4">
+                      <p className="text-[0.75rem] font-medium uppercase tracking-wide text-[#7a8292]">
+                        Search preview
+                      </p>
+                      <p className="mt-3 text-[0.82rem] text-[#1a0dab]">{seoPreviewTitle}</p>
+                      <p className="mt-1 break-all text-[0.74rem] text-[#188038]">
+                        {seoCanonicalUrl.trim() ||
+                          `/${primaryCategory?.toLowerCase().replace(/[^a-z0-9-]/g, '-') || 'category'}/${slug || 'your-slug'}`}
+                      </p>
+                      <p className="mt-2 text-[0.78rem] leading-relaxed text-[#4d5156]">
+                        {seoPreviewDescription}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2 rounded-[16px] border border-[#e8ecf4] bg-white p-4">
+                      <p className="text-[0.75rem] font-medium uppercase tracking-wide text-[#7a8292]">
+                        SEO checks
+                      </p>
+                      {seoChecks.map((item) => (
+                        <div
+                          key={item.label}
+                          className="rounded-[12px] border border-[#eef1f6] px-3 py-2.5"
+                        >
+                          <div className="flex items-center justify-between gap-3 text-[0.82rem]">
+                            <span className="text-[#2f3440]">{item.label}</span>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[0.7rem] font-medium ${
+                                item.ok
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-amber-100 text-amber-800'
+                              }`}
+                            >
+                              {item.ok ? 'Good' : 'Needs work'}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-[0.74rem] leading-relaxed text-[#7a8292]">
+                            {item.hint}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-[0.78rem] leading-relaxed text-[#7a8292]">
+                    Add SEO title, description, canonical URL, and index controls when needed.
+                  </p>
+                )}
+              </div>
+
+              {/* Categories */}
+              <div className="relative grid gap-3 rounded-[16px] border border-[#e4e9f2] bg-[#fafbfd] p-4">
+                <p className="text-[0.85rem] text-[#2f3440]">Categories</p>
+                <div
+                  className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3 py-2 text-[0.9rem] flex flex-wrap gap-2 items-center focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all cursor-text"
+                  onClick={() => setIsCategoryDropdownOpen(true)}
+                >
+                  {categories.map((cat) => (
+                    <span
+                      key={cat}
+                      title={
+                        primaryCategory === cat ? 'Primary Category' : 'Click to set as Primary'
+                      }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPrimaryCategory(cat);
+                      }}
+                      className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.8rem] font-medium border cursor-pointer transition-colors ${
+                        primaryCategory === cat
+                          ? 'bg-blue-100 text-blue-800 border-blue-200'
+                          : 'bg-blue-50 text-blue-700 border-blue-100/50 hover:bg-blue-100/50'
+                      }`}
+                    >
+                      {primaryCategory === cat && <span className="text-[0.7rem]">★</span>}
+                      {cat}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeCategory(cat);
+                        }}
+                        className={`hover:text-blue-900 focus:outline-none transition-colors ${primaryCategory === cat ? 'text-blue-500' : 'text-blue-400'}`}
+                      >
+                        &times;
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    type="text"
+                    value={categoryInput}
+                    onChange={(e) => {
+                      setCategoryInput(e.target.value);
+                      setIsCategoryDropdownOpen(true);
+                    }}
+                    onFocus={() => setIsCategoryDropdownOpen(true)}
+                    onBlur={() => {
+                      const pending = categoryInput.trim();
+                      if (pending) {
+                        addCategory(pending);
+                      }
+                      setTimeout(() => setIsCategoryDropdownOpen(false), 200);
+                    }}
+                    onKeyDown={handleCategoryKeyDown}
+                    placeholder={categories.length === 0 ? 'Select or add categories...' : ''}
+                    className="flex-1 min-w-[120px] bg-transparent outline-none py-0.5 text-[0.85rem] placeholder:text-gray-400"
+                    disabled={categories.length >= 15}
+                  />
+                </div>
+                {isCategoryDropdownOpen && (
+                  <div className="absolute top-[100%] left-0 w-full mt-1 bg-white border border-gray-200 rounded-[12px] shadow-lg overflow-hidden z-50">
+                    <ul className="max-h-[200px] overflow-y-auto pt-1">
+                      {filteredCategories.length > 0
+                        ? filteredCategories.map((cat) => (
+                            <li
+                              key={cat}
+                              className="px-4 py-2.5 text-[0.85rem] text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors"
+                              onClick={() => addCategory(cat)}
+                            >
+                              {cat}
+                            </li>
+                          ))
+                        : categoryInput.trim() === '' && (
+                            <li className="px-4 py-3 text-[0.85rem] text-gray-500 italic text-center">
+                              Start typing to search or create
+                            </li>
+                          )}
+                    </ul>
+                    {categoryInput.trim() &&
+                      !filteredCategories.find(
+                        (c) => c.toLowerCase() === categoryInput.trim().toLowerCase(),
+                      ) && (
+                        <div
+                          className="px-4 py-3 bg-blue-50/50 border-t border-gray-100 text-[0.85rem] text-blue-700 cursor-pointer hover:bg-blue-50 transition-colors font-medium flex items-center gap-2"
+                          onClick={() => addCategory(categoryInput.trim())}
+                        >
+                          <span className="bg-blue-100 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-[0.9rem] leading-none">
+                            +
+                          </span>
+                          Add &ldquo;{categoryInput}&rdquo;
+                        </div>
+                      )}
+                  </div>
+                )}
+                <p className="text-[0.78rem] text-[#7a8292]">
+                  Multiple categories allowed. Max 15.
+                </p>
+              </div>
+
+              <div className="grid gap-4 min-w-0 rounded-[16px] border border-[#e4e9f2] bg-[#fafbfd] p-4">
+                <p className="text-[0.85rem] text-[#2f3440]">Content type</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-2">
+                    <label className="text-[0.78rem] text-[#6b7280]">Post type</label>
+                    <select
+                      value={postType}
+                      onChange={(e) => setPostType(e.target.value as typeof postType)}
+                      className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem]"
+                    >
+                      {optionPostTypes.map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid gap-2">
+                    <label className="text-[0.78rem] text-[#6b7280]">Post format</label>
+                    <select
+                      value={postFormat}
+                      onChange={(e) => setPostFormat(e.target.value as typeof postFormat)}
+                      className="w-full rounded-[12px] border border-[#e1e5ee] bg-white px-3.5 py-2.5 text-[0.9rem]"
+                    >
+                      {optionPostFormats.map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
           </aside>
         </div>
       </fieldset>
@@ -2271,7 +2287,9 @@ export default function CreateContentPage() {
                         className="w-full rounded-[12px] border border-[#e1e5ee] px-3.5 py-2.5 text-[0.9rem] outline-none"
                       />
                       {isMediaLibraryLoading ? (
-                        <p className="py-10 text-center text-[0.88rem] text-[#7a8292]">Loading media...</p>
+                        <p className="py-10 text-center text-[0.88rem] text-[#7a8292]">
+                          Loading media...
+                        </p>
                       ) : mediaLibraryItems.length === 0 ? (
                         <p className="py-10 text-center text-[0.88rem] text-[#7a8292]">
                           No images found in library.

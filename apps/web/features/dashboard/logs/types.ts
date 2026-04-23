@@ -29,4 +29,3 @@ export type ErrorLogsResponse = {
   truncatedFromStart: boolean;
   scannedLineCount: number;
 };
-

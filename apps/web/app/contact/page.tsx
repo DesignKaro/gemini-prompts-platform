@@ -9,7 +9,8 @@ export async function generateMetadata() {
 
   return buildMetadata({
     title: 'Contact',
-    description: 'Get in touch with the Gemini Prompts team for support, feedback, and partnerships.',
+    description:
+      'Get in touch with the Gemini Prompts team for support, feedback, and partnerships.',
     path: '/contact',
     noIndex: settings.noindexStaticPages,
   });

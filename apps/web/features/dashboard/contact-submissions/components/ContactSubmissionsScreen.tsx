@@ -171,10 +171,13 @@ export function ContactSubmissionsScreen() {
       setDetailError(null);
 
       try {
-        const payload = await adminRequest<ContactSubmissionDetail>(`/api/admin/contact/submissions/${id}`, {
-          actionName: 'admin.contact.submissions.detail',
-          signal,
-        });
+        const payload = await adminRequest<ContactSubmissionDetail>(
+          `/api/admin/contact/submissions/${id}`,
+          {
+            actionName: 'admin.contact.submissions.detail',
+            signal,
+          },
+        );
         setSelectedDetail(payload);
         setStatusDraft(payload.status);
         setNoteDraft(payload.internalNote ?? '');
@@ -184,7 +187,9 @@ export function ContactSubmissionsScreen() {
         }
         setSelectedDetail(null);
         setDetailError(
-          requestError instanceof Error ? requestError.message : 'Unable to load submission details.',
+          requestError instanceof Error
+            ? requestError.message
+            : 'Unable to load submission details.',
         );
       } finally {
         setIsDetailLoading(false);
@@ -289,7 +294,9 @@ export function ContactSubmissionsScreen() {
         setNoteDraft('');
       }
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Unable to delete submission.');
+      setError(
+        requestError instanceof Error ? requestError.message : 'Unable to delete submission.',
+      );
     } finally {
       setDeletingId((current) => (current === id ? null : current));
     }
@@ -303,7 +310,8 @@ export function ContactSubmissionsScreen() {
 
   const sourceOptions = useMemo(() => response?.sources ?? [], [response?.sources]);
   const statusOptions = useMemo(
-    () => (response?.statuses && response.statuses.length > 0 ? response.statuses : FALLBACK_STATUSES),
+    () =>
+      response?.statuses && response.statuses.length > 0 ? response.statuses : FALLBACK_STATUSES,
     [response?.statuses],
   );
 
@@ -311,7 +319,9 @@ export function ContactSubmissionsScreen() {
     if (!selectedDetail) {
       return false;
     }
-    return selectedDetail.status !== statusDraft || (selectedDetail.internalNote ?? '') !== noteDraft;
+    return (
+      selectedDetail.status !== statusDraft || (selectedDetail.internalNote ?? '') !== noteDraft
+    );
   }, [noteDraft, selectedDetail, statusDraft]);
 
   return (
@@ -524,7 +534,9 @@ export function ContactSubmissionsScreen() {
                       <tr key={item.id} className={isSelected ? 'bg-[#fafcff]' : 'bg-white'}>
                         <td className="px-4 py-3 font-medium text-[#11141b]">{item.name}</td>
                         <td className="px-4 py-3 text-[#4a5363]">{item.email}</td>
-                        <td className="max-w-[320px] truncate px-4 py-3 text-[#4a5363]">{item.subject}</td>
+                        <td className="max-w-[320px] truncate px-4 py-3 text-[#4a5363]">
+                          {item.subject}
+                        </td>
                         <td className="px-4 py-3">
                           <span
                             className={`inline-flex rounded-full border px-2.5 py-1 text-[0.74rem] font-medium ${STATUS_BADGES[item.status]}`}
@@ -601,7 +613,10 @@ export function ContactSubmissionsScreen() {
             ) : null}
 
             {!isDetailLoading && detailError ? (
-              <ActionError error={detailError} onRetry={() => setRefreshNonce((value) => value + 1)} />
+              <ActionError
+                error={detailError}
+                onRetry={() => setRefreshNonce((value) => value + 1)}
+              />
             ) : null}
 
             {!isDetailLoading && !detailError && !selectedDetail ? (
@@ -613,7 +628,9 @@ export function ContactSubmissionsScreen() {
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
                     <p className="text-[0.72rem] uppercase tracking-wide text-gray-500">Name</p>
-                    <p className="mt-1 text-[0.88rem] font-medium text-[#11141b]">{selectedDetail.name}</p>
+                    <p className="mt-1 text-[0.88rem] font-medium text-[#11141b]">
+                      {selectedDetail.name}
+                    </p>
                   </div>
                   <div>
                     <p className="text-[0.72rem] uppercase tracking-wide text-gray-500">Email</p>
@@ -624,7 +641,9 @@ export function ContactSubmissionsScreen() {
                     <p className="mt-1 text-[0.88rem] text-[#4a5363]">{selectedDetail.source}</p>
                   </div>
                   <div>
-                    <p className="text-[0.72rem] uppercase tracking-wide text-gray-500">Submitted</p>
+                    <p className="text-[0.72rem] uppercase tracking-wide text-gray-500">
+                      Submitted
+                    </p>
                     <p className="mt-1 text-[0.88rem] text-[#4a5363]">
                       {formatSubmissionTimestamp(selectedDetail.createdAt)}
                     </p>
@@ -633,7 +652,9 @@ export function ContactSubmissionsScreen() {
 
                 <div>
                   <p className="text-[0.72rem] uppercase tracking-wide text-gray-500">Subject</p>
-                  <p className="mt-1 text-[0.92rem] font-medium text-[#11141b]">{selectedDetail.subject}</p>
+                  <p className="mt-1 text-[0.92rem] font-medium text-[#11141b]">
+                    {selectedDetail.subject}
+                  </p>
                 </div>
 
                 <div>
@@ -648,7 +669,9 @@ export function ContactSubmissionsScreen() {
                     Status
                     <select
                       value={statusDraft}
-                      onChange={(event) => setStatusDraft(event.target.value as ContactSubmissionStatus)}
+                      onChange={(event) =>
+                        setStatusDraft(event.target.value as ContactSubmissionStatus)
+                      }
                       className="h-10 rounded-xl border border-[#e3e8f3] bg-white px-3 text-[0.86rem] font-medium text-[#0f1116] outline-none transition-colors focus:border-[#c9d5f0]"
                     >
                       {statusOptions.map((status) => (
@@ -684,7 +707,9 @@ export function ContactSubmissionsScreen() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-[0.78rem] text-gray-500">
                     Last reviewed: {formatSubmissionTimestamp(selectedDetail.reviewedAt)}
-                    {selectedDetail.reviewedBy ? ` by ${selectedDetail.reviewedBy.name ?? selectedDetail.reviewedBy.email}` : ''}
+                    {selectedDetail.reviewedBy
+                      ? ` by ${selectedDetail.reviewedBy.name ?? selectedDetail.reviewedBy.email}`
+                      : ''}
                   </p>
 
                   <div className="flex items-center gap-2">

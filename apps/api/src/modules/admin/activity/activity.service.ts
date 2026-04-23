@@ -25,7 +25,9 @@ export class ActivityService {
   }
 
   private asAuditAction(value: string): AuditAction | null {
-    return Object.values(AuditAction).includes(value as AuditAction) ? (value as AuditAction) : null;
+    return Object.values(AuditAction).includes(value as AuditAction)
+      ? (value as AuditAction)
+      : null;
   }
 
   private asAuditTargetType(value: string): AuditTargetType | null {

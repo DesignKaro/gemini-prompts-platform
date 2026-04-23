@@ -95,12 +95,14 @@ export default async function RefundAndReturnPolicyPage() {
 
             <h2>2. Digital Product Nature</h2>
             <p>
-              Please note that all products sold on GeminiPrompts.io are <strong>digital goods</strong>{' '}
-              — including prompt packs, collections, templates, and subscription plans. Due to the
-              nature of digital products:
+              Please note that all products sold on GeminiPrompts.io are{' '}
+              <strong>digital goods</strong> — including prompt packs, collections, templates, and
+              subscription plans. Due to the nature of digital products:
             </p>
             <ul>
-              <li>Content is <strong>instantly accessible</strong> upon purchase.</li>
+              <li>
+                Content is <strong>instantly accessible</strong> upon purchase.
+              </li>
               <li>
                 Digital files <strong>cannot be &quot;returned&quot;</strong> in the traditional
                 sense once accessed or downloaded.
@@ -229,8 +231,8 @@ export default async function RefundAndReturnPolicyPage() {
             <p>
               <strong>Step 1 — Contact Us</strong>
               <br />
-              Send an email to <a href="mailto:help@geminiprompts.io">help@geminiprompts.io</a>{' '}
-              with the subject line:
+              Send an email to <a href="mailto:help@geminiprompts.io">help@geminiprompts.io</a> with
+              the subject line:
               <br />
               <code>Refund Request – [Your Order ID]</code>
             </p>
@@ -301,9 +303,9 @@ export default async function RefundAndReturnPolicyPage() {
               </table>
             </div>
             <p>
-              Processing times may vary depending on your bank or payment provider.
-              GeminiPrompts.io is not responsible for delays caused by financial institutions once
-              the refund has been issued from our end.
+              Processing times may vary depending on your bank or payment provider. GeminiPrompts.io
+              is not responsible for delays caused by financial institutions once the refund has
+              been issued from our end.
             </p>
 
             <h2>7. Subscription Cancellations</h2>
@@ -315,7 +317,9 @@ export default async function RefundAndReturnPolicyPage() {
             </p>
             <h3>7.2 What Happens After Cancellation</h3>
             <ul>
-              <li>Your subscription will remain active until the end of the current billing period.</li>
+              <li>
+                Your subscription will remain active until the end of the current billing period.
+              </li>
               <li>You will not be charged in the next billing cycle.</li>
               <li>Access to premium content will be revoked at the end of the paid period.</li>
               <li>

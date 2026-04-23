@@ -103,8 +103,9 @@ function parseLogLine(rawLine: string): ParsedLogEntry {
           : JSON.stringify(messageCandidate ?? payload);
       return {
         timestamp:
-          normalizeTimestamp(payload.timestamp ?? payload.ts ?? payload.time ?? payload.createdAt) ??
-          extractIsoTimestamp(line),
+          normalizeTimestamp(
+            payload.timestamp ?? payload.ts ?? payload.time ?? payload.createdAt,
+          ) ?? extractIsoTimestamp(line),
         level: normalizeLevel(payload.level ?? payload.severity ?? payload.logLevel),
         message: message.slice(0, 4000),
         raw: rawLine,

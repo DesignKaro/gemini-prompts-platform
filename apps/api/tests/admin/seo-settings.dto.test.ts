@@ -16,7 +16,8 @@ describe('UpdateSeoSettingsDto', () => {
       robotsAdditionalRules: ['Crawl-delay: 5'],
       robotsCustomText:
         'User-agent: *\nAllow: /\nDisallow: /dashboard\nSitemap: https://example.com/sitemap.xml',
-      sitemapCustomXml: '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>',
+      sitemapCustomXml:
+        '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>',
       sitemapIncludePages: true,
       schemaWebPageEnabled: true,
       schemaFaqEnabled: true,

@@ -365,7 +365,9 @@ export default function CategoriesPage() {
 
       const failedIds = new Set(result.failures.map((entry) => entry.id));
       setCategories((current) =>
-        current.filter((category) => !selectedIds.includes(category.id) || failedIds.has(category.id)),
+        current.filter(
+          (category) => !selectedIds.includes(category.id) || failedIds.has(category.id),
+        ),
       );
       setSelectedIds(Array.from(failedIds));
       setLoadError(bulkActionMessage(result, 'Delete'));
@@ -842,11 +844,15 @@ export default function CategoriesPage() {
 
                       <label
                         className={`inline-flex items-center justify-center rounded-full bg-[#0f1116] px-5 py-2.5 text-[0.85rem] font-medium text-white transition-opacity ${
-                          isUploadingMedia ? 'cursor-not-allowed opacity-70 pointer-events-none' : 'cursor-pointer hover:opacity-90'
+                          isUploadingMedia
+                            ? 'cursor-not-allowed opacity-70 pointer-events-none'
+                            : 'cursor-pointer hover:opacity-90'
                         }`}
                       >
                         <span className="inline-flex items-center gap-2">
-                          {isUploadingMedia ? <InlineSpinner size="xs" className="text-white" /> : null}
+                          {isUploadingMedia ? (
+                            <InlineSpinner size="xs" className="text-white" />
+                          ) : null}
                           <span>{isUploadingMedia ? 'Uploading…' : 'Upload new'}</span>
                         </span>
                         <input

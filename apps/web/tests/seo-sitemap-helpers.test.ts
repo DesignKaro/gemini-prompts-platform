@@ -56,18 +56,15 @@ describe('sitemap xml render helpers', () => {
 
   it('returns custom sitemap xml override verbatim after trimming', () => {
     const customXml = '  <?xml version="1.0" encoding="UTF-8"?><urlset></urlset>  ';
-    const xml = buildSitemapIndexXml(
-      { sitemapCustomXml: customXml },
-      [
-        {
-          key: 'page',
-          path: '/page-sitemap.xml',
-          url: 'https://example.com/page-sitemap.xml',
-          enabled: true,
-          entries: [{ loc: 'https://example.com/' }],
-        },
-      ],
-    );
+    const xml = buildSitemapIndexXml({ sitemapCustomXml: customXml }, [
+      {
+        key: 'page',
+        path: '/page-sitemap.xml',
+        url: 'https://example.com/page-sitemap.xml',
+        enabled: true,
+        entries: [{ loc: 'https://example.com/' }],
+      },
+    ]);
 
     expect(xml).toBe('<?xml version="1.0" encoding="UTF-8"?><urlset></urlset>');
   });

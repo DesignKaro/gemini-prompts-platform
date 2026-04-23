@@ -57,8 +57,11 @@ function stubUploadClient(service: MediaStorageService) {
     bytes?: Buffer;
   } = {};
 
-  (service as unknown as { withClient: (worker: (client: unknown) => Promise<unknown>) => Promise<unknown> })
-    .withClient = async (worker) => {
+  (
+    service as unknown as {
+      withClient: (worker: (client: unknown) => Promise<unknown>) => Promise<unknown>;
+    }
+  ).withClient = async (worker) => {
     const fakeClient = {
       ensureDir: async (dir: string) => {
         capture.dir = dir;

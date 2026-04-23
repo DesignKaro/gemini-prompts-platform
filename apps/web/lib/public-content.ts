@@ -305,26 +305,35 @@ export async function getHomeContent(options?: FetchOptions) {
 
   // Fallback path: compose homepage payload from individual endpoints when
   // `/api/public/home` is temporarily unavailable.
-  const [categoriesResponse, latestPromptsResponse, trendingPromptsResponse, latestPostsResponse, popularTagsResponse] =
-    await Promise.all([
-      fetchPublicApi<ListResponse<PublicCategory>>('categories', { take: 12, sort: 'popular' }, options),
-      fetchPublicApi<ListResponse<PublicPrompt>>(
-        'prompts',
-        { take: 8, sort: 'latest', includeTags: 1 },
-        options,
-      ),
-      fetchPublicApi<ListResponse<PublicPrompt>>(
-        'prompts',
-        { take: 8, sort: 'trending', includeTags: 1 },
-        options,
-      ),
-      fetchPublicApi<ListResponse<PublicPost>>(
-        'posts',
-        { take: 6, sort: 'latest', includeTags: 1 },
-        options,
-      ),
-      fetchPublicApi<ListResponse<PublicTag>>('tags', { take: 18, sort: 'popular' }, options),
-    ]);
+  const [
+    categoriesResponse,
+    latestPromptsResponse,
+    trendingPromptsResponse,
+    latestPostsResponse,
+    popularTagsResponse,
+  ] = await Promise.all([
+    fetchPublicApi<ListResponse<PublicCategory>>(
+      'categories',
+      { take: 12, sort: 'popular' },
+      options,
+    ),
+    fetchPublicApi<ListResponse<PublicPrompt>>(
+      'prompts',
+      { take: 8, sort: 'latest', includeTags: 1 },
+      options,
+    ),
+    fetchPublicApi<ListResponse<PublicPrompt>>(
+      'prompts',
+      { take: 8, sort: 'trending', includeTags: 1 },
+      options,
+    ),
+    fetchPublicApi<ListResponse<PublicPost>>(
+      'posts',
+      { take: 6, sort: 'latest', includeTags: 1 },
+      options,
+    ),
+    fetchPublicApi<ListResponse<PublicTag>>('tags', { take: 18, sort: 'popular' }, options),
+  ]);
 
   const fallbackHome: HomeResponse = {
     categories: categoriesResponse?.items ?? [],
@@ -385,10 +394,7 @@ export async function getAllPromptList(
         ? requestedTake
         : 72,
   );
-  const maxPages = Math.max(
-    1,
-    Number.isFinite(config?.maxPages) ? Number(config?.maxPages) : 50,
-  );
+  const maxPages = Math.max(1, Number.isFinite(config?.maxPages) ? Number(config?.maxPages) : 50);
 
   const items: PublicPrompt[] = [];
   let total = 0;

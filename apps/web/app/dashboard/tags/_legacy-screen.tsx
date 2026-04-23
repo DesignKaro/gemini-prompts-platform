@@ -322,7 +322,9 @@ export default function TagsPage() {
       });
 
       const failedIds = new Set(result.failures.map((entry) => entry.id));
-      setTags((prev) => prev.filter((tag) => !selectedIds.includes(tag.id) || failedIds.has(tag.id)));
+      setTags((prev) =>
+        prev.filter((tag) => !selectedIds.includes(tag.id) || failedIds.has(tag.id)),
+      );
       setSelectedIds(Array.from(failedIds));
       setLoadError(bulkActionMessage(result, 'Delete'));
 

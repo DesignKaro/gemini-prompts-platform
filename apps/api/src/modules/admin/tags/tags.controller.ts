@@ -54,11 +54,7 @@ export class TagsController {
 
   @Patch(':id')
   @Permissions('tags:manage')
-  update(
-    @CurrentUser() user: AuthUser,
-    @Param() params: IdParamDto,
-    @Body() body: UpdateTagDto,
-  ) {
+  update(@CurrentUser() user: AuthUser, @Param() params: IdParamDto, @Body() body: UpdateTagDto) {
     return this.tagsService.update(user.sub, params.id, body);
   }
 

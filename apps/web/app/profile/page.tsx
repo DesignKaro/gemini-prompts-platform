@@ -26,6 +26,17 @@ type PromptThumbProps = {
   className: string;
 };
 
+type ProfileActivityItem = {
+  id: string;
+  type: 'SAVE' | 'LIKE' | 'CREATE' | 'VIEW_PROMPT' | 'VIEW_POST';
+  targetType: 'PROMPT' | 'POST';
+  targetPath: string | null;
+  title: string | null;
+  image: string | null;
+  subtitle?: string | null;
+  createdAt: string;
+};
+
 function PromptThumb({ image, title, fallbackKey, className }: PromptThumbProps) {
   const fallbackSrc = resolvePromptImage(null, fallbackKey);
   const [src, setSrc] = useState(() => resolvePromptImage(image, fallbackKey));
@@ -83,20 +94,20 @@ function ProfilePageContent() {
         session.authError === 'AccountSuspended'
           ? 'Your account has been suspended. Please contact support for help.'
           : session.authError === 'GoogleBackendSyncFailed'
-          ? 'Finishing Google sign-in. This can take a few seconds.'
-          : session.authError === 'GoogleTokenMissing'
-            ? 'Google login token was missing. Please sign out and sign in again.'
-            : session.authError === 'RefreshAccessTokenError'
-              ? 'Session refresh failed. Please sign out and sign in again.'
-              : 'Login sync failed. Please sign out and sign in again.';
+            ? 'Finishing Google sign-in. This can take a few seconds.'
+            : session.authError === 'GoogleTokenMissing'
+              ? 'Google login token was missing. Please sign out and sign in again.'
+              : session.authError === 'RefreshAccessTokenError'
+                ? 'Session refresh failed. Please sign out and sign in again.'
+                : 'Login sync failed. Please sign out and sign in again.';
       const nextMessage =
         session.authError === 'AccountSuspended'
           ? session.authErrorMessage?.trim() || fallbackMessage
           : session.authError === 'GoogleBackendSyncFailed'
             ? fallbackMessage
-          : session.authErrorMessage?.trim()
-            ? `Login sync failed: ${session.authErrorMessage}`
-            : fallbackMessage;
+            : session.authErrorMessage?.trim()
+              ? `Login sync failed: ${session.authErrorMessage}`
+              : fallbackMessage;
       setAuthSyncError(nextMessage);
     } else {
       setAuthSyncError(null);
@@ -149,15 +160,7 @@ function ProfilePageContent() {
     plan: 'FREE',
   });
 
-  const [recentActivity, setRecentActivity] = useState<
-    Array<{
-      id: string;
-      type: 'SAVE' | 'LIKE' | 'CREATE';
-      promptTitle: string | null;
-      promptSlug: string | null;
-      createdAt: string;
-    }>
-  >([]);
+  const [recentActivity, setRecentActivity] = useState<ProfileActivityItem[]>([]);
 
   const [savedPromptCards, setSavedPromptCards] = useState<
     Array<{
@@ -244,13 +247,7 @@ function ProfilePageContent() {
             audienceCount: number;
             plan: string;
           };
-          recentActivity: Array<{
-            id: string;
-            type: 'SAVE' | 'LIKE' | 'CREATE';
-            promptTitle: string | null;
-            promptSlug: string | null;
-            createdAt: string;
-          }>;
+          recentActivity: ProfileActivityItem[];
           savedPrompts: Array<{
             id: string;
             title: string;
@@ -309,7 +306,15 @@ function ProfilePageContent() {
         window.clearInterval(refreshId);
       }
     };
-  }, [apiBaseUrl, isEditOpen, isGoogleSyncPending, refreshSession, session?.authError, session?.apiAccessToken, status]);
+  }, [
+    apiBaseUrl,
+    isEditOpen,
+    isGoogleSyncPending,
+    refreshSession,
+    session?.authError,
+    session?.apiAccessToken,
+    status,
+  ]);
 
   useEffect(() => {
     if (!isEditOpen) {
@@ -414,21 +419,25 @@ function ProfilePageContent() {
       SAVE: 'bg-[#f4f7ff] text-[#2f5bd9]',
       LIKE: 'bg-[#fff4e6] text-[#d2603a]',
       CREATE: 'bg-[#eef7f1] text-[#2f7a5a]',
+      VIEW_PROMPT: 'bg-[#eef4ff] text-[#3158b0]',
+      VIEW_POST: 'bg-[#f5f0ff] text-[#7750c6]',
     } as const;
 
     const titleMap = {
       SAVE: 'Prompt saved',
       LIKE: 'Prompt liked',
       CREATE: 'Prompt created',
+      VIEW_PROMPT: 'Prompt visited',
+      VIEW_POST: 'Blog visited',
     } as const;
 
     return {
-      id: activity.id || `${activity.type}-${activity.promptTitle ?? 'activity'}-${activity.createdAt}`,
+      id: activity.id || `${activity.type}-${activity.title ?? 'activity'}-${activity.createdAt}`,
       title: titleMap[activity.type],
-      detail: activity.promptTitle ? `“${activity.promptTitle}”` : 'Your recent prompt activity.',
+      detail: activity.title ? `“${activity.title}”` : 'Your recent activity.',
       time: formatRelativeTime(activity.createdAt),
       tone: toneMap[activity.type],
-      promptSlug: activity.promptSlug,
+      targetPath: activity.targetPath,
     };
   });
 
@@ -905,7 +914,9 @@ function ProfilePageContent() {
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="text-[0.88rem] font-medium text-[#10141c]">{item.title}</p>
+                            <p className="text-[0.88rem] font-medium text-[#10141c]">
+                              {item.title}
+                            </p>
                             <p className="mt-1 text-[0.8rem] text-[#667080]">{item.detail}</p>
                           </div>
                           <span
@@ -915,9 +926,9 @@ function ProfilePageContent() {
                           </span>
                         </div>
                         <div className="mt-3">
-                          {item.promptSlug ? (
+                          {item.targetPath ? (
                             <Link
-                              href={`/prompt/${item.promptSlug}`}
+                              href={item.targetPath}
                               className="inline-flex rounded-full border border-[#d4d9e2] px-2.5 py-1 text-[0.72rem] text-[#10141c] transition-colors duration-300 hover:border-[#10141c] hover:bg-[#10141c] hover:text-white"
                             >
                               Open
@@ -956,9 +967,9 @@ function ProfilePageContent() {
                               {item.detail}
                             </td>
                             <td className="px-3 py-2.5">
-                              {item.promptSlug ? (
+                              {item.targetPath ? (
                                 <Link
-                                  href={`/prompt/${item.promptSlug}`}
+                                  href={item.targetPath}
                                   className="inline-flex rounded-full border border-[#d4d9e2] px-2.5 py-1 text-[0.72rem] text-[#10141c] transition-colors duration-300 hover:border-[#10141c] hover:bg-[#10141c] hover:text-white"
                                 >
                                   Open
@@ -1007,9 +1018,7 @@ function ProfilePageContent() {
                     key={prompt.id}
                     className="flex flex-col gap-2.5 rounded-[16px] border border-[#dde3eb] bg-white p-2.5 sm:flex-row sm:items-center sm:p-3"
                   >
-                    <div
-                      className="h-[90px] w-full overflow-hidden rounded-[12px] bg-[#eef1f5] sm:h-[74px] sm:w-[122px]"
-                    >
+                    <div className="h-[90px] w-full overflow-hidden rounded-[12px] bg-[#eef1f5] sm:h-[74px] sm:w-[122px]">
                       <PromptThumb
                         image={prompt.image}
                         title={prompt.title}

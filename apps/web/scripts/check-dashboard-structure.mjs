@@ -7,11 +7,7 @@ const roots = ['apps/web/app/dashboard', 'apps/web/features/dashboard'];
 const violations = [];
 const routeViolations = [];
 
-const allowedRouteImports = [
-  '@/features/dashboard/',
-  'next/navigation',
-  'react',
-];
+const allowedRouteImports = ['@/features/dashboard/', 'next/navigation', 'react'];
 
 function walk(dir) {
   if (!fs.existsSync(dir)) return;

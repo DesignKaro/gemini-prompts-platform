@@ -151,9 +151,7 @@ export class UsersService {
     const existingRoleIds = new Set(existingRoles.map((role) => role.id));
     const missingRoleIds = roleIds.filter((roleId) => !existingRoleIds.has(roleId));
     if (missingRoleIds.length > 0) {
-      throw new BadRequestException(
-        `One or more roles do not exist: ${missingRoleIds.join(', ')}`,
-      );
+      throw new BadRequestException(`One or more roles do not exist: ${missingRoleIds.join(', ')}`);
     }
   }
 

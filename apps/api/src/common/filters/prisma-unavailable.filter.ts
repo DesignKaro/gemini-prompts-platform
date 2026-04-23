@@ -269,13 +269,12 @@ export class PrismaUnavailableFilter extends BaseExceptionFilter {
       mappedPrismaError ??
       (exception instanceof HttpException ? mapHttpException(exception) : null);
 
-    const payload: StandardErrorResponse =
-      mappedHttpError ?? {
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'An unexpected internal error occurred.',
-        error: 'Internal Server Error',
-        code: 'INTERNAL_SERVER_ERROR',
-      };
+    const payload: StandardErrorResponse = mappedHttpError ?? {
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      message: 'An unexpected internal error occurred.',
+      error: 'Internal Server Error',
+      code: 'INTERNAL_SERVER_ERROR',
+    };
 
     const location = `${request.method} ${request.url}`;
     if (payload.status >= HttpStatus.INTERNAL_SERVER_ERROR) {

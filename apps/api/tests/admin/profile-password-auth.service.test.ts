@@ -250,14 +250,20 @@ describe('AuthService Google first login avatar normalization', () => {
     } as unknown as ConstructorParameters<typeof AuthService>[0];
 
     const service = new AuthService(prisma, createConfigService(), createMediaStorageService());
-    vi.spyOn(service as unknown as { verifyGoogleProfile: (...args: unknown[]) => Promise<unknown> }, 'verifyGoogleProfile').mockResolvedValue({
+    vi.spyOn(
+      service as unknown as { verifyGoogleProfile: (...args: unknown[]) => Promise<unknown> },
+      'verifyGoogleProfile',
+    ).mockResolvedValue({
       sub: 'google-sub-1',
       email: 'user@example.com',
       emailVerified: true,
       name: 'Google User',
       picture: 'http://lh3.googleusercontent.com/photo',
     });
-    vi.spyOn(service as unknown as { issueSession: (...args: unknown[]) => Promise<unknown> }, 'issueSession').mockResolvedValue({
+    vi.spyOn(
+      service as unknown as { issueSession: (...args: unknown[]) => Promise<unknown> },
+      'issueSession',
+    ).mockResolvedValue({
       user: createUser({ passwordCredential: null }),
       accessToken: 'token',
       accessTokenExpiresAt: new Date().toISOString(),

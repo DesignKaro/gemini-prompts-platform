@@ -1,9 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  resolveSeoIntegrationScope,
-  type SeoIntegrationScope,
-} from './seo-integration-scope';
+import { resolveSeoIntegrationScope, type SeoIntegrationScope } from './seo-integration-scope';
 
 export type SeoIntegrationSettingsPayload = {
   scope: SeoIntegrationScope;
@@ -34,11 +31,13 @@ export class SeoIntegrationsService {
   constructor(private readonly prisma: PrismaService) {}
 
   private get integrationsDelegate() {
-    return (this.prisma as PrismaService & {
-      seoIntegrationSettings: {
-        upsert: (args: Record<string, unknown>) => Promise<IntegrationRecord>;
-      };
-    }).seoIntegrationSettings;
+    return (
+      this.prisma as PrismaService & {
+        seoIntegrationSettings: {
+          upsert: (args: Record<string, unknown>) => Promise<IntegrationRecord>;
+        };
+      }
+    ).seoIntegrationSettings;
   }
 
   async getSettings(scopeInput?: string | null): Promise<SeoIntegrationSettingsPayload> {
@@ -79,13 +78,19 @@ export class SeoIntegrationsService {
           current.bingSiteVerification,
           191,
         ),
-        gaMeasurementId: this.normalizeGaMeasurementId(input.gaMeasurementId, current.gaMeasurementId),
+        gaMeasurementId: this.normalizeGaMeasurementId(
+          input.gaMeasurementId,
+          current.gaMeasurementId,
+        ),
         googleAdsTagId: this.normalizeGoogleAdsTagId(input.googleAdsTagId, current.googleAdsTagId),
         adsensePublisherId: this.normalizeAdsensePublisherId(
           input.adsensePublisherId,
           current.adsensePublisherId,
         ),
-        clarityProjectId: this.normalizeClarityProjectId(input.clarityProjectId, current.clarityProjectId),
+        clarityProjectId: this.normalizeClarityProjectId(
+          input.clarityProjectId,
+          current.clarityProjectId,
+        ),
         customHeadScriptUrls: this.normalizeScriptUrls(
           input.customHeadScriptUrls,
           current.customHeadScriptUrls,
@@ -120,13 +125,19 @@ export class SeoIntegrationsService {
           current.bingSiteVerification,
           191,
         ),
-        gaMeasurementId: this.normalizeGaMeasurementId(input.gaMeasurementId, current.gaMeasurementId),
+        gaMeasurementId: this.normalizeGaMeasurementId(
+          input.gaMeasurementId,
+          current.gaMeasurementId,
+        ),
         googleAdsTagId: this.normalizeGoogleAdsTagId(input.googleAdsTagId, current.googleAdsTagId),
         adsensePublisherId: this.normalizeAdsensePublisherId(
           input.adsensePublisherId,
           current.adsensePublisherId,
         ),
-        clarityProjectId: this.normalizeClarityProjectId(input.clarityProjectId, current.clarityProjectId),
+        clarityProjectId: this.normalizeClarityProjectId(
+          input.clarityProjectId,
+          current.clarityProjectId,
+        ),
         customHeadScriptUrls: this.normalizeScriptUrls(
           input.customHeadScriptUrls,
           current.customHeadScriptUrls,
@@ -350,7 +361,9 @@ export class SeoIntegrationsService {
       }
       unique.add(parsed.toString());
       if (unique.size > MAX_SCRIPT_URLS) {
-        throw new BadRequestException(`customHeadScriptUrls supports up to ${MAX_SCRIPT_URLS} URLs.`);
+        throw new BadRequestException(
+          `customHeadScriptUrls supports up to ${MAX_SCRIPT_URLS} URLs.`,
+        );
       }
     }
 
@@ -416,7 +429,15 @@ export class SeoIntegrationsService {
     }
 
     const lower = withoutWrapperTags.toLowerCase();
-    const blockedFragments = ['<script', '</script', '<iframe', '<object', '<embed', '<link', '<meta'];
+    const blockedFragments = [
+      '<script',
+      '</script',
+      '<iframe',
+      '<object',
+      '<embed',
+      '<link',
+      '<meta',
+    ];
 
     if (blockedFragments.some((fragment) => lower.includes(fragment))) {
       throw new BadRequestException('Inline style contains blocked content.');

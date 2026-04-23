@@ -242,7 +242,9 @@ export function MembersScreen() {
               <p className="text-[1.15rem] font-semibold text-[#101625]">{activeMembers}</p>
             </div>
             <div className="rounded-xl border border-[#e5e9f1] bg-[#f8fafd] px-3 py-2 text-right">
-              <p className="text-[0.72rem] uppercase tracking-[0.08em] text-[#8a93a3]">Total users</p>
+              <p className="text-[0.72rem] uppercase tracking-[0.08em] text-[#8a93a3]">
+                Total users
+              </p>
               <p className="text-[1.15rem] font-semibold text-[#101625]">{total}</p>
             </div>
           </div>

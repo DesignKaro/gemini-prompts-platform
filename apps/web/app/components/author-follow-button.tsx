@@ -186,11 +186,7 @@ export function AuthorFollowButton({ authorId, initialFollowerCount }: AuthorFol
               : 'bg-[#d5ea52] text-black hover:bg-[#c7dc43]'
         }`}
       >
-        {isOwnProfile
-          ? 'Your profile'
-          : statusReady && following
-              ? 'Following'
-              : 'Follow'}
+        {isOwnProfile ? 'Your profile' : statusReady && following ? 'Following' : 'Follow'}
       </LoadingButton>
     </div>
   );

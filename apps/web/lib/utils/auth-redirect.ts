@@ -1,7 +1,4 @@
-import {
-  buildAuthCallbackFallbackFromHref,
-  normalizeAuthCallbackPath,
-} from './auth-callback';
+import { buildAuthCallbackFallbackFromHref, normalizeAuthCallbackPath } from './auth-callback';
 
 export function buildSignInModalUrl(currentHref: string, callbackUrl?: string): string {
   const currentUrl = new URL(currentHref);

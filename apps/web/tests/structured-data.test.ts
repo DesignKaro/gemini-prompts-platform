@@ -20,9 +20,7 @@ describe('structured-data helpers', () => {
     );
 
     expect(schema?.['@type']).toBe('BreadcrumbList');
-    expect(
-      Array.isArray(schema?.itemListElement) ? schema?.itemListElement.length : 0,
-    ).toBe(2);
+    expect(Array.isArray(schema?.itemListElement) ? schema?.itemListElement.length : 0).toBe(2);
   });
 
   it('builds creative work prompt schema from prompt data', () => {
@@ -68,9 +66,7 @@ describe('structured-data helpers', () => {
     });
 
     expect(schema?.['@type']).toBe('ItemList');
-    expect(
-      Array.isArray(schema?.itemListElement) ? schema?.itemListElement.length : 0,
-    ).toBe(1);
+    expect(Array.isArray(schema?.itemListElement) ? schema?.itemListElement.length : 0).toBe(1);
   });
 
   it('returns both person and profile schemas for author pages', () => {

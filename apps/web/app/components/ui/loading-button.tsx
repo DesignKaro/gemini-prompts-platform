@@ -21,12 +21,7 @@ export function LoadingButton({
   const isDisabled = Boolean(disabled) || pending;
 
   return (
-    <button
-      {...props}
-      disabled={isDisabled}
-      aria-busy={pending || undefined}
-      className={className}
-    >
+    <button {...props} disabled={isDisabled} aria-busy={pending || undefined} className={className}>
       {pending ? (
         <span className="inline-flex items-center gap-2">
           <InlineSpinner size={spinnerSize} className={spinnerClassName} />
@@ -38,4 +33,3 @@ export function LoadingButton({
     </button>
   );
 }
-

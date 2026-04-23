@@ -171,9 +171,7 @@ describe('PublicService membership checkout', () => {
   });
 
   it('verifies payment and upgrades subscription + membership plan', async () => {
-    const signature = createHmac('sha256', 'rzp_test_secret')
-      .update('order_1|pay_1')
-      .digest('hex');
+    const signature = createHmac('sha256', 'rzp_test_secret').update('order_1|pay_1').digest('hex');
 
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
@@ -270,9 +268,7 @@ describe('PublicService membership checkout', () => {
   });
 
   it('handles duplicate verify callbacks without creating duplicate upgrades', async () => {
-    const signature = createHmac('sha256', 'rzp_test_secret')
-      .update('order_1|pay_1')
-      .digest('hex');
+    const signature = createHmac('sha256', 'rzp_test_secret').update('order_1|pay_1').digest('hex');
 
     const activeUntil = new Date('2026-04-29T00:00:00.000Z');
 

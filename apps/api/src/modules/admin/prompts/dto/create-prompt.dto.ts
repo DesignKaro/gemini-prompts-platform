@@ -17,7 +17,10 @@ import {
   WebsitePromptKind,
 } from '@prisma/client';
 import { Transform } from 'class-transformer';
-import { toOptionalBoolean, toOptionalStringArray } from '../../../../common/dto/query-transformers';
+import {
+  toOptionalBoolean,
+  toOptionalStringArray,
+} from '../../../../common/dto/query-transformers';
 
 export class CreatePromptDto {
   @IsString()

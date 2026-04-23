@@ -215,7 +215,8 @@ export function MembershipManageClient() {
     };
   }, [getAccessToken, session?.user?.plan, sessionStatus, update]);
 
-  const isPremiumActive = summary?.membership.status === 'ACTIVE' && summary.user.plan === 'PREMIUM';
+  const isPremiumActive =
+    summary?.membership.status === 'ACTIVE' && summary.user.plan === 'PREMIUM';
   const primaryActionHref = isPremiumActive ? '/exclusive' : '/membership';
   const primaryActionLabel = isPremiumActive ? 'Browse Exclusive Content' : 'Upgrade to Premium';
 
@@ -252,7 +253,9 @@ export function MembershipManageClient() {
           <>
             <div className="mt-6 grid gap-5 lg:grid-cols-2">
               <div className="rounded-[24px] border border-[#e6e9f2] bg-white p-6">
-                <p className="text-[0.84rem] uppercase tracking-[0.08em] text-[#8a93a3]">Current plan</p>
+                <p className="text-[0.84rem] uppercase tracking-[0.08em] text-[#8a93a3]">
+                  Current plan
+                </p>
                 <div className="mt-3 flex flex-wrap items-center gap-3">
                   <span className="text-[1.45rem] leading-none text-[#0f172a]">
                     {summary.user.plan === 'PREMIUM' ? 'Premium' : 'Free'}
@@ -298,7 +301,9 @@ export function MembershipManageClient() {
               </div>
 
               <div className="rounded-[24px] border border-[#e6e9f2] bg-white p-6">
-                <p className="text-[0.84rem] uppercase tracking-[0.08em] text-[#8a93a3]">Access window</p>
+                <p className="text-[0.84rem] uppercase tracking-[0.08em] text-[#8a93a3]">
+                  Access window
+                </p>
                 <dl className="mt-4 space-y-3 text-[0.92rem]">
                   <div className="flex items-center justify-between gap-3">
                     <dt className="text-[#6a7282]">Started</dt>
@@ -349,9 +354,7 @@ export function MembershipManageClient() {
                       {historyRows.map((row) => (
                         <tr key={row.id} className="bg-white text-[#111827]">
                           <td className="px-4 py-3">{formatDate(row.createdAt)}</td>
-                          <td className="px-4 py-3">
-                            {formatCurrency(row.amount, row.currency)}
-                          </td>
+                          <td className="px-4 py-3">{formatCurrency(row.amount, row.currency)}</td>
                           <td className="px-4 py-3">{row.status}</td>
                           <td className="px-4 py-3">{row.provider}</td>
                           <td className="px-4 py-3">

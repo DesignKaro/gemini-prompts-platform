@@ -89,9 +89,7 @@ export function SocialShareMenu({
   };
 
   const menuPositionClass =
-    align === 'left'
-      ? 'left-0 right-auto translate-x-0'
-      : 'right-0 left-auto translate-x-0';
+    align === 'left' ? 'left-0 right-auto translate-x-0' : 'right-0 left-auto translate-x-0';
   const menuPlacementClass =
     menuPlacement === 'above' ? 'bottom-[calc(100%+14px)]' : 'top-[calc(100%+10px)]';
 

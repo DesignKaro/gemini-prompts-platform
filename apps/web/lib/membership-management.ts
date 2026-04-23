@@ -41,7 +41,9 @@ export class MembershipManagementError extends Error {
   }
 }
 
-export async function getMembershipSummary(accessToken: string): Promise<MembershipSummaryResponse> {
+export async function getMembershipSummary(
+  accessToken: string,
+): Promise<MembershipSummaryResponse> {
   const response = await fetch(`${API_BASE_URL}/api/auth/membership`, {
     method: 'GET',
     headers: {

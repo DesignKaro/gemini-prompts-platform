@@ -77,11 +77,7 @@ export class MediaController {
 
   @Patch(':id')
   @Permissions('media:manage')
-  update(
-    @CurrentUser() user: AuthUser,
-    @Param() params: IdParamDto,
-    @Body() body: UpdateMediaDto,
-  ) {
+  update(@CurrentUser() user: AuthUser, @Param() params: IdParamDto, @Body() body: UpdateMediaDto) {
     return this.mediaService.update(user.sub, params.id, body);
   }
 

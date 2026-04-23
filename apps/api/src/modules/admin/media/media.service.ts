@@ -91,7 +91,11 @@ export class MediaService {
     let width = data.width ?? null;
     let height = data.height ?? null;
 
-    if (url && this.mediaStorageService.isInlineImageDataUrl(url) && this.mediaStorageService.isEnabled()) {
+    if (
+      url &&
+      this.mediaStorageService.isInlineImageDataUrl(url) &&
+      this.mediaStorageService.isEnabled()
+    ) {
       const stored = await this.mediaStorageService.uploadImageDataUrl({
         dataUrl: url,
         scope: 'media',

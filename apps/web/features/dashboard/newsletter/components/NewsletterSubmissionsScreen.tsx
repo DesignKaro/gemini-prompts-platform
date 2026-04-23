@@ -153,7 +153,9 @@ export function NewsletterSubmissionsScreen() {
       });
       setRefreshNonce((value) => value + 1);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Unable to delete submission.');
+      setError(
+        requestError instanceof Error ? requestError.message : 'Unable to delete submission.',
+      );
     } finally {
       setDeletingId((current) => (current === id ? null : current));
     }

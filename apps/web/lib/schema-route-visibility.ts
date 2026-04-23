@@ -58,7 +58,11 @@ function isPaginatedRequest(searchParams: URLSearchParams) {
 }
 
 function hasPrivateOrAuthIntent(pathname: string, searchParams: URLSearchParams) {
-  if (PRIVATE_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+  if (
+    PRIVATE_ROUTE_PREFIXES.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    )
+  ) {
     return true;
   }
 

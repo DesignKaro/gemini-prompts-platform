@@ -13,7 +13,10 @@ type CategoryDescriptionPreviewProps = {
   categoryName: string;
 };
 
-export function CategoryDescriptionPreview({ text, categoryName }: CategoryDescriptionPreviewProps) {
+export function CategoryDescriptionPreview({
+  text,
+  categoryName,
+}: CategoryDescriptionPreviewProps) {
   const [open, setOpen] = useState(false);
   const titleId = useId();
   const words = splitWords(text);
@@ -56,7 +59,9 @@ export function CategoryDescriptionPreview({ text, categoryName }: CategoryDescr
     <>
       <div className="mt-3 max-w-full">
         <div className="relative">
-          <p className="whitespace-pre-line text-[1.05rem] leading-[1.7] text-[#5f6773]">{previewText}</p>
+          <p className="whitespace-pre-line text-[1.05rem] leading-[1.7] text-[#5f6773]">
+            {previewText}
+          </p>
           <div
             className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white to-transparent"
             aria-hidden
@@ -102,10 +107,15 @@ export function CategoryDescriptionPreview({ text, categoryName }: CategoryDescr
                 />
               </svg>
             </button>
-            <h2 id={titleId} className="pr-10 text-[1.25rem] font-medium tracking-[-0.02em] text-[#0f1116] sm:text-[1.4rem]">
+            <h2
+              id={titleId}
+              className="pr-10 text-[1.25rem] font-medium tracking-[-0.02em] text-[#0f1116] sm:text-[1.4rem]"
+            >
               {categoryName}
             </h2>
-            <p className="mt-4 whitespace-pre-line text-[1.05rem] leading-[1.7] text-[#5f6773]">{text}</p>
+            <p className="mt-4 whitespace-pre-line text-[1.05rem] leading-[1.7] text-[#5f6773]">
+              {text}
+            </p>
           </div>
         </div>
       ) : null}

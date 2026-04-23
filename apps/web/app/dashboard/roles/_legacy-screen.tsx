@@ -334,7 +334,10 @@ export default function RolesPage() {
               </thead>
               <tbody>
                 {Array.from({ length: 5 }).map((_, index) => (
-                  <tr key={`role-skeleton-${index}`} className="border-b border-[#f0f4f8] last:border-0">
+                  <tr
+                    key={`role-skeleton-${index}`}
+                    className="border-b border-[#f0f4f8] last:border-0"
+                  >
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
                         <Skeleton className="h-10 w-10 rounded-full" />
@@ -377,10 +380,7 @@ export default function RolesPage() {
               </thead>
               <tbody className="divide-y divide-[#f0f4f8]">
                 {filteredRoles.map((role, index) => (
-                  <tr
-                    key={role.id}
-                    className="group transition-colors hover:bg-gray-50/50"
-                  >
+                  <tr key={role.id} className="group transition-colors hover:bg-gray-50/50">
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
                         <span
@@ -401,7 +401,10 @@ export default function RolesPage() {
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                      <p className="max-w-[280px] truncate text-[0.88rem] text-gray-500" title={role.description ?? ''}>
+                      <p
+                        className="max-w-[280px] truncate text-[0.88rem] text-gray-500"
+                        title={role.description ?? ''}
+                      >
                         {role.description || '—'}
                       </p>
                     </td>
@@ -471,9 +474,7 @@ export default function RolesPage() {
               <MdSecurity className="text-gray-300" size={24} />
             </div>
             <p className="mt-4 text-[0.95rem] font-medium text-[#0f1116]">No roles found</p>
-            <p className="mt-1 text-[0.85rem] text-gray-500">
-              Try adjusting your search criteria.
-            </p>
+            <p className="mt-1 text-[0.85rem] text-gray-500">Try adjusting your search criteria.</p>
           </div>
         )}
       </div>

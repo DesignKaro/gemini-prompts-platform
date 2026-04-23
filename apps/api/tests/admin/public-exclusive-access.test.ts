@@ -2,9 +2,7 @@ import { MembershipPlan, PromptVisibility, UserRole } from '@prisma/client';
 import { describe, expect, it, vi } from 'vitest';
 import { PublicService } from '../../src/modules/public/public.service';
 
-function createService(
-  prismaOverride?: Partial<ConstructorParameters<typeof PublicService>[0]>,
-) {
+function createService(prismaOverride?: Partial<ConstructorParameters<typeof PublicService>[0]>) {
   const prisma = (prismaOverride ?? {}) as ConstructorParameters<typeof PublicService>[0];
   const configService = {
     getOrThrow: vi.fn().mockReturnValue('test-secret'),
@@ -65,7 +63,11 @@ describe('PublicService exclusive access policy', () => {
     const service = createService();
     const buildPublicPromptWhere = (
       service as unknown as {
-        buildPublicPromptWhere: (options: Record<string, unknown>, viewer?: unknown, mode?: string) => {
+        buildPublicPromptWhere: (
+          options: Record<string, unknown>,
+          viewer?: unknown,
+          mode?: string,
+        ) => {
           AND?: Array<Record<string, unknown>>;
         };
       }
@@ -85,14 +87,22 @@ describe('PublicService exclusive access policy', () => {
     const service = createService();
     const buildPublicPromptWhere = (
       service as unknown as {
-        buildPublicPromptWhere: (options: Record<string, unknown>, viewer?: unknown, mode?: string) => {
+        buildPublicPromptWhere: (
+          options: Record<string, unknown>,
+          viewer?: unknown,
+          mode?: string,
+        ) => {
           AND?: Array<Record<string, unknown>>;
         };
       }
     ).buildPublicPromptWhere.bind(service);
     const buildPublicPostWhere = (
       service as unknown as {
-        buildPublicPostWhere: (options: Record<string, unknown>, viewer?: unknown, mode?: string) => {
+        buildPublicPostWhere: (
+          options: Record<string, unknown>,
+          viewer?: unknown,
+          mode?: string,
+        ) => {
           AND?: Array<Record<string, unknown>>;
         };
       }
@@ -173,10 +183,7 @@ describe('PublicService exclusive access policy', () => {
         featuredImageUrl: inlineImage,
         metaTitle: null,
         metaDescription: null,
-        galleryImageUrls: [
-          inlineImage,
-          'https://cdn.example.com/image.png',
-        ],
+        galleryImageUrls: [inlineImage, 'https://cdn.example.com/image.png'],
         publishedAt: new Date('2026-03-30T00:00:00.000Z'),
         updatedAt: new Date('2026-03-30T00:00:00.000Z'),
         viewCount: 0,

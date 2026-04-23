@@ -56,11 +56,7 @@ export class CommentsController {
 
   @Post(':id/reply')
   @Permissions('comments:moderate')
-  reply(
-    @CurrentUser() user: AuthUser,
-    @Param() params: IdParamDto,
-    @Body() body: ReplyCommentDto,
-  ) {
+  reply(@CurrentUser() user: AuthUser, @Param() params: IdParamDto, @Body() body: ReplyCommentDto) {
     return this.commentsService.reply(user.sub, params.id, body.content);
   }
 

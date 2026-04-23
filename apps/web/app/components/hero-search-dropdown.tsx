@@ -137,7 +137,11 @@ function buildResultsByTab(payload: SearchResponse): SearchResultsByTab {
   const categoryImageById = new Map<string, string>();
   const categoryImageBySlug = new Map<string, string>();
 
-  const registerCategoryImage = (id: string | null | undefined, slug: string | null | undefined, image: string | null) => {
+  const registerCategoryImage = (
+    id: string | null | undefined,
+    slug: string | null | undefined,
+    image: string | null,
+  ) => {
     if (!image) return;
     if (id && !categoryImageById.has(id)) {
       categoryImageById.set(id, image);
@@ -150,7 +154,11 @@ function buildResultsByTab(payload: SearchResponse): SearchResultsByTab {
   payload.prompts.forEach((prompt) => {
     const normalizedImage = normalizeAvatarUrl(prompt.image);
     if (!normalizedImage) return;
-    registerCategoryImage(prompt.primaryCategory?.id, prompt.primaryCategory?.slug, normalizedImage);
+    registerCategoryImage(
+      prompt.primaryCategory?.id,
+      prompt.primaryCategory?.slug,
+      normalizedImage,
+    );
     prompt.categories.forEach((category) => {
       registerCategoryImage(category.id, category.slug, normalizedImage);
     });
@@ -166,11 +174,14 @@ function buildResultsByTab(payload: SearchResponse): SearchResultsByTab {
   });
 
   const resolveCategoryImage = (id?: string | null, slug?: string | null) =>
-    (id ? categoryImageById.get(id) : null) || (slug ? categoryImageBySlug.get(slug) : null) || null;
+    (id ? categoryImageById.get(id) : null) ||
+    (slug ? categoryImageBySlug.get(slug) : null) ||
+    null;
 
   return {
     prompts: payload.prompts.map((prompt) => {
-      const categorySlug = prompt.primaryCategory?.slug || prompt.categories[0]?.slug || 'uncategorized';
+      const categorySlug =
+        prompt.primaryCategory?.slug || prompt.categories[0]?.slug || 'uncategorized';
       return {
         id: prompt.id,
         type: 'prompt',
@@ -210,8 +221,7 @@ function buildResultsByTab(payload: SearchResponse): SearchResultsByTab {
       title: category.name,
       subtitle: `${formatCount(category.totalCount)} items`,
       href: `/${category.slug}`,
-      thumbnail:
-        normalizeAvatarUrl(category.imageUrl) || CATEGORY_IMAGE_FALLBACK,
+      thumbnail: normalizeAvatarUrl(category.imageUrl) || CATEGORY_IMAGE_FALLBACK,
       thumbnailFallback: CATEGORY_IMAGE_FALLBACK,
     })),
     tags: payload.tags.map((tag) => ({

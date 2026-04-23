@@ -32,7 +32,10 @@ describe('SeoScreen integrations tab', () => {
     sessionRole = 'SUPERADMIN';
     sessionPermissions = ['roles:read'];
     requestMock.mockImplementation(async (path: string) => {
-      if (path.startsWith('/api/admin/seo/integrations') || path.startsWith('/api/admin/seo/custom-code')) {
+      if (
+        path.startsWith('/api/admin/seo/integrations') ||
+        path.startsWith('/api/admin/seo/custom-code')
+      ) {
         return {
           scope: 'production',
           customHeadScriptUrls: [],
@@ -78,9 +81,9 @@ describe('SeoScreen integrations tab', () => {
 
     await waitFor(() => {
       const paths = requestMock.mock.calls.map((call) => String(call[0] ?? ''));
-      expect(paths.some((path) => path.includes('/api/admin/seo/integrations?scope=production'))).toBe(
-        true,
-      );
+      expect(
+        paths.some((path) => path.includes('/api/admin/seo/integrations?scope=production')),
+      ).toBe(true);
     });
 
     const scopeSelect = screen.getByLabelText('Scope');
@@ -103,9 +106,9 @@ describe('SeoScreen integrations tab', () => {
 
     await waitFor(() => {
       const paths = requestMock.mock.calls.map((call) => String(call[0] ?? ''));
-      expect(paths.some((path) => path.includes('/api/admin/seo/custom-code?scope=production'))).toBe(
-        true,
-      );
+      expect(
+        paths.some((path) => path.includes('/api/admin/seo/custom-code?scope=production')),
+      ).toBe(true);
     });
   });
 

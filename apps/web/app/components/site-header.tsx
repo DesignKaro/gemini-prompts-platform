@@ -340,7 +340,8 @@ export function SiteHeader() {
 
             <nav className="hidden items-center gap-2.5 lg:flex lg:justify-self-center">
               {navItems.map((item) => {
-                const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+                const isActive =
+                  item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
 
                 return (
                   <Link

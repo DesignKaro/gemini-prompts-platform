@@ -2,22 +2,46 @@ import Link from 'next/link';
 
 const popularCategories = [
   { title: 'Latest Prompts', href: '/latest', note: 'Fresh styles and edits updated daily' },
-  { title: 'Couple Prompts', href: '/search?q=Couple+Prompts', note: 'Romantic reels and portraits' },
-  { title: 'Boys Prompts', href: '/search?q=Boys+Prompts', note: 'Gym, attitude, retro, street looks' },
-  { title: 'Girls Prompts', href: '/search?q=Girls+Prompts', note: 'Aesthetic and festive creator styles' },
-  { title: 'Girl Saree Prompts', href: '/search?q=Girl+Saree+Prompts', note: 'Traditional and royal edits' },
+  {
+    title: 'Couple Prompts',
+    href: '/search?q=Couple+Prompts',
+    note: 'Romantic reels and portraits',
+  },
+  {
+    title: 'Boys Prompts',
+    href: '/search?q=Boys+Prompts',
+    note: 'Gym, attitude, retro, street looks',
+  },
+  {
+    title: 'Girls Prompts',
+    href: '/search?q=Girls+Prompts',
+    note: 'Aesthetic and festive creator styles',
+  },
+  {
+    title: 'Girl Saree Prompts',
+    href: '/search?q=Girl+Saree+Prompts',
+    note: 'Traditional and royal edits',
+  },
   {
     title: 'Bike Lover & Thar Lover',
     href: '/search?q=Bike+Lover+Thar+Lover+Prompts',
     note: 'Cinematic vehicle visuals',
   },
-  { title: 'Festival Prompts', href: '/search?q=Festival+Prompts', note: 'Diwali to Navratri campaigns' },
+  {
+    title: 'Festival Prompts',
+    href: '/search?q=Festival+Prompts',
+    note: 'Diwali to Navratri campaigns',
+  },
   {
     title: 'Devotional & Culture',
     href: '/search?q=Devotional+Culture+Prompts',
     note: 'Meaningful faith and heritage content',
   },
-  { title: 'Kids Prompts', href: '/search?q=Kids+Prompts', note: 'Fun cartoon and fairy-tale concepts' },
+  {
+    title: 'Kids Prompts',
+    href: '/search?q=Kids+Prompts',
+    note: 'Fun cartoon and fairy-tale concepts',
+  },
 ];
 
 const exclusivePromptTopics = [
@@ -90,8 +114,8 @@ export function HomeSeoContentSection() {
                   Exclusive Gemini & ChatGPT Prompts
                 </h3>
                 <p className="mt-2 text-[0.9rem] leading-6 text-[#5f6b7e]">
-                  Use proven prompt patterns to generate realistic portraits, scroll-stopping visuals,
-                  and social-first creative assets.
+                  Use proven prompt patterns to generate realistic portraits, scroll-stopping
+                  visuals, and social-first creative assets.
                 </p>
                 <ul className="mt-5 space-y-2.5">
                   {exclusivePromptTopics.map((topic) => (

@@ -301,49 +301,48 @@ async function loadDashboardData(
     posts,
     collabs,
     postCategoriesSchema,
-  ] =
-    await Promise.all([
-      db.category.findUnique({
-        where: { slug: 'uncategorized' },
-        select: { id: true, deletedAt: true },
-      }),
-      db.tag.findUnique({
-        where: { slug: 'default' },
-        select: { id: true, deletedAt: true },
-      }),
-      db.category.findMany({
-        where: { deletedAt: { not: null } },
-        select: { id: true },
-      }),
-      db.tag.findMany({
-        where: { deletedAt: { not: null } },
-        select: { id: true },
-      }),
-      db.prompt.findMany({
-        select: {
-          id: true,
-          primaryCategoryId: true,
-          categories: { select: { id: true, deletedAt: true } },
-          tags: { select: { id: true, deletedAt: true } },
-        },
-      }),
-      db.post.findMany({
-        select: {
-          id: true,
-          primaryCategoryId: true,
-          categories: { select: { id: true, deletedAt: true } },
-          tags: { select: { id: true, deletedAt: true } },
-        },
-      }),
-      db.collab.findMany({
-        select: {
-          id: true,
-          categories: { select: { id: true, deletedAt: true } },
-          tags: { select: { id: true, deletedAt: true } },
-        },
-      }),
-      inspectPostCategoriesSchema(db),
-    ]);
+  ] = await Promise.all([
+    db.category.findUnique({
+      where: { slug: 'uncategorized' },
+      select: { id: true, deletedAt: true },
+    }),
+    db.tag.findUnique({
+      where: { slug: 'default' },
+      select: { id: true, deletedAt: true },
+    }),
+    db.category.findMany({
+      where: { deletedAt: { not: null } },
+      select: { id: true },
+    }),
+    db.tag.findMany({
+      where: { deletedAt: { not: null } },
+      select: { id: true },
+    }),
+    db.prompt.findMany({
+      select: {
+        id: true,
+        primaryCategoryId: true,
+        categories: { select: { id: true, deletedAt: true } },
+        tags: { select: { id: true, deletedAt: true } },
+      },
+    }),
+    db.post.findMany({
+      select: {
+        id: true,
+        primaryCategoryId: true,
+        categories: { select: { id: true, deletedAt: true } },
+        tags: { select: { id: true, deletedAt: true } },
+      },
+    }),
+    db.collab.findMany({
+      select: {
+        id: true,
+        categories: { select: { id: true, deletedAt: true } },
+        tags: { select: { id: true, deletedAt: true } },
+      },
+    }),
+    inspectPostCategoriesSchema(db),
+  ]);
 
   return {
     prompts,

@@ -298,7 +298,10 @@ export class PublicController {
 
   @UseGuards(JwtAuthGuard)
   @Post('membership/checkout/verify')
-  verifyMembershipCheckout(@CurrentUser() user: AuthUser, @Body() body: VerifyMembershipCheckoutDto) {
+  verifyMembershipCheckout(
+    @CurrentUser() user: AuthUser,
+    @Body() body: VerifyMembershipCheckoutDto,
+  ) {
     return this.publicService.verifyMembershipCheckout(user, body);
   }
 

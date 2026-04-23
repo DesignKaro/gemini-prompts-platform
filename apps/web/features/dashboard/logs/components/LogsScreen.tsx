@@ -6,7 +6,12 @@ import { useAdminApi } from '@/app/components/dashboard/use-admin-api';
 import { buildErrorLogsQuery } from '../api';
 import { formatBytes, formatIsoTimestamp } from '../hooks';
 import { DEFAULT_PAGE_STATE } from '../state';
-import type { DashboardPageState, ErrorLogEntry, ErrorLogLevelFilter, ErrorLogsResponse } from '../types';
+import type {
+  DashboardPageState,
+  ErrorLogEntry,
+  ErrorLogLevelFilter,
+  ErrorLogsResponse,
+} from '../types';
 
 const LIMIT_OPTIONS = [50, 100, 150, 300, 500];
 
@@ -73,7 +78,9 @@ export function LogsScreen() {
         if (requestError instanceof Error && requestError.name === 'AbortError') {
           return;
         }
-        setError(requestError instanceof Error ? requestError.message : 'Unable to load error logs.');
+        setError(
+          requestError instanceof Error ? requestError.message : 'Unable to load error logs.',
+        );
         setPageState('error');
       }
     },
@@ -201,7 +208,8 @@ export function LogsScreen() {
       {entries.length > 0 && (
         <div className="rounded-[20px] border border-[#e8ecf4] bg-white">
           <div className="border-b border-[#edf1f8] px-4 py-3 text-[0.78rem] text-gray-500">
-            Showing {entries.length} entries • Scanned {response?.scannedLineCount ?? entries.length} lines
+            Showing {entries.length} entries • Scanned{' '}
+            {response?.scannedLineCount ?? entries.length} lines
           </div>
           <div className="max-h-[65vh] divide-y divide-[#edf1f8] overflow-auto">
             {entries.map((entry, index) => (
@@ -214,7 +222,9 @@ export function LogsScreen() {
                   >
                     {entry.level}
                   </span>
-                  <span className="text-[0.74rem] text-gray-500">{formatIsoTimestamp(entry.timestamp)}</span>
+                  <span className="text-[0.74rem] text-gray-500">
+                    {formatIsoTimestamp(entry.timestamp)}
+                  </span>
                 </div>
                 <p className="mt-2 whitespace-pre-wrap text-[0.87rem] leading-relaxed text-[#12141a]">
                   {entry.message}
@@ -230,4 +240,3 @@ export function LogsScreen() {
     </div>
   );
 }
-

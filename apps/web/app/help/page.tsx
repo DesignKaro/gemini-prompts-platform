@@ -25,7 +25,8 @@ export default async function HelpPage() {
       schema: buildWebPageSchema({
         url: pageUrl,
         name: 'Help Center',
-        description: 'Search support resources, product guides, and account help for Gemini Prompts.',
+        description:
+          'Search support resources, product guides, and account help for Gemini Prompts.',
       }),
     },
     {

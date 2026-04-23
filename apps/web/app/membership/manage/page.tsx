@@ -5,7 +5,8 @@ import { MembershipManageClient } from './manage-client';
 export async function generateMetadata(): Promise<Metadata> {
   return buildMetadata({
     title: 'Manage Membership',
-    description: 'Review your Gemini Prompts membership status, access window, and billing history.',
+    description:
+      'Review your Gemini Prompts membership status, access window, and billing history.',
     path: '/membership/manage',
     noIndex: true,
   });

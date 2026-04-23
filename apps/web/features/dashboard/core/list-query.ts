@@ -30,11 +30,7 @@ export function appendSortParam(
   return params;
 }
 
-export function compareByIsoDate(
-  a: string,
-  b: string,
-  direction: SortDirection = 'desc',
-): number {
+export function compareByIsoDate(a: string, b: string, direction: SortDirection = 'desc'): number {
   const aTime = Date.parse(a);
   const bTime = Date.parse(b);
   const safeA = Number.isNaN(aTime) ? 0 : aTime;

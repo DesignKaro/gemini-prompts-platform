@@ -246,7 +246,8 @@ const SITEMAP_SECTION_DEFINITIONS: Record<SitemapSectionKey, SitemapSectionDefin
     loadEntries: async (_settings, baseUrl) => {
       const tags = await fetchAllSitemapItems({
         pageSize: SITEMAP_PAGE_SIZE,
-        fetchPage: ({ skip, take }) => getTagList({ skip, take, sort: 'popular' }, { noStore: true }),
+        fetchPage: ({ skip, take }) =>
+          getTagList({ skip, take, sort: 'popular' }, { noStore: true }),
       });
       return tags.map((tag) => ({
         loc: absoluteUrl(`/tag/${encodeURIComponent(tag.slug)}`, baseUrl),
@@ -339,7 +340,9 @@ async function loadAllSections(settings?: SeoSettings) {
   const resolvedSettings = settings ?? (await getSeoSettingsFresh());
   const baseUrl = getBaseUrl(resolvedSettings);
   const keys = SITEMAP_CHILDREN.map((child) => child.key);
-  const sections = await Promise.all(keys.map((key) => loadSection(key, resolvedSettings, baseUrl)));
+  const sections = await Promise.all(
+    keys.map((key) => loadSection(key, resolvedSettings, baseUrl)),
+  );
   return { baseUrl, sections, settings: resolvedSettings };
 }
 
@@ -383,8 +386,10 @@ export function renderSitemapUrlSet(entries: SitemapUrlEntry[]) {
     )
     .join('');
 
-  return `<?xml version="1.0" encoding="UTF-8"?>` +
-    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${rows}</urlset>`;
+  return (
+    `<?xml version="1.0" encoding="UTF-8"?>` +
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${rows}</urlset>`
+  );
 }
 
 export function renderSitemapIndex(sections: SitemapSection[]) {
@@ -397,8 +402,10 @@ export function renderSitemapIndex(sections: SitemapSection[]) {
     )
     .join('');
 
-  return `<?xml version="1.0" encoding="UTF-8"?>` +
-    `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${rows}</sitemapindex>`;
+  return (
+    `<?xml version="1.0" encoding="UTF-8"?>` +
+    `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${rows}</sitemapindex>`
+  );
 }
 
 export function createXmlResponse(xml: string) {

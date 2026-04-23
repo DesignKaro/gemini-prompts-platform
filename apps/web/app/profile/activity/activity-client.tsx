@@ -72,13 +72,17 @@ function formatRelativeTime(value: string) {
 function toActivityTone(type: ProfileActivityItem['type']) {
   if (type === 'SAVE') return 'bg-[#f4f7ff] text-[#2f5bd9]';
   if (type === 'LIKE') return 'bg-[#fff4e6] text-[#d2603a]';
-  return 'bg-[#eef7f1] text-[#2f7a5a]';
+  if (type === 'CREATE') return 'bg-[#eef7f1] text-[#2f7a5a]';
+  if (type === 'VIEW_PROMPT') return 'bg-[#eef4ff] text-[#3158b0]';
+  return 'bg-[#f5f0ff] text-[#7750c6]';
 }
 
 function toActivityLabel(type: ProfileActivityItem['type']) {
   if (type === 'SAVE') return 'Prompt saved';
   if (type === 'LIKE') return 'Prompt liked';
-  return 'Prompt created';
+  if (type === 'CREATE') return 'Prompt created';
+  if (type === 'VIEW_PROMPT') return 'Prompt visited';
+  return 'Blog visited';
 }
 
 export function ProfileActivityClient() {
@@ -90,7 +94,12 @@ export function ProfileActivityClient() {
   const [error, setError] = useState<string | null>(null);
   const [syncRetryTick, setSyncRetryTick] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activityFilter, setActivityFilter] = useState<'ALL' | ProfileActivityItem['type']>('ALL');
+  const [activityFilter, setActivityFilter] = useState<
+    'ALL' | 'HISTORY' | 'SAVE' | 'LIKE' | 'CREATE'
+  >('ALL');
+  const [contentFilter, setContentFilter] = useState<'ALL' | ProfileActivityItem['targetType']>(
+    'ALL',
+  );
   const [sortBy, setSortBy] = useState<'latest' | 'oldest' | 'prompt_az' | 'prompt_za'>('latest');
   const isGoogleSyncPending =
     session?.authError === 'GoogleBackendSyncFailed' && !session?.apiAccessToken;
@@ -177,21 +186,39 @@ export function ProfileActivityClient() {
   const canPrev = pageIndex > 0;
   const canNext = pageIndex + 1 < totalPages;
   const hasActiveFilters =
-    searchQuery.trim().length > 0 || activityFilter !== 'ALL' || sortBy !== 'latest';
+    searchQuery.trim().length > 0 ||
+    activityFilter !== 'ALL' ||
+    contentFilter !== 'ALL' ||
+    sortBy !== 'latest';
 
   const displayedItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
     const filtered = items.filter((item) => {
-      if (activityFilter !== 'ALL' && item.type !== activityFilter) {
+      if (
+        activityFilter === 'HISTORY' &&
+        item.type !== 'VIEW_PROMPT' &&
+        item.type !== 'VIEW_POST'
+      ) {
+        return false;
+      }
+      if (
+        activityFilter !== 'ALL' &&
+        activityFilter !== 'HISTORY' &&
+        item.type !== activityFilter
+      ) {
+        return false;
+      }
+      if (contentFilter !== 'ALL' && item.targetType !== contentFilter) {
         return false;
       }
       if (!query) {
         return true;
       }
-      const title = item.promptTitle?.toLowerCase() ?? '';
+      const title = item.title?.toLowerCase() ?? '';
       const label = toActivityLabel(item.type).toLowerCase();
-      return title.includes(query) || label.includes(query);
+      const subtitle = item.subtitle?.toLowerCase() ?? '';
+      return title.includes(query) || label.includes(query) || subtitle.includes(query);
     });
 
     const sorted = [...filtered];
@@ -203,17 +230,17 @@ export function ProfileActivityClient() {
         return Date.parse(left.createdAt) - Date.parse(right.createdAt);
       }
       if (sortBy === 'prompt_az') {
-        return (left.promptTitle ?? '').localeCompare(right.promptTitle ?? '', undefined, {
+        return (left.title ?? '').localeCompare(right.title ?? '', undefined, {
           sensitivity: 'base',
         });
       }
-      return (right.promptTitle ?? '').localeCompare(left.promptTitle ?? '', undefined, {
+      return (right.title ?? '').localeCompare(left.title ?? '', undefined, {
         sensitivity: 'base',
       });
     });
 
     return sorted;
-  }, [activityFilter, items, searchQuery, sortBy]);
+  }, [activityFilter, contentFilter, items, searchQuery, sortBy]);
 
   return (
     <section className="page-shell-tight bg-white">
@@ -241,15 +268,25 @@ export function ProfileActivityClient() {
               />
               <select
                 value={activityFilter}
-                onChange={(event) =>
-                  setActivityFilter(event.target.value as 'ALL' | ProfileActivityItem['type'])
-                }
+                onChange={(event) => setActivityFilter(event.target.value as typeof activityFilter)}
                 className="h-10 rounded-xl border border-[#dfe5ef] bg-white px-3 text-[0.82rem] text-[#0f1116] outline-none transition-colors focus:border-[#b9c4d9]"
               >
                 <option value="ALL">All activity</option>
+                <option value="HISTORY">History</option>
                 <option value="SAVE">Saved</option>
                 <option value="LIKE">Liked</option>
                 <option value="CREATE">Created</option>
+              </select>
+              <select
+                value={contentFilter}
+                onChange={(event) =>
+                  setContentFilter(event.target.value as 'ALL' | ProfileActivityItem['targetType'])
+                }
+                className="h-10 rounded-xl border border-[#dfe5ef] bg-white px-3 text-[0.82rem] text-[#0f1116] outline-none transition-colors focus:border-[#b9c4d9]"
+              >
+                <option value="ALL">All content</option>
+                <option value="PROMPT">Prompts</option>
+                <option value="POST">Blogs</option>
               </select>
               <select
                 value={sortBy}
@@ -260,14 +297,15 @@ export function ProfileActivityClient() {
               >
                 <option value="latest">Latest first</option>
                 <option value="oldest">Oldest first</option>
-                <option value="prompt_az">Prompt A-Z</option>
-                <option value="prompt_za">Prompt Z-A</option>
+                <option value="prompt_az">Title A-Z</option>
+                <option value="prompt_za">Title Z-A</option>
               </select>
               <button
                 type="button"
                 onClick={() => {
                   setSearchQuery('');
                   setActivityFilter('ALL');
+                  setContentFilter('ALL');
                   setSortBy('latest');
                 }}
                 disabled={!hasActiveFilters}
@@ -294,7 +332,9 @@ export function ProfileActivityClient() {
             <div className="mt-4">
               {displayedItems.length === 0 ? (
                 <div className="rounded-[16px] border border-dashed border-[#d8dde6] bg-white p-4 text-[0.9rem] text-[#7a8292]">
-                  {hasActiveFilters ? 'No activity matches the current filters.' : 'No activity yet.'}
+                  {hasActiveFilters
+                    ? 'No activity matches the current filters.'
+                    : 'No activity yet.'}
                 </div>
               ) : (
                 <>
@@ -310,9 +350,9 @@ export function ProfileActivityClient() {
                           >
                             {formatRelativeTime(item.createdAt)}
                           </span>
-                          {item.promptSlug ? (
+                          {item.targetPath ? (
                             <Link
-                              href={`/prompt/${item.promptSlug}`}
+                              href={item.targetPath}
                               className="inline-flex rounded-full border border-[#d4d9e2] px-2.5 py-1 text-[0.72rem] text-[#10141c] transition-colors hover:border-[#10141c] hover:bg-[#10141c] hover:text-white"
                             >
                               Open
@@ -323,9 +363,9 @@ export function ProfileActivityClient() {
                         </div>
                         <div className="mt-2.5 flex gap-3">
                           <PromptThumb
-                            image={item.promptImage}
-                            title={item.promptTitle ?? 'Prompt image'}
-                            fallbackKey={item.promptSlug ?? item.id}
+                            image={item.image}
+                            title={item.title ?? 'Activity image'}
+                            fallbackKey={item.targetPath ?? item.id}
                             className="h-14 w-20 shrink-0 rounded-[10px] border border-[#e3e7ef]"
                           />
                           <div className="min-w-0">
@@ -333,9 +373,13 @@ export function ProfileActivityClient() {
                               {toActivityLabel(item.type)}
                             </p>
                             <p className="mt-1 text-[0.8rem] text-[#667080]">
-                              {item.promptTitle ? `“${item.promptTitle}”` : 'Your recent prompt activity.'}
+                              {item.title ? `“${item.title}”` : 'Your recent activity.'}
                             </p>
-                            <p className="mt-1 text-[0.76rem] text-[#9aa1ae]">Gemini Prompts</p>
+                            <p className="mt-1 text-[0.76rem] text-[#9aa1ae]">
+                              {item.targetType === 'POST'
+                                ? (item.subtitle ?? 'Blog history')
+                                : 'Gemini Prompts'}
+                            </p>
                           </div>
                         </div>
                       </article>
@@ -348,7 +392,7 @@ export function ProfileActivityClient() {
                           <th className="px-4 py-3 font-semibold">Time</th>
                           <th className="px-4 py-3 font-semibold">Activity</th>
                           <th className="px-4 py-3 font-semibold">Image</th>
-                          <th className="px-4 py-3 font-semibold">Prompt</th>
+                          <th className="px-4 py-3 font-semibold">Title</th>
                           <th className="px-4 py-3 font-semibold">Source</th>
                           <th className="px-4 py-3 font-semibold">Action</th>
                         </tr>
@@ -368,20 +412,24 @@ export function ProfileActivityClient() {
                             </td>
                             <td className="px-4 py-3">
                               <PromptThumb
-                                image={item.promptImage}
-                                title={item.promptTitle ?? 'Prompt image'}
-                                fallbackKey={item.promptSlug ?? item.id}
+                                image={item.image}
+                                title={item.title ?? 'Activity image'}
+                                fallbackKey={item.targetPath ?? item.id}
                                 className="h-11 w-20 rounded-[10px] border border-[#e3e7ef]"
                               />
                             </td>
                             <td className="px-4 py-3 text-[0.86rem] text-[#667080]">
-                              {item.promptTitle ? `“${item.promptTitle}”` : 'Your recent prompt activity.'}
+                              {item.title ? `“${item.title}”` : 'Your recent activity.'}
                             </td>
-                            <td className="px-4 py-3 text-[0.82rem] text-[#9aa1ae]">Gemini Prompts</td>
+                            <td className="px-4 py-3 text-[0.82rem] text-[#9aa1ae]">
+                              {item.targetType === 'POST'
+                                ? (item.subtitle ?? 'Blog history')
+                                : 'Gemini Prompts'}
+                            </td>
                             <td className="px-4 py-3">
-                              {item.promptSlug ? (
+                              {item.targetPath ? (
                                 <Link
-                                  href={`/prompt/${item.promptSlug}`}
+                                  href={item.targetPath}
                                   className="inline-flex rounded-full border border-[#d4d9e2] px-3 py-1 text-[0.74rem] text-[#10141c] transition-colors hover:border-[#10141c] hover:bg-[#10141c] hover:text-white"
                                 >
                                   Open

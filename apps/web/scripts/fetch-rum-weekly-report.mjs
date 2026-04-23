@@ -19,7 +19,9 @@ const headers = reportToken ? { 'x-rum-report-token': reportToken } : {};
 const response = await fetch(endpoint.toString(), { headers });
 if (!response.ok) {
   const body = await response.text().catch(() => '');
-  throw new Error(`[rum-weekly] Failed to fetch report (${response.status}): ${body.slice(0, 400)}`);
+  throw new Error(
+    `[rum-weekly] Failed to fetch report (${response.status}): ${body.slice(0, 400)}`,
+  );
 }
 
 const payload = await response.json();
@@ -30,8 +32,10 @@ if (!summary) {
 
 const metricLines = (summary.metrics || [])
   .map((metric) => {
-    const p75 = metric.p75 === null || metric.p75 === undefined ? 'n/a' : Number(metric.p75).toFixed(2);
-    const avg = metric.avg === null || metric.avg === undefined ? 'n/a' : Number(metric.avg).toFixed(2);
+    const p75 =
+      metric.p75 === null || metric.p75 === undefined ? 'n/a' : Number(metric.p75).toFixed(2);
+    const avg =
+      metric.avg === null || metric.avg === undefined ? 'n/a' : Number(metric.avg).toFixed(2);
     const poorRate = Number(metric.poorRate || 0) * 100;
     return `- ${metric.name}: p75=${p75}, avg=${avg}, samples=${metric.samples}, poor=${poorRate.toFixed(1)}%`;
   })

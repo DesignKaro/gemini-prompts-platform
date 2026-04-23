@@ -234,28 +234,44 @@ function checkRegression(routeId, metric, baselineMetric, failures) {
   }
 
   const lcpIncrease = (metric.lcp ?? 0) - (baselineMetric.lcp ?? 0);
-  if (isPositiveFinite(metric.lcp) && isPositiveFinite(baselineMetric.lcp) && lcpIncrease > REGRESSION_BUDGET.lcpIncreaseMax) {
+  if (
+    isPositiveFinite(metric.lcp) &&
+    isPositiveFinite(baselineMetric.lcp) &&
+    lcpIncrease > REGRESSION_BUDGET.lcpIncreaseMax
+  ) {
     failures.push(
       `[${routeId}] LCP increased by ${formatMetric(lcpIncrease)} (max ${REGRESSION_BUDGET.lcpIncreaseMax})`,
     );
   }
 
   const inpIncrease = (metric.inp ?? 0) - (baselineMetric.inp ?? 0);
-  if (isPositiveFinite(metric.inp) && isPositiveFinite(baselineMetric.inp) && inpIncrease > REGRESSION_BUDGET.inpIncreaseMax) {
+  if (
+    isPositiveFinite(metric.inp) &&
+    isPositiveFinite(baselineMetric.inp) &&
+    inpIncrease > REGRESSION_BUDGET.inpIncreaseMax
+  ) {
     failures.push(
       `[${routeId}] INP increased by ${formatMetric(inpIncrease)} (max ${REGRESSION_BUDGET.inpIncreaseMax})`,
     );
   }
 
   const clsIncrease = (metric.cls ?? 0) - (baselineMetric.cls ?? 0);
-  if (isPositiveFinite(metric.cls) && isPositiveFinite(baselineMetric.cls) && clsIncrease > REGRESSION_BUDGET.clsIncreaseMax) {
+  if (
+    isPositiveFinite(metric.cls) &&
+    isPositiveFinite(baselineMetric.cls) &&
+    clsIncrease > REGRESSION_BUDGET.clsIncreaseMax
+  ) {
     failures.push(
       `[${routeId}] CLS increased by ${formatMetric(clsIncrease, 3)} (max ${REGRESSION_BUDGET.clsIncreaseMax})`,
     );
   }
 
   const tbtIncrease = (metric.tbt ?? 0) - (baselineMetric.tbt ?? 0);
-  if (isPositiveFinite(metric.tbt) && isPositiveFinite(baselineMetric.tbt) && tbtIncrease > REGRESSION_BUDGET.tbtIncreaseMax) {
+  if (
+    isPositiveFinite(metric.tbt) &&
+    isPositiveFinite(baselineMetric.tbt) &&
+    tbtIncrease > REGRESSION_BUDGET.tbtIncreaseMax
+  ) {
     failures.push(
       `[${routeId}] TBT increased by ${formatMetric(tbtIncrease)} (max ${REGRESSION_BUDGET.tbtIncreaseMax})`,
     );

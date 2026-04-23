@@ -58,11 +58,7 @@ export class PostsController {
 
   @Patch(':id')
   @Permissions('posts:manage')
-  update(
-    @CurrentUser() user: AuthUser,
-    @Param() params: IdParamDto,
-    @Body() body: UpdatePostDto,
-  ) {
+  update(@CurrentUser() user: AuthUser, @Param() params: IdParamDto, @Body() body: UpdatePostDto) {
     return this.postsService.update(user.sub, params.id, body);
   }
 

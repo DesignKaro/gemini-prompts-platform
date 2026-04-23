@@ -70,9 +70,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   return buildMetadata({
     title: author.name,
     description:
-      author.bio ||
-      author.profileTitle ||
-      `Explore public prompts and posts from ${author.name}.`,
+      author.bio || author.profileTitle || `Explore public prompts and posts from ${author.name}.`,
     path,
     image: author.avatarUrl,
     type: 'profile',

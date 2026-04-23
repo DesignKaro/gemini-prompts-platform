@@ -96,7 +96,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     });
   }
 
-  const categorySlug = prompt.primaryCategory?.slug || prompt.categories[0]?.slug || 'uncategorized';
+  const categorySlug =
+    prompt.primaryCategory?.slug || prompt.categories[0]?.slug || 'uncategorized';
   const title = prompt.metaTitle || prompt.seoTitle || prompt.title;
   const description =
     prompt.metaDescription ||
@@ -189,7 +190,8 @@ async function PromptDetailPageContent({ params }: PageProps) {
   }
 
   const baseUrl = getNormalizedBaseUrl(seoSettings);
-  const categorySlug = prompt.primaryCategory?.slug || prompt.categories[0]?.slug || 'uncategorized';
+  const categorySlug =
+    prompt.primaryCategory?.slug || prompt.categories[0]?.slug || 'uncategorized';
   if (requestedCategorySlug !== categorySlug) {
     permanentRedirect(`/${encodeURIComponent(categorySlug)}/${encodeURIComponent(prompt.slug)}`);
   }
@@ -215,7 +217,12 @@ async function PromptDetailPageContent({ params }: PageProps) {
           (prompt.isLocked
             ? 'Members-only prompt details are locked on this page.'
             : 'A published prompt synced from the Gemini Prompts dashboard.'),
-        keywords: [categoryName, prompt.promptType, prompt.visibility, ...prompt.tags.map((tag) => tag.name)],
+        keywords: [
+          categoryName,
+          prompt.promptType,
+          prompt.visibility,
+          ...prompt.tags.map((tag) => tag.name),
+        ],
       }),
     },
     {

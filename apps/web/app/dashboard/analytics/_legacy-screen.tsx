@@ -49,9 +49,7 @@ function SparklineChart({ data, labels }: { data: number[]; labels?: string[] })
   const gradientId = useId();
   const safeData = data.length > 1 ? data : [data[0] ?? 0, data[0] ?? 0];
   const safeLabels =
-    labels && labels.length > 1
-      ? labels
-      : [labels?.[0] ?? 'Start', labels?.[0] ?? 'Now'];
+    labels && labels.length > 1 ? labels : [labels?.[0] ?? 'Start', labels?.[0] ?? 'Now'];
   const width = 600;
   const height = 200;
   const padTop = 18;
@@ -74,10 +72,8 @@ function SparklineChart({ data, labels }: { data: number[]; labels?: string[] })
         ];
 
   const points = safeData.map((value, index) => {
-    const x =
-      padLeft + (index / (safeData.length - 1)) * (width - padLeft - padRight);
-    const y =
-      padTop + (1 - (value - min) / range) * (height - padTop - padBottom);
+    const x = padLeft + (index / (safeData.length - 1)) * (width - padLeft - padRight);
+    const y = padTop + (1 - (value - min) / range) * (height - padTop - padBottom);
 
     return {
       x,
@@ -90,7 +86,7 @@ function SparklineChart({ data, labels }: { data: number[]; labels?: string[] })
   const pathD = `M ${points.map((point) => `${point.x},${point.y}`).join(' L ')}`;
   const fillD = `${pathD} L ${width - padRight},${height - padBottom} L ${padLeft},${height - padBottom} Z`;
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const activePoint = activeIndex === null ? null : points[activeIndex] ?? null;
+  const activePoint = activeIndex === null ? null : (points[activeIndex] ?? null);
 
   return (
     <div className="relative h-full w-full">
@@ -138,13 +134,7 @@ function SparklineChart({ data, labels }: { data: number[]; labels?: string[] })
               strokeWidth="1"
               strokeDasharray="4 6"
             />
-            <text
-              x={6}
-              y={tick.y + 4}
-              fill="#98a1b2"
-              fontSize="11"
-              fontWeight="500"
-            >
+            <text x={6} y={tick.y + 4} fill="#98a1b2" fontSize="11" fontWeight="500">
               {formatValue(tick.value)}
             </text>
           </g>

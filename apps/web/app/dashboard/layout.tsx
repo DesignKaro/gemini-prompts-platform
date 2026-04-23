@@ -153,17 +153,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const canViewPosts = hasAnyPermission(permissionSession, ['posts:read', 'posts:manage']);
   const canManagePosts = hasAnyPermission(permissionSession, ['posts:manage']);
   const canViewMedia = hasAnyPermission(permissionSession, ['media:read', 'media:manage']);
-  const canViewCategories = hasAnyPermission(permissionSession, ['categories:read', 'categories:manage']);
+  const canViewCategories = hasAnyPermission(permissionSession, [
+    'categories:read',
+    'categories:manage',
+  ]);
   const canManageCategories = hasAnyPermission(permissionSession, ['categories:manage']);
   const canViewTags = hasAnyPermission(permissionSession, ['tags:read', 'tags:manage']);
   const canManageTags = hasAnyPermission(permissionSession, ['tags:manage']);
-  const canViewComments = hasAnyPermission(permissionSession, ['comments:read', 'comments:moderate']);
+  const canViewComments = hasAnyPermission(permissionSession, [
+    'comments:read',
+    'comments:moderate',
+  ]);
   const canModerateComments = hasAnyPermission(permissionSession, ['comments:moderate']);
   const canViewAnalytics = hasAnyPermission(permissionSession, ['analytics:read']);
   const canViewActivity = hasAnyPermission(permissionSession, ['activity:read']);
   const canViewErrorLogs = canViewActivity;
   const canViewNewsletterSubmissions = canViewActivity;
-  const canViewContactSubmissions = hasAnyPermission(permissionSession, ['contacts:read', 'contacts:manage']);
+  const canViewContactSubmissions = hasAnyPermission(permissionSession, [
+    'contacts:read',
+    'contacts:manage',
+  ]);
   const canViewUsers = hasAnyPermission(permissionSession, ['users:read', 'users:manage']);
   const canManageUsers = hasAnyPermission(permissionSession, ['users:manage']);
   const canViewMembers = isProtectedSuperadminEmail(session?.user?.email);
@@ -221,10 +230,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const query = new URLSearchParams(dashboardSearch);
     const requested = query.get('callbackUrl')?.trim();
     const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
-    const fallback = buildAuthCallbackFallbackFromPath(
-      pathname || '/dashboard',
-      dashboardSearch,
-    );
+    const fallback = buildAuthCallbackFallbackFromPath(pathname || '/dashboard', dashboardSearch);
     return normalizeAuthCallbackPath(requested, { origin, fallback });
   }, [dashboardSearch, pathname]);
 
@@ -238,9 +244,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         method: 'POST',
         cache: 'no-store',
       });
-      const payload = (await response.json().catch(() => null)) as
-        | { message?: string }
-        | null;
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null;
 
       if (!response.ok) {
         throw new Error(payload?.message || 'Unable to clear cache right now.');
@@ -249,7 +253,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setCacheClearNotice(payload?.message || 'Public site cache cleared.');
       router.refresh();
     } catch (error) {
-      setCacheClearNotice(error instanceof Error ? error.message : 'Unable to clear cache right now.');
+      setCacheClearNotice(
+        error instanceof Error ? error.message : 'Unable to clear cache right now.',
+      );
     } finally {
       setIsClearingPublicCache(false);
     }
@@ -889,7 +895,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (sessionStatus === 'unauthenticated') {
     return (
       <div className="min-h-screen bg-[#f7f9fc]">
-        <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} callbackUrl={dashboardCallbackUrl} />
+        <AuthModal
+          isOpen={isAuthOpen}
+          onClose={() => setIsAuthOpen(false)}
+          callbackUrl={dashboardCallbackUrl}
+        />
       </div>
     );
   }

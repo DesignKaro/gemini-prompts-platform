@@ -22,4 +22,3 @@ export function formatIsoTimestamp(value: string | null) {
   }
   return parsed.toLocaleString();
 }
-

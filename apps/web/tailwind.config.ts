@@ -9,7 +9,10 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        brand: '#0a7f5a',
+        brand: '#d5ea52',
+        'brand-hover': '#cbe246',
+        primary: '#d5ea52',
+        'primary-hover': '#cbe246',
         ink: '#0f172a',
       },
       fontFamily: {

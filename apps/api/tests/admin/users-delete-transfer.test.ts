@@ -208,16 +208,13 @@ describe('UsersService delete transfer flow', () => {
     });
 
     const service = new UsersService(prisma as never);
-    const result = service.remove(
-      { sub: 'admin_1', role: UserRole.ADMIN } as never,
-      'user_1',
-    );
+    const result = service.remove({ sub: 'admin_1', role: UserRole.ADMIN } as never, 'user_1');
 
     await expect(result).rejects.toBeInstanceOf(BadRequestException);
     await result.catch((error: BadRequestException) => {
-        const response = error.getResponse() as { message: string; code: string };
-        expect(response.code).toBe('USER_TRANSFER_REQUIRED');
-        expect(response.message).toContain('Submissions: 1');
+      const response = error.getResponse() as { message: string; code: string };
+      expect(response.code).toBe('USER_TRANSFER_REQUIRED');
+      expect(response.message).toContain('Submissions: 1');
     });
   });
 });

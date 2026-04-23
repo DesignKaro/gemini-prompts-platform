@@ -21,10 +21,12 @@ const API_BASE_URL = resolveApiBaseUrl();
 
 export type ProfileActivityItem = {
   id: string;
-  type: 'SAVE' | 'LIKE' | 'CREATE';
-  promptTitle: string | null;
-  promptSlug: string | null;
-  promptImage: string | null;
+  type: 'SAVE' | 'LIKE' | 'CREATE' | 'VIEW_PROMPT' | 'VIEW_POST';
+  targetType: 'PROMPT' | 'POST';
+  targetPath: string | null;
+  title: string | null;
+  image: string | null;
+  subtitle?: string | null;
   createdAt: string;
 };
 
@@ -105,5 +107,9 @@ export function getProfileSavedList(
   accessToken: string,
   query: { skip?: number; take?: number } = {},
 ) {
-  return requestProfileListsApi<ProfileSavedResponse>('/api/auth/profile/saved', accessToken, query);
+  return requestProfileListsApi<ProfileSavedResponse>(
+    '/api/auth/profile/saved',
+    accessToken,
+    query,
+  );
 }

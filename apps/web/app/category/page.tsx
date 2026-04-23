@@ -179,8 +179,12 @@ async function CategoriesArchiveSection({
                   />
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-[1.02rem] font-medium text-[#171b24]">{category.name}</p>
-                  <p className="text-[0.95rem] text-[#9aa2b0]">{formatCompactCount(category.totalCount)}</p>
+                  <p className="truncate text-[1.02rem] font-medium text-[#171b24]">
+                    {category.name}
+                  </p>
+                  <p className="text-[0.95rem] text-[#9aa2b0]">
+                    {formatCompactCount(category.totalCount)}
+                  </p>
                 </div>
               </Link>
             ))}
@@ -193,7 +197,9 @@ async function CategoriesArchiveSection({
       </section>
 
       <section className="mt-14">
-        <h2 className="text-[2rem] font-medium tracking-[-0.03em] text-[#1a1f2b]">Trending Categories</h2>
+        <h2 className="text-[2rem] font-medium tracking-[-0.03em] text-[#1a1f2b]">
+          Trending Categories
+        </h2>
 
         {categoriesResponse.items.length > 0 ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -213,7 +219,9 @@ async function CategoriesArchiveSection({
                   />
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-[1.04rem] font-medium text-[#171b24]">{category.name}</p>
+                  <p className="truncate text-[1.04rem] font-medium text-[#171b24]">
+                    {category.name}
+                  </p>
                   <p className="text-[0.95rem] text-[#9aa2b0]">
                     {formatCompactCount(category.totalCount)} items
                   </p>
@@ -278,7 +286,8 @@ export default async function CategoriesArchivePage({ searchParams }: PageProps)
   const page = Math.max(1, Number.parseInt(resolvedSearchParams?.page ?? '1', 10) || 1);
   const seoSettings = await getSeoSettings();
   const baseUrl = getNormalizedBaseUrl(seoSettings);
-  const shouldNoIndex = seoSettings.noindexCategoryPages || (page > 1 && seoSettings.noindexPaginatedArchives);
+  const shouldNoIndex =
+    seoSettings.noindexCategoryPages || (page > 1 && seoSettings.noindexPaginatedArchives);
 
   return (
     <main className="page-shell-tight bg-white">

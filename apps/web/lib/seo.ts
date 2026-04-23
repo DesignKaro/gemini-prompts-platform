@@ -149,9 +149,7 @@ function normalizeStringArray(value: unknown): string[] {
     return [];
   }
 
-  return value
-    .map((item) => (typeof item === 'string' ? item.trim() : ''))
-    .filter(Boolean);
+  return value.map((item) => (typeof item === 'string' ? item.trim() : '')).filter(Boolean);
 }
 
 function normalizeSlashPaths(value: unknown): string[] {
@@ -209,7 +207,9 @@ function normalizeSeoPayload(payload: Partial<SeoSettings> | null | undefined): 
         ? payload.schemaWebPageEnabled
         : schemaWebsiteEnabled,
     schemaFaqEnabled:
-      typeof payload.schemaFaqEnabled === 'boolean' ? payload.schemaFaqEnabled : schemaWebsiteEnabled,
+      typeof payload.schemaFaqEnabled === 'boolean'
+        ? payload.schemaFaqEnabled
+        : schemaWebsiteEnabled,
     schemaCollectionEnabled:
       typeof payload.schemaCollectionEnabled === 'boolean'
         ? payload.schemaCollectionEnabled

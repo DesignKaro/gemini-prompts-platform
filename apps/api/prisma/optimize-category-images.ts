@@ -49,9 +49,7 @@ function shouldConvertToWebp(mime: string) {
 }
 
 function parseDataUrl(dataUrl: string) {
-  const match = dataUrl
-    .trim()
-    .match(/^data:(image\/[a-z0-9.+-]+);base64,([a-z0-9+/=\s]+)$/i);
+  const match = dataUrl.trim().match(/^data:(image\/[a-z0-9.+-]+);base64,([a-z0-9+/=\s]+)$/i);
   if (!match) {
     throw new Error('Invalid image data URL.');
   }
@@ -62,10 +60,7 @@ function parseDataUrl(dataUrl: string) {
   };
 }
 
-async function prepareUploadBuffer(input: {
-  buffer: Buffer;
-  mime: string;
-}): Promise<{
+async function prepareUploadBuffer(input: { buffer: Buffer; mime: string }): Promise<{
   buffer: Buffer;
   mime: string;
   extension: string;
@@ -307,7 +302,9 @@ async function main() {
           width: prepared.width,
           height: prepared.height,
           reductionPercent: Number(
-            (((sourceBuffer.length - prepared.buffer.length) / sourceBuffer.length) * 100).toFixed(1),
+            (((sourceBuffer.length - prepared.buffer.length) / sourceBuffer.length) * 100).toFixed(
+              1,
+            ),
           ),
         });
       } catch (error) {

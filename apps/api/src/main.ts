@@ -148,7 +148,8 @@ async function bootstrap() {
         .dashboardErrorCode;
 
       if (isDashboardRoute(url)) {
-        const actorId = (req as RequestWithContext).user?.sub ?? (req as RequestWithContext).user?.id;
+        const actorId =
+          (req as RequestWithContext).user?.sub ?? (req as RequestWithContext).user?.id;
         const inferredAction = inferDashboardAction(method, url);
         const clientAction = getClientDashboardAction(req);
         const action = clientAction ?? inferredAction;

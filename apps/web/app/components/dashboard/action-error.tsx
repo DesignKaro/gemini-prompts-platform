@@ -35,4 +35,3 @@ export function ActionError({ error, onRetry }: ActionErrorProps) {
     </div>
   );
 }
-

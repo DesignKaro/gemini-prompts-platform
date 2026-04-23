@@ -138,11 +138,7 @@ export class PromptsService {
     featuredImageUrl?: string | null,
     galleryImageUrls?: unknown,
   ) {
-    const rows = await this.buildPromptMediaUsageRows(
-      targetId,
-      featuredImageUrl,
-      galleryImageUrls,
-    );
+    const rows = await this.buildPromptMediaUsageRows(targetId, featuredImageUrl, galleryImageUrls);
 
     await this.prisma.mediaUsage.deleteMany({
       where: {
@@ -561,46 +557,42 @@ export class PromptsService {
     ).html;
 
     const createData: Prisma.PromptCreateInput = {
-        author: { connect: { id: authorId } },
-        title,
-        slug,
-        description: data.description ?? null,
-        content: normalizedContent,
-        promptType: data.promptType,
-        imageMode: data.imageMode ?? null,
-        websitePromptKind: data.websitePromptKind ?? null,
-        websiteComponent: data.websiteComponent ?? null,
-        websiteFeature: data.websiteFeature ?? null,
-        visibility: data.visibility ?? 'FREE',
-        status: publicationState.status,
-        featuredImageUrl: hostedFeaturedImage ?? null,
-        galleryImageUrls: this.normalizeGalleryImageInput(hostedGallery) ?? Prisma.DbNull,
-        metaTitle: data.metaTitle ?? null,
-        metaDescription: data.metaDescription ?? null,
-        seoTitle: data.seoTitle ?? null,
-        seoDescription: data.seoDescription ?? null,
-        seoFocusKeyword: data.seoFocusKeyword ?? null,
-        seoCanonicalUrl: data.seoCanonicalUrl ?? null,
-        seoNoIndex: data.seoNoIndex ?? false,
-        scheduledAt: publicationState.scheduledAt,
-        publishedAt: publicationState.publishedAt,
-        primaryCategory: categoryResult.primaryCategoryId
-          ? { connect: { id: categoryResult.primaryCategoryId } }
-          : undefined,
-        categories: categoryResult.categoryIds.length
-          ? { connect: categoryResult.categoryIds.map((id) => ({ id })) }
-          : undefined,
-        tags: tagIds.length ? { connect: tagIds.map((id) => ({ id })) } : undefined,
+      author: { connect: { id: authorId } },
+      title,
+      slug,
+      description: data.description ?? null,
+      content: normalizedContent,
+      promptType: data.promptType,
+      imageMode: data.imageMode ?? null,
+      websitePromptKind: data.websitePromptKind ?? null,
+      websiteComponent: data.websiteComponent ?? null,
+      websiteFeature: data.websiteFeature ?? null,
+      visibility: data.visibility ?? 'FREE',
+      status: publicationState.status,
+      featuredImageUrl: hostedFeaturedImage ?? null,
+      galleryImageUrls: this.normalizeGalleryImageInput(hostedGallery) ?? Prisma.DbNull,
+      metaTitle: data.metaTitle ?? null,
+      metaDescription: data.metaDescription ?? null,
+      seoTitle: data.seoTitle ?? null,
+      seoDescription: data.seoDescription ?? null,
+      seoFocusKeyword: data.seoFocusKeyword ?? null,
+      seoCanonicalUrl: data.seoCanonicalUrl ?? null,
+      seoNoIndex: data.seoNoIndex ?? false,
+      scheduledAt: publicationState.scheduledAt,
+      publishedAt: publicationState.publishedAt,
+      primaryCategory: categoryResult.primaryCategoryId
+        ? { connect: { id: categoryResult.primaryCategoryId } }
+        : undefined,
+      categories: categoryResult.categoryIds.length
+        ? { connect: categoryResult.categoryIds.map((id) => ({ id })) }
+        : undefined,
+      tags: tagIds.length ? { connect: tagIds.map((id) => ({ id })) } : undefined,
     };
 
     const created = await this.prisma.prompt.create({
       data: createData,
     });
-    await this.syncPromptMediaUsage(
-      created.id,
-      created.featuredImageUrl,
-      created.galleryImageUrls,
-    );
+    await this.syncPromptMediaUsage(created.id, created.featuredImageUrl, created.galleryImageUrls);
 
     await this.auditService.log({
       actorId: authorId,
@@ -664,52 +656,46 @@ export class PromptsService {
         : (await this.mediaStorageService.replaceInlineImageDataUrls(data.content, 'editor')).html;
 
     const updateData: Prisma.PromptUpdateInput = {
-        title: data.title?.trim(),
-        slug: data.slug?.trim(),
-        description: data.description,
-        content: normalizedContent,
-        promptType: data.promptType,
-        imageMode: data.imageMode,
-        websitePromptKind: data.websitePromptKind,
-        websiteComponent: data.websiteComponent,
-        websiteFeature: data.websiteFeature,
-        visibility: data.visibility,
-        status: publicationState.status,
-        featuredImageUrl: hostedFeaturedImage,
-        galleryImageUrls:
-          hostedGallery === undefined
-            ? undefined
-            : this.normalizeGalleryImageInput(hostedGallery),
-        metaTitle: data.metaTitle,
-        metaDescription: data.metaDescription,
-        seoTitle: data.seoTitle,
-        seoDescription: data.seoDescription,
-        seoFocusKeyword: data.seoFocusKeyword,
-        seoCanonicalUrl: data.seoCanonicalUrl,
-        seoNoIndex: data.seoNoIndex,
-        scheduledAt: publicationState.scheduledAt,
-        publishedAt: publicationState.publishedAt,
-        primaryCategory:
-          data.primaryCategoryId === undefined
-            ? undefined
-            : categoryResult.primaryCategoryId
-              ? { connect: { id: categoryResult.primaryCategoryId } }
-              : { disconnect: true },
-        categories: data.categoryIds
-          ? { set: categoryResult.categoryIds.map((cid) => ({ id: cid })) }
-          : undefined,
-        tags: data.tagIds ? { set: tagIds.map((tid) => ({ id: tid })) } : undefined,
+      title: data.title?.trim(),
+      slug: data.slug?.trim(),
+      description: data.description,
+      content: normalizedContent,
+      promptType: data.promptType,
+      imageMode: data.imageMode,
+      websitePromptKind: data.websitePromptKind,
+      websiteComponent: data.websiteComponent,
+      websiteFeature: data.websiteFeature,
+      visibility: data.visibility,
+      status: publicationState.status,
+      featuredImageUrl: hostedFeaturedImage,
+      galleryImageUrls:
+        hostedGallery === undefined ? undefined : this.normalizeGalleryImageInput(hostedGallery),
+      metaTitle: data.metaTitle,
+      metaDescription: data.metaDescription,
+      seoTitle: data.seoTitle,
+      seoDescription: data.seoDescription,
+      seoFocusKeyword: data.seoFocusKeyword,
+      seoCanonicalUrl: data.seoCanonicalUrl,
+      seoNoIndex: data.seoNoIndex,
+      scheduledAt: publicationState.scheduledAt,
+      publishedAt: publicationState.publishedAt,
+      primaryCategory:
+        data.primaryCategoryId === undefined
+          ? undefined
+          : categoryResult.primaryCategoryId
+            ? { connect: { id: categoryResult.primaryCategoryId } }
+            : { disconnect: true },
+      categories: data.categoryIds
+        ? { set: categoryResult.categoryIds.map((cid) => ({ id: cid })) }
+        : undefined,
+      tags: data.tagIds ? { set: tagIds.map((tid) => ({ id: tid })) } : undefined,
     };
 
     const updated = await this.prisma.prompt.update({
       where: { id },
       data: updateData,
     });
-    await this.syncPromptMediaUsage(
-      updated.id,
-      updated.featuredImageUrl,
-      updated.galleryImageUrls,
-    );
+    await this.syncPromptMediaUsage(updated.id, updated.featuredImageUrl, updated.galleryImageUrls);
 
     await this.auditService.log({
       actorId,

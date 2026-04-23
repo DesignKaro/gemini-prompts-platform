@@ -85,7 +85,9 @@ async function AboutTrendingAuthorsSection() {
                 initialClassName="text-[0.82rem]"
               />
               <div className="min-w-0">
-                <h3 className="truncate text-[1.05rem] font-medium text-[#111118]">{author.name}</h3>
+                <h3 className="truncate text-[1.05rem] font-medium text-[#111118]">
+                  {author.name}
+                </h3>
                 <p className="truncate text-[0.92rem] text-[#6a7280]">
                   {articleCount} article{articleCount === 1 ? '' : 's'}
                 </p>

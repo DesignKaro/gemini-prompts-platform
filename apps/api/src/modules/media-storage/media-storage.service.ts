@@ -6,13 +6,7 @@ import { Readable } from 'node:stream';
 import sharp from 'sharp';
 import type { Env } from '@/config/env.validation';
 
-export type MediaStorageScope =
-  | 'media'
-  | 'prompts'
-  | 'posts'
-  | 'categories'
-  | 'avatars'
-  | 'editor';
+export type MediaStorageScope = 'media' | 'prompts' | 'posts' | 'categories' | 'avatars' | 'editor';
 
 export type StoredMediaObject = {
   publicUrl: string;
@@ -59,8 +53,7 @@ export class MediaStorageService {
   private readonly ftpRootDir: string;
   private readonly ftpTlsRejectUnauthorized: boolean;
   private readonly ftpTlsServername?: string;
-  private readonly imageDataUrlPattern =
-    /^data:(image\/[a-z0-9.+-]+);base64,([a-z0-9+/=\s]+)$/i;
+  private readonly imageDataUrlPattern = /^data:(image\/[a-z0-9.+-]+);base64,([a-z0-9+/=\s]+)$/i;
   private readonly inlineImageSrcPattern =
     /src=(["'])(data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=\s]+)\1/gi;
 
@@ -230,7 +223,11 @@ export class MediaStorageService {
   }
 
   private normalizeScope(scope?: MediaStorageScope | string) {
-    const normalized = (scope ?? 'media').toString().trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    const normalized = (scope ?? 'media')
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-');
     return normalized || 'media';
   }
 
@@ -384,10 +381,20 @@ export class MediaStorageService {
   private parseBooleanFlag(value: string | undefined, fallback: boolean) {
     if (!value) return fallback;
     const normalized = value.trim().toLowerCase();
-    if (normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on') {
+    if (
+      normalized === '1' ||
+      normalized === 'true' ||
+      normalized === 'yes' ||
+      normalized === 'on'
+    ) {
       return true;
     }
-    if (normalized === '0' || normalized === 'false' || normalized === 'no' || normalized === 'off') {
+    if (
+      normalized === '0' ||
+      normalized === 'false' ||
+      normalized === 'no' ||
+      normalized === 'off'
+    ) {
       return false;
     }
     return fallback;

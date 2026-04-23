@@ -50,14 +50,16 @@ type PublicUser = {
   roleNames: string[];
 };
 
-type ProfileActivityType = 'SAVE' | 'LIKE' | 'CREATE';
+type ProfileActivityType = 'SAVE' | 'LIKE' | 'CREATE' | 'VIEW_PROMPT' | 'VIEW_POST';
 
 type ProfileActivityItem = {
   id: string;
   type: ProfileActivityType;
-  promptTitle: string | null;
-  promptSlug: string | null;
-  promptImage: string | null;
+  targetType: 'PROMPT' | 'POST';
+  targetPath: string | null;
+  title: string | null;
+  image: string | null;
+  subtitle?: string | null;
   createdAt: string;
 };
 
@@ -91,6 +93,21 @@ type ProfileActivityList = {
 type ProfileSavedPromptsList = {
   items: ProfileSavedPromptItem[];
   total: number;
+};
+
+type ProfilePromptActivityRecord = {
+  id: string;
+  title: string | null;
+  slug: string | null;
+  image: string | null;
+};
+
+type ProfilePostActivityRecord = {
+  id: string;
+  title: string | null;
+  slug: string | null;
+  image: string | null;
+  isNewsletter: boolean;
 };
 
 type MembershipCycle = 'monthly' | 'yearly';
@@ -700,6 +717,8 @@ export class AuthService {
       savedPromptRecords,
       likeRecords,
       createdPromptRecords,
+      promptViewRecords,
+      postViewRecords,
     ] = await this.prisma.$transaction([
       this.prisma.user.findUnique({
         where: { id: userId },
@@ -761,6 +780,59 @@ export class AuthService {
           createdAt: true,
         },
       }),
+      this.prisma.promptView.findMany({
+        where: {
+          userId,
+          prompt: {
+            status: PromptStatus.PUBLISHED,
+            deletedAt: null,
+            publishedAt: { not: null },
+          },
+        },
+        orderBy: { lastViewedAt: 'desc' },
+        take: PROFILE_SUMMARY_ITEMS_LIMIT,
+        select: {
+          promptId: true,
+          lastViewedAt: true,
+          prompt: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              featuredImageUrl: true,
+            },
+          },
+        },
+      }),
+      this.prisma.postView.findMany({
+        where: {
+          userId,
+          post: {
+            status: PromptStatus.PUBLISHED,
+            deletedAt: null,
+            publishedAt: { not: null },
+          },
+        },
+        orderBy: { lastViewedAt: 'desc' },
+        take: PROFILE_SUMMARY_ITEMS_LIMIT,
+        select: {
+          postId: true,
+          lastViewedAt: true,
+          post: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              featuredImageUrl: true,
+              tags: {
+                select: {
+                  slug: true,
+                },
+              },
+            },
+          },
+        },
+      }),
     ]);
 
     if (!user) {
@@ -771,6 +843,8 @@ export class AuthService {
       ...savedPromptRecords.map((record) => record.prompt.featuredImageUrl),
       ...likeRecords.map((record) => record.prompt.featuredImageUrl),
       ...createdPromptRecords.map((record) => record.featuredImageUrl),
+      ...promptViewRecords.map((record) => record.prompt.featuredImageUrl),
+      ...postViewRecords.map((record) => record.post.featuredImageUrl),
     ]);
 
     const publicUser = await this.ensureProtectedSuperadminRole(this.toPublicUser(user));
@@ -781,30 +855,72 @@ export class AuthService {
     const audienceCount = audienceUsers.length;
 
     const recentActivity = [
-      ...savedPromptRecords.map((record) => ({
-        id: `save:${record.promptId}:${record.createdAt.toISOString()}`,
-        type: 'SAVE' as const,
-        promptTitle: record.prompt.title,
-        promptSlug: record.prompt.slug,
-        promptImage: this.resolveMediaAssetUrl(record.prompt.featuredImageUrl, imageAssetMap),
-        createdAt: record.createdAt.toISOString(),
-      })),
-      ...likeRecords.map((record) => ({
-        id: `like:${record.promptId}:${record.createdAt.toISOString()}`,
-        type: 'LIKE' as const,
-        promptTitle: record.prompt.title,
-        promptSlug: record.prompt.slug,
-        promptImage: this.resolveMediaAssetUrl(record.prompt.featuredImageUrl, imageAssetMap),
-        createdAt: record.createdAt.toISOString(),
-      })),
-      ...createdPromptRecords.map((record) => ({
-        id: `create:${record.id}`,
-        type: 'CREATE' as const,
-        promptTitle: record.title,
-        promptSlug: record.slug,
-        promptImage: this.resolveMediaAssetUrl(record.featuredImageUrl, imageAssetMap),
-        createdAt: record.createdAt.toISOString(),
-      })),
+      ...savedPromptRecords.map((record) =>
+        this.toPromptActivityItem(
+          'SAVE',
+          `save:${record.promptId}:${record.createdAt.toISOString()}`,
+          {
+            id: record.prompt.id,
+            title: record.prompt.title,
+            slug: record.prompt.slug,
+            image: this.resolveMediaAssetUrl(record.prompt.featuredImageUrl, imageAssetMap),
+          },
+          record.createdAt,
+        ),
+      ),
+      ...likeRecords.map((record) =>
+        this.toPromptActivityItem(
+          'LIKE',
+          `like:${record.promptId}:${record.createdAt.toISOString()}`,
+          {
+            id: record.promptId,
+            title: record.prompt.title,
+            slug: record.prompt.slug,
+            image: this.resolveMediaAssetUrl(record.prompt.featuredImageUrl, imageAssetMap),
+          },
+          record.createdAt,
+        ),
+      ),
+      ...createdPromptRecords.map((record) =>
+        this.toPromptActivityItem(
+          'CREATE',
+          `create:${record.id}`,
+          {
+            id: record.id,
+            title: record.title,
+            slug: record.slug,
+            image: this.resolveMediaAssetUrl(record.featuredImageUrl, imageAssetMap),
+          },
+          record.createdAt,
+        ),
+      ),
+      ...promptViewRecords.map((record) =>
+        this.toPromptActivityItem(
+          'VIEW_PROMPT',
+          `view:prompt:${record.promptId}:${record.lastViewedAt.toISOString()}`,
+          {
+            id: record.prompt.id,
+            title: record.prompt.title,
+            slug: record.prompt.slug,
+            image: this.resolveMediaAssetUrl(record.prompt.featuredImageUrl, imageAssetMap),
+          },
+          record.lastViewedAt,
+        ),
+      ),
+      ...postViewRecords.map((record) =>
+        this.toPostActivityItem(
+          'VIEW_POST',
+          `view:post:${record.postId}:${record.lastViewedAt.toISOString()}`,
+          {
+            id: record.post.id,
+            title: record.post.title,
+            slug: record.post.slug,
+            image: this.resolveMediaAssetUrl(record.post.featuredImageUrl, imageAssetMap),
+            isNewsletter: record.post.tags.some((tag) => tag.slug === 'newsletter'),
+          },
+          record.lastViewedAt,
+        ),
+      ),
     ]
       .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
       .slice(0, PROFILE_SUMMARY_ITEMS_LIMIT);
@@ -836,66 +952,150 @@ export class AuthService {
     const { skip: safeSkip, take: safeTake } = normalizePagination(skip, take);
     const windowSize = safeSkip + safeTake;
 
-    const [user, savedCount, likedCount, createdCount, savedRecords, likeRecords, createdRecords] =
-      await this.prisma.$transaction([
-        this.prisma.user.findUnique({
-          where: { id: userId },
-          select: { id: true },
-        }),
-        this.prisma.savedPrompt.count({
-          where: { userId },
-        }),
-        this.prisma.promptLike.count({
-          where: { userId },
-        }),
-        this.prisma.prompt.count({
-          where: { authorId: userId },
-        }),
-        this.prisma.savedPrompt.findMany({
-          where: { userId },
-          orderBy: { createdAt: 'desc' },
-          take: windowSize,
-          select: {
-            promptId: true,
-            createdAt: true,
-            prompt: {
-              select: {
-                title: true,
-                slug: true,
-                featuredImageUrl: true,
+    const [
+      user,
+      savedCount,
+      likedCount,
+      createdCount,
+      promptViewCount,
+      postViewCount,
+      savedRecords,
+      likeRecords,
+      createdRecords,
+      promptViewRecords,
+      postViewRecords,
+    ] = await this.prisma.$transaction([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      }),
+      this.prisma.savedPrompt.count({
+        where: { userId },
+      }),
+      this.prisma.promptLike.count({
+        where: { userId },
+      }),
+      this.prisma.prompt.count({
+        where: { authorId: userId },
+      }),
+      this.prisma.promptView.count({
+        where: {
+          userId,
+          prompt: {
+            status: PromptStatus.PUBLISHED,
+            deletedAt: null,
+            publishedAt: { not: null },
+          },
+        },
+      }),
+      this.prisma.postView.count({
+        where: {
+          userId,
+          post: {
+            status: PromptStatus.PUBLISHED,
+            deletedAt: null,
+            publishedAt: { not: null },
+          },
+        },
+      }),
+      this.prisma.savedPrompt.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: windowSize,
+        select: {
+          promptId: true,
+          createdAt: true,
+          prompt: {
+            select: {
+              title: true,
+              slug: true,
+              featuredImageUrl: true,
+            },
+          },
+        },
+      }),
+      this.prisma.promptLike.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: windowSize,
+        select: {
+          promptId: true,
+          createdAt: true,
+          prompt: {
+            select: {
+              title: true,
+              slug: true,
+              featuredImageUrl: true,
+            },
+          },
+        },
+      }),
+      this.prisma.prompt.findMany({
+        where: { authorId: userId },
+        orderBy: { createdAt: 'desc' },
+        take: windowSize,
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          featuredImageUrl: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.promptView.findMany({
+        where: {
+          userId,
+          prompt: {
+            status: PromptStatus.PUBLISHED,
+            deletedAt: null,
+            publishedAt: { not: null },
+          },
+        },
+        orderBy: { lastViewedAt: 'desc' },
+        take: windowSize,
+        select: {
+          promptId: true,
+          lastViewedAt: true,
+          prompt: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              featuredImageUrl: true,
+            },
+          },
+        },
+      }),
+      this.prisma.postView.findMany({
+        where: {
+          userId,
+          post: {
+            status: PromptStatus.PUBLISHED,
+            deletedAt: null,
+            publishedAt: { not: null },
+          },
+        },
+        orderBy: { lastViewedAt: 'desc' },
+        take: windowSize,
+        select: {
+          postId: true,
+          lastViewedAt: true,
+          post: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              featuredImageUrl: true,
+              tags: {
+                select: {
+                  slug: true,
+                },
               },
             },
           },
-        }),
-        this.prisma.promptLike.findMany({
-          where: { userId },
-          orderBy: { createdAt: 'desc' },
-          take: windowSize,
-          select: {
-            promptId: true,
-            createdAt: true,
-            prompt: {
-              select: {
-                title: true,
-                slug: true,
-                featuredImageUrl: true,
-              },
-            },
-          },
-        }),
-        this.prisma.prompt.findMany({
-          where: { authorId: userId },
-          orderBy: { createdAt: 'desc' },
-          take: windowSize,
-          select: {
-            id: true,
-            title: true,
-            slug: true,
-            featuredImageUrl: true,
-            createdAt: true,
-          },
-        }),
-      ]);
+        },
+      }),
+    ]);
 
     if (!user) {
       throw new UnauthorizedException('User not found.');
@@ -905,38 +1105,76 @@ export class AuthService {
       ...savedRecords.map((record) => record.prompt.featuredImageUrl),
       ...likeRecords.map((record) => record.prompt.featuredImageUrl),
       ...createdRecords.map((record) => record.featuredImageUrl),
+      ...promptViewRecords.map((record) => record.prompt.featuredImageUrl),
+      ...postViewRecords.map((record) => record.post.featuredImageUrl),
     ]);
 
     const items = [
-      ...savedRecords.map(
-        (record): ProfileActivityItem => ({
-          id: `save:${record.promptId}:${record.createdAt.toISOString()}`,
-          type: 'SAVE',
-          promptTitle: record.prompt.title,
-          promptSlug: record.prompt.slug,
-          promptImage: this.resolveMediaAssetUrl(record.prompt.featuredImageUrl, imageAssetMap),
-          createdAt: record.createdAt.toISOString(),
-        }),
+      ...savedRecords.map((record) =>
+        this.toPromptActivityItem(
+          'SAVE',
+          `save:${record.promptId}:${record.createdAt.toISOString()}`,
+          {
+            id: record.promptId,
+            title: record.prompt.title,
+            slug: record.prompt.slug,
+            image: this.resolveMediaAssetUrl(record.prompt.featuredImageUrl, imageAssetMap),
+          },
+          record.createdAt,
+        ),
       ),
-      ...likeRecords.map(
-        (record): ProfileActivityItem => ({
-          id: `like:${record.promptId}:${record.createdAt.toISOString()}`,
-          type: 'LIKE',
-          promptTitle: record.prompt.title,
-          promptSlug: record.prompt.slug,
-          promptImage: this.resolveMediaAssetUrl(record.prompt.featuredImageUrl, imageAssetMap),
-          createdAt: record.createdAt.toISOString(),
-        }),
+      ...likeRecords.map((record) =>
+        this.toPromptActivityItem(
+          'LIKE',
+          `like:${record.promptId}:${record.createdAt.toISOString()}`,
+          {
+            id: record.promptId,
+            title: record.prompt.title,
+            slug: record.prompt.slug,
+            image: this.resolveMediaAssetUrl(record.prompt.featuredImageUrl, imageAssetMap),
+          },
+          record.createdAt,
+        ),
       ),
-      ...createdRecords.map(
-        (record): ProfileActivityItem => ({
-          id: `create:${record.id}`,
-          type: 'CREATE',
-          promptTitle: record.title,
-          promptSlug: record.slug,
-          promptImage: this.resolveMediaAssetUrl(record.featuredImageUrl, imageAssetMap),
-          createdAt: record.createdAt.toISOString(),
-        }),
+      ...createdRecords.map((record) =>
+        this.toPromptActivityItem(
+          'CREATE',
+          `create:${record.id}`,
+          {
+            id: record.id,
+            title: record.title,
+            slug: record.slug,
+            image: this.resolveMediaAssetUrl(record.featuredImageUrl, imageAssetMap),
+          },
+          record.createdAt,
+        ),
+      ),
+      ...promptViewRecords.map((record) =>
+        this.toPromptActivityItem(
+          'VIEW_PROMPT',
+          `view:prompt:${record.promptId}:${record.lastViewedAt.toISOString()}`,
+          {
+            id: record.prompt.id,
+            title: record.prompt.title,
+            slug: record.prompt.slug,
+            image: this.resolveMediaAssetUrl(record.prompt.featuredImageUrl, imageAssetMap),
+          },
+          record.lastViewedAt,
+        ),
+      ),
+      ...postViewRecords.map((record) =>
+        this.toPostActivityItem(
+          'VIEW_POST',
+          `view:post:${record.postId}:${record.lastViewedAt.toISOString()}`,
+          {
+            id: record.post.id,
+            title: record.post.title,
+            slug: record.post.slug,
+            image: this.resolveMediaAssetUrl(record.post.featuredImageUrl, imageAssetMap),
+            isNewsletter: record.post.tags.some((tag) => tag.slug === 'newsletter'),
+          },
+          record.lastViewedAt,
+        ),
       ),
     ]
       .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
@@ -944,7 +1182,7 @@ export class AuthService {
 
     return {
       items,
-      total: savedCount + likedCount + createdCount,
+      total: savedCount + likedCount + createdCount + promptViewCount + postViewCount,
     };
   }
 
@@ -1100,9 +1338,7 @@ export class AuthService {
         amount:
           typeof item.amount === 'number'
             ? item.amount
-            : Number(
-                typeof item.amount === 'string' ? item.amount : item.amount.toString(),
-              ),
+            : Number(typeof item.amount === 'string' ? item.amount : item.amount.toString()),
         currency: item.currency.toUpperCase(),
         createdAt: item.createdAt.toISOString(),
       })),
@@ -1201,11 +1437,13 @@ export class AuthService {
     }
   }
 
-  private resolveMembershipCycleFromTransaction(transaction: {
-    status: string;
-    amount: Prisma.Decimal | number | string;
-    currency: string;
-  } | null): MembershipCycle | null {
+  private resolveMembershipCycleFromTransaction(
+    transaction: {
+      status: string;
+      amount: Prisma.Decimal | number | string;
+      currency: string;
+    } | null,
+  ): MembershipCycle | null {
     if (!transaction) {
       return null;
     }
@@ -1371,6 +1609,49 @@ export class AuthService {
     if (!value.startsWith(this.mediaRefPrefix)) return null;
     const id = value.slice(this.mediaRefPrefix.length).trim();
     return id || null;
+  }
+
+  private getPostActivityPath(post: ProfilePostActivityRecord): string | null {
+    if (!post.slug) {
+      return null;
+    }
+    return post.isNewsletter ? `/newsletter/${post.slug}` : `/blog/${post.slug}`;
+  }
+
+  private toPromptActivityItem(
+    type: Extract<ProfileActivityType, 'SAVE' | 'LIKE' | 'CREATE' | 'VIEW_PROMPT'>,
+    id: string,
+    prompt: ProfilePromptActivityRecord,
+    createdAt: Date,
+  ): ProfileActivityItem {
+    return {
+      id,
+      type,
+      targetType: 'PROMPT',
+      targetPath: prompt.slug ? `/prompt/${prompt.slug}` : null,
+      title: prompt.title,
+      image: prompt.image,
+      subtitle: type === 'VIEW_PROMPT' ? 'Prompt history' : null,
+      createdAt: createdAt.toISOString(),
+    };
+  }
+
+  private toPostActivityItem(
+    type: Extract<ProfileActivityType, 'VIEW_POST'>,
+    id: string,
+    post: ProfilePostActivityRecord,
+    createdAt: Date,
+  ): ProfileActivityItem {
+    return {
+      id,
+      type,
+      targetType: 'POST',
+      targetPath: this.getPostActivityPath(post),
+      title: post.title,
+      image: post.image,
+      subtitle: post.isNewsletter ? 'Newsletter history' : 'Blog history',
+      createdAt: createdAt.toISOString(),
+    };
   }
 
   private async buildMediaAssetUrlMap(values: Array<string | null | undefined>) {

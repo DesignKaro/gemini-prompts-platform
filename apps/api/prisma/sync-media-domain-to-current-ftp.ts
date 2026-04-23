@@ -93,10 +93,10 @@ class FtpsClient {
 }
 
 async function main() {
-  const oldPrefix = optionalEnv('OLD_MEDIA_PREFIX', 'https://media.argro.io/gemini_prompts').replace(
-    /\/+$/,
-    '',
-  );
+  const oldPrefix = optionalEnv(
+    'OLD_MEDIA_PREFIX',
+    'https://media.argro.io/gemini_prompts',
+  ).replace(/\/+$/, '');
   const newPrefix = requiredEnv('MEDIA_PUBLIC_BASE_URL').replace(/\/+$/, '');
   const oldPrefixPattern = new RegExp(`${escapeRegex(oldPrefix)}[^\\s"'<>)]*`, 'g');
   const newPrefixUrl = new URL(newPrefix);

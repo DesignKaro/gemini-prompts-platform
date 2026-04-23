@@ -21,4 +21,3 @@ export function InlineSpinner({ size = 'sm', className = '' }: InlineSpinnerProp
     />
   );
 }
-

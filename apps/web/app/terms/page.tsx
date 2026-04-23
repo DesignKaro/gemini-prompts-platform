@@ -39,7 +39,8 @@ export default async function TermsPage() {
       schema: buildWebPageSchema({
         url: pageUrl,
         name: 'Terms',
-        description: 'Review the terms for using Gemini Prompts, memberships, and community features.',
+        description:
+          'Review the terms for using Gemini Prompts, memberships, and community features.',
       }),
     },
     {

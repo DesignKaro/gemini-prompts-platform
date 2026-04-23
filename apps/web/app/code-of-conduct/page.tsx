@@ -89,10 +89,9 @@ export default async function CodeOfConductPage() {
               platform.
             </p>
             <p>
-              By accessing or using GeminiPrompts.io, you agree to abide by this Code of Conduct.
-              We are committed to providing a safe, respectful, and inclusive environment for
-              everyone — regardless of age, gender, nationality, experience level, background, or
-              identity.
+              By accessing or using GeminiPrompts.io, you agree to abide by this Code of Conduct. We
+              are committed to providing a safe, respectful, and inclusive environment for everyone
+              — regardless of age, gender, nationality, experience level, background, or identity.
             </p>
 
             <h2>2. Our Core Values</h2>
@@ -126,9 +125,7 @@ export default async function CodeOfConductPage() {
               <li>All registered users and account holders.</li>
               <li>Visitors browsing the website.</li>
               <li>Contributors who submit prompts, comments, reviews, or other content.</li>
-              <li>
-                Anyone communicating with us via email, social media, or any other channel.
-              </li>
+              <li>Anyone communicating with us via email, social media, or any other channel.</li>
             </ul>
 
             <h2>4. Expected Behavior</h2>
@@ -158,8 +155,8 @@ export default async function CodeOfConductPage() {
             <h3>4.4 Protect Privacy</h3>
             <ul>
               <li>
-                Do not share personally identifiable information about yourself or others publicly on
-                the platform.
+                Do not share personally identifiable information about yourself or others publicly
+                on the platform.
               </li>
               <li>
                 Do not use prompts to extract, expose, or misuse private or sensitive information
@@ -189,8 +186,8 @@ export default async function CodeOfConductPage() {
             <ul>
               <li>
                 Submitting prompts or content designed to generate hate speech, discrimination, or
-                harassment based on race, ethnicity, gender, sexuality, religion, disability, or
-                any other characteristic.
+                harassment based on race, ethnicity, gender, sexuality, religion, disability, or any
+                other characteristic.
               </li>
               <li>Promoting or glorifying violence, abuse, or self-harm.</li>
             </ul>
@@ -239,7 +236,9 @@ export default async function CodeOfConductPage() {
             </ul>
             <h3>5.5 Platform Abuse</h3>
             <ul>
-              <li>Spamming, flooding, or repeatedly submitting low-quality or duplicate prompts.</li>
+              <li>
+                Spamming, flooding, or repeatedly submitting low-quality or duplicate prompts.
+              </li>
               <li>
                 Attempting to manipulate ratings, reviews, or rankings through fake accounts or
                 coordinated actions.
@@ -265,8 +264,8 @@ export default async function CodeOfConductPage() {
 
             <h2>6. AI Ethics and Responsible Use</h2>
             <p>
-              GeminiPrompts.io is built on the foundation of responsible AI use. We ask all users
-              to uphold the following principles when using our prompts with AI tools:
+              GeminiPrompts.io is built on the foundation of responsible AI use. We ask all users to
+              uphold the following principles when using our prompts with AI tools:
             </p>
             <ul>
               <li>
@@ -340,9 +339,7 @@ export default async function CodeOfConductPage() {
             </p>
 
             <h2>9. Consequences of Violations</h2>
-            <p>
-              Depending on the nature and severity of the violation, consequences may include:
-            </p>
+            <p>Depending on the nature and severity of the violation, consequences may include:</p>
             <div className={LEGAL_TABLE_CONTAINER_CLASS}>
               <table className={LEGAL_TABLE_CLASS}>
                 <thead className={LEGAL_TABLE_HEAD_CLASS}>
@@ -356,13 +353,17 @@ export default async function CodeOfConductPage() {
                     <td className={LEGAL_TABLE_CELL_CLASS}>
                       <strong>Minor</strong>
                     </td>
-                    <td className={LEGAL_TABLE_CELL_CLASS}>Content removal and a written warning</td>
+                    <td className={LEGAL_TABLE_CELL_CLASS}>
+                      Content removal and a written warning
+                    </td>
                   </tr>
                   <tr className={LEGAL_TABLE_ROW_CLASS}>
                     <td className={LEGAL_TABLE_CELL_CLASS}>
                       <strong>Moderate</strong>
                     </td>
-                    <td className={LEGAL_TABLE_CELL_CLASS}>Temporary suspension of account access</td>
+                    <td className={LEGAL_TABLE_CELL_CLASS}>
+                      Temporary suspension of account access
+                    </td>
                   </tr>
                   <tr className={LEGAL_TABLE_ROW_CLASS}>
                     <td className={LEGAL_TABLE_CELL_CLASS}>
@@ -389,9 +390,10 @@ export default async function CodeOfConductPage() {
             <h2>10. Appeals</h2>
             <p>
               If you believe a moderation action taken against your account was made in error, you
-              may appeal by contacting us at <a href="mailto:help@geminiprompts.io">help@geminiprompts.io</a>{' '}
-              with the subject line <code>Moderation Appeal</code>. Please provide your account
-              details and a clear explanation of why you believe the decision should be reconsidered.
+              may appeal by contacting us at{' '}
+              <a href="mailto:help@geminiprompts.io">help@geminiprompts.io</a> with the subject line{' '}
+              <code>Moderation Appeal</code>. Please provide your account details and a clear
+              explanation of why you believe the decision should be reconsidered.
             </p>
             <p>
               We will review all appeals fairly and respond within <strong>7 business days</strong>.
@@ -407,7 +409,10 @@ export default async function CodeOfConductPage() {
             </p>
 
             <h2>12. Contact Us</h2>
-            <p>For any questions, concerns, or suggestions regarding this Code of Conduct, please get in touch:</p>
+            <p>
+              For any questions, concerns, or suggestions regarding this Code of Conduct, please get
+              in touch:
+            </p>
             <p>
               <strong>GeminiPrompts.io</strong>
               <br />

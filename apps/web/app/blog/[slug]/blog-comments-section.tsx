@@ -392,29 +392,29 @@ export function BlogCommentsSection({
                       </button>
                     )}
                     <span className="text-[#c7ced8]">/</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void likeComment(comment.id);
-                        }}
-                        disabled={Boolean(likePendingByCommentId[comment.id])}
-                        aria-busy={Boolean(likePendingByCommentId[comment.id]) || undefined}
-                        aria-pressed={comment.likedByViewer}
-                        className={`inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
-                          comment.likedByViewer
-                            ? 'bg-[#fce8ed] text-[#dc4b74]'
-                            : 'bg-[#eef1f5] text-[#6b7280] hover:text-[#111827]'
-                        }`}
-                      >
-                        {likePendingByCommentId[comment.id] ? (
-                          <InlineSpinner
-                            size="xs"
-                            className={comment.likedByViewer ? 'text-[#dc4b74]' : 'text-[#6b7280]'}
-                          />
-                        ) : comment.likedByViewer ? (
-                          <FaHeart className="h-4 w-4" />
-                        ) : (
-                          <FaRegHeart className="h-4 w-4" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void likeComment(comment.id);
+                      }}
+                      disabled={Boolean(likePendingByCommentId[comment.id])}
+                      aria-busy={Boolean(likePendingByCommentId[comment.id]) || undefined}
+                      aria-pressed={comment.likedByViewer}
+                      className={`inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
+                        comment.likedByViewer
+                          ? 'bg-[#fce8ed] text-[#dc4b74]'
+                          : 'bg-[#eef1f5] text-[#6b7280] hover:text-[#111827]'
+                      }`}
+                    >
+                      {likePendingByCommentId[comment.id] ? (
+                        <InlineSpinner
+                          size="xs"
+                          className={comment.likedByViewer ? 'text-[#dc4b74]' : 'text-[#6b7280]'}
+                        />
+                      ) : comment.likedByViewer ? (
+                        <FaHeart className="h-4 w-4" />
+                      ) : (
+                        <FaRegHeart className="h-4 w-4" />
                       )}
                     </button>
                     <span className="text-[1rem] text-[#111827]">{comment.likeCount}</span>
@@ -530,7 +530,9 @@ export function BlogCommentsSection({
                                 {likePendingByCommentId[reply.id] ? (
                                   <InlineSpinner
                                     size="xs"
-                                    className={reply.likedByViewer ? 'text-[#dc4b74]' : 'text-[#6b7280]'}
+                                    className={
+                                      reply.likedByViewer ? 'text-[#dc4b74]' : 'text-[#6b7280]'
+                                    }
                                   />
                                 ) : reply.likedByViewer ? (
                                   <FaHeart className="h-3.5 w-3.5" />

@@ -325,7 +325,9 @@ export function useAdminApi() {
             : null;
         const requestId = requestIdFromHeader ?? requestIdFromBody ?? undefined;
         const responseErrorCode =
-          payload && typeof payload === 'object' && typeof (payload as ApiErrorPayload).code === 'string'
+          payload &&
+          typeof payload === 'object' &&
+          typeof (payload as ApiErrorPayload).code === 'string'
             ? ((payload as ApiErrorPayload).code as string)
             : undefined;
 
@@ -402,7 +404,11 @@ export function useAdminApi() {
       const providedActionName = options.actionName?.trim();
       const actionName = providedActionName || defaultActionName(method, path);
 
-      if (!providedActionName && isDashboardApiPath(path) && process.env.NODE_ENV !== 'production') {
+      if (
+        !providedActionName &&
+        isDashboardApiPath(path) &&
+        process.env.NODE_ENV !== 'production'
+      ) {
         console.warn(
           `[dashboard-api] missing explicit actionName for ${method} ${path}; using "${actionName}".`,
         );
@@ -440,9 +446,7 @@ export function useAdminApi() {
           } catch (error) {
             const isFinalAttempt = attempt >= retryCount;
             const shouldRetryForStatus =
-              error instanceof DashboardApiError &&
-              error.statusCode === 503 &&
-              !isFinalAttempt;
+              error instanceof DashboardApiError && error.statusCode === 503 && !isFinalAttempt;
             const shouldRetryForTimeout =
               error instanceof DashboardApiError &&
               error.code === 'TIMEOUT' &&

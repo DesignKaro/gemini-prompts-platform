@@ -55,7 +55,8 @@ export default async function AuthorsPage({ searchParams }: PageProps) {
       schema: buildWebPageSchema({
         url: pageUrl,
         name: 'Authors',
-        description: 'Explore creators publishing prompts, workflow templates, and editorial posts.',
+        description:
+          'Explore creators publishing prompts, workflow templates, and editorial posts.',
       }),
     },
     {
@@ -142,7 +143,9 @@ export default async function AuthorsPage({ searchParams }: PageProps) {
                       initialClassName="text-[0.82rem]"
                     />
                     <div className="min-w-0">
-                      <h2 className="truncate text-[1.04rem] font-medium text-[#111118]">{author.name}</h2>
+                      <h2 className="truncate text-[1.04rem] font-medium text-[#111118]">
+                        {author.name}
+                      </h2>
                       <p className="truncate text-[0.86rem] text-[#7b8392]">
                         {author.profileTitle || 'Prompt creator'}
                       </p>

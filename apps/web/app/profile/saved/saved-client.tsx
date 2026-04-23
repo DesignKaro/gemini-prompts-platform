@@ -325,7 +325,9 @@ export function ProfileSavedClient() {
                             />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[0.88rem] font-medium text-[#10141c]">Prompt saved</p>
+                            <p className="text-[0.88rem] font-medium text-[#10141c]">
+                              Prompt saved
+                            </p>
                             <p className="mt-1 text-[0.8rem] text-[#667080]">“{prompt.title}”</p>
                             <div className="mt-1.5 flex items-center gap-2">
                               <span className="rounded-full bg-[#f0f2f6] px-2 py-0.5 text-[0.68rem] text-[#4a5261]">
@@ -362,9 +364,7 @@ export function ProfileSavedClient() {
                               Prompt saved
                             </td>
                             <td className="px-4 py-3">
-                              <div
-                                className="h-11 w-20 overflow-hidden rounded-[10px] border border-[#e3e7ef] bg-[#eef1f5]"
-                              >
+                              <div className="h-11 w-20 overflow-hidden rounded-[10px] border border-[#e3e7ef] bg-[#eef1f5]">
                                 <PromptThumb
                                   image={prompt.image}
                                   title={prompt.title}
@@ -379,7 +379,9 @@ export function ProfileSavedClient() {
                                 {formatPromptType(prompt.promptType)}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-[0.82rem] text-[#9aa1ae]">Gemini Prompts</td>
+                            <td className="px-4 py-3 text-[0.82rem] text-[#9aa1ae]">
+                              Gemini Prompts
+                            </td>
                             <td className="px-4 py-3">
                               <Link
                                 href={`/prompt/${prompt.slug}`}

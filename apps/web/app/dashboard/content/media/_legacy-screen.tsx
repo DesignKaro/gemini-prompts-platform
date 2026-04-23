@@ -67,7 +67,7 @@ function getMediaType(item: MediaItem): MediaDisplayType {
   if (mime.includes('png')) return 'PNG';
 
   const fileName = item.url.split('/').pop()?.split('?')[0]?.split('#')[0]?.toLowerCase();
-  const extension = fileName?.includes('.') ? fileName.split('.').pop() ?? '' : '';
+  const extension = fileName?.includes('.') ? (fileName.split('.').pop() ?? '') : '';
   return MEDIA_TYPE_BY_EXTENSION[extension] ?? 'JPG';
 }
 
@@ -248,7 +248,9 @@ export default function MediaManagementPage() {
           }).then(() => undefined),
       });
       const failedIds = new Set(result.failures.map((entry) => entry.id));
-      setMediaItems((prev) => prev.filter((item) => !selectedIds.includes(item.id) || failedIds.has(item.id)));
+      setMediaItems((prev) =>
+        prev.filter((item) => !selectedIds.includes(item.id) || failedIds.has(item.id)),
+      );
       setSelectedIds(Array.from(failedIds));
       setLoadError(bulkActionMessage(result, 'Delete'));
       if (result.failureCount === 0) {
@@ -359,7 +361,9 @@ export default function MediaManagementPage() {
               </div>
               <label
                 className={`mt-2 rounded-xl bg-[#d5ea52] px-6 py-2.5 text-[0.85rem] font-medium text-[#0f1116] shadow-sm transition-opacity ${
-                  isUploading ? 'cursor-not-allowed opacity-75 pointer-events-none' : 'cursor-pointer hover:opacity-90'
+                  isUploading
+                    ? 'cursor-not-allowed opacity-75 pointer-events-none'
+                    : 'cursor-pointer hover:opacity-90'
                 }`}
               >
                 <span className="inline-flex items-center gap-2">
@@ -396,7 +400,9 @@ export default function MediaManagementPage() {
                   )}
                   <label
                     className={`rounded-full bg-[#0f1116] px-5 py-2 text-[0.85rem] font-medium text-white transition-opacity ${
-                      isUploading ? 'cursor-not-allowed opacity-70 pointer-events-none' : 'cursor-pointer hover:opacity-90'
+                      isUploading
+                        ? 'cursor-not-allowed opacity-70 pointer-events-none'
+                        : 'cursor-pointer hover:opacity-90'
                     }`}
                   >
                     <span className="inline-flex items-center gap-2">
@@ -435,7 +441,7 @@ export default function MediaManagementPage() {
                   />
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                    <select
+                  <select
                     value={typeFilter}
                     onChange={(event) => setTypeFilter(event.target.value as MediaTypeFilter)}
                     className="rounded-full border border-[#e1e5ee] bg-white px-4 py-2 text-[0.82rem] text-gray-600"

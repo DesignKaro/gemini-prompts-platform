@@ -506,34 +506,34 @@ export function PromptPageShell({
 
         {/* Grid */}
         <div className="site-section-sub grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {isLoading
-            ? Array.from({ length: loadingCardCount }).map((_, index) => (
-                <article
-                  key={`prompt-page-shell-loading-${index}`}
-                  className="flex flex-col rounded-[24px] bg-transparent"
-                >
-                  <Skeleton className="aspect-[4/3] w-full rounded-[24px]" />
-                  <div className="mt-4 space-y-3 px-1 sm:px-2">
-                    <Skeleton className="h-5 w-full rounded-full" />
-                    <Skeleton className="h-5 w-[82%] rounded-full" />
-                    <Skeleton className="h-4 w-28 rounded-full" />
-                  </div>
-                  <div className="mt-5 flex items-center justify-between gap-3 px-1 sm:px-2">
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="h-10 w-10 rounded-full" />
-                      <Skeleton className="h-10 w-10 rounded-full" />
-                    </div>
+          {isLoading ? (
+            Array.from({ length: loadingCardCount }).map((_, index) => (
+              <article
+                key={`prompt-page-shell-loading-${index}`}
+                className="flex flex-col rounded-[24px] bg-transparent"
+              >
+                <Skeleton className="aspect-[4/3] w-full rounded-[24px]" />
+                <div className="mt-4 space-y-3 px-1 sm:px-2">
+                  <Skeleton className="h-5 w-full rounded-full" />
+                  <Skeleton className="h-5 w-[82%] rounded-full" />
+                  <Skeleton className="h-4 w-28 rounded-full" />
+                </div>
+                <div className="mt-5 flex items-center justify-between gap-3 px-1 sm:px-2">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
                     <Skeleton className="h-10 w-10 rounded-full" />
                   </div>
-                </article>
-              ))
-            : visible.length > 0
-              ? visible.map((prompt) => <PromptCardUI key={prompt.id} prompt={prompt} />)
-              : (
-                  <div className="col-span-full rounded-[22px] border border-dashed border-[#d8dee8] px-6 py-7 text-center text-[0.96rem] text-[#677386]">
-                    {emptyMessage}
-                  </div>
-                )}
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                </div>
+              </article>
+            ))
+          ) : visible.length > 0 ? (
+            visible.map((prompt) => <PromptCardUI key={prompt.id} prompt={prompt} />)
+          ) : (
+            <div className="col-span-full rounded-[22px] border border-dashed border-[#d8dee8] px-6 py-7 text-center text-[0.96rem] text-[#677386]">
+              {emptyMessage}
+            </div>
+          )}
         </div>
 
         {/* Pagination */}

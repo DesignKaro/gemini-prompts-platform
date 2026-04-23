@@ -47,9 +47,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return buildMetadata({
     title: category.name,
-    description:
-      category.description ||
-      `Explore prompts and posts filed under ${category.name}.`,
+    description: category.description || `Explore prompts and posts filed under ${category.name}.`,
     path: `/${category.slug}`,
     image: category.imageUrl,
     noIndex: settings.noindexCategoryPages,
@@ -176,7 +174,8 @@ async function CategoryDetailPageContent({ params }: PageProps) {
       schema: buildWebPageSchema({
         url: pageUrl,
         name: category.name,
-        description: category.description || `Explore prompts and posts filed under ${category.name}.`,
+        description:
+          category.description || `Explore prompts and posts filed under ${category.name}.`,
         keywords: [category.name],
       }),
     },
@@ -258,9 +257,7 @@ async function CategoryDetailPageContent({ params }: PageProps) {
                 </div>
               </div>
               <CategoryDescriptionPreview
-                text={
-                  category.description || 'Live prompts and posts curated from the dashboard.'
-                }
+                text={category.description || 'Live prompts and posts curated from the dashboard.'}
                 categoryName={category.name}
               />
             </div>

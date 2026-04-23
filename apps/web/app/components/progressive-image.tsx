@@ -55,10 +55,7 @@ export function ProgressiveImage({
     .filter(Boolean)
     .join(' ');
 
-  const wrapperClassName = [
-    fill ? 'absolute inset-0' : 'relative block',
-    containerClassName,
-  ]
+  const wrapperClassName = [fill ? 'absolute inset-0' : 'relative block', containerClassName]
     .filter(Boolean)
     .join(' ');
 

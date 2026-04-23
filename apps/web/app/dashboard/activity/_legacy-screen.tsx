@@ -324,7 +324,11 @@ export default function ActivityPage() {
 
   const hasMore = activity.length < total;
   const hasActiveFilters = Boolean(
-    debouncedSearch || selectedAction || selectedTargetType || selectedRange || sortOrder !== 'desc',
+    debouncedSearch ||
+    selectedAction ||
+    selectedTargetType ||
+    selectedRange ||
+    sortOrder !== 'desc',
   );
 
   const filterChips = useMemo(() => {
@@ -375,9 +379,7 @@ export default function ActivityPage() {
         ),
       }))
       .sort((left, right) =>
-        sortOrder === 'asc'
-          ? left.earliest - right.earliest
-          : right.latest - left.latest,
+        sortOrder === 'asc' ? left.earliest - right.earliest : right.latest - left.latest,
       );
   }, [activity, sortOrder]);
 
@@ -436,9 +438,7 @@ export default function ActivityPage() {
             value={selectedRange}
             options={RANGE_OPTIONS}
             isOpen={activeDropdown === 'range'}
-            onToggle={() =>
-              setActiveDropdown((current) => (current === 'range' ? null : 'range'))
-            }
+            onToggle={() => setActiveDropdown((current) => (current === 'range' ? null : 'range'))}
             onSelect={(value) => {
               setSelectedRange(value);
               setActiveDropdown(null);

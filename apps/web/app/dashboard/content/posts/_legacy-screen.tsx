@@ -221,7 +221,9 @@ export default function PostsManagementPage() {
           }).then(() => undefined),
       });
       const failedIds = new Set(result.failures.map((entry) => entry.id));
-      setPosts((prev) => prev.filter((post) => !selectedIds.includes(post.id) || failedIds.has(post.id)));
+      setPosts((prev) =>
+        prev.filter((post) => !selectedIds.includes(post.id) || failedIds.has(post.id)),
+      );
       setSelectedIds(Array.from(failedIds));
       setLoadError(bulkActionMessage(result, 'Delete'));
       if (result.failureCount === 0) {

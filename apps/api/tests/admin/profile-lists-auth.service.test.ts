@@ -49,6 +49,8 @@ describe('AuthService profile lists', () => {
     const savedAt = new Date('2026-03-29T11:00:00.000Z');
     const likedAt = new Date('2026-03-29T10:00:00.000Z');
     const createdAt = new Date('2026-03-29T09:00:00.000Z');
+    const promptViewedAt = new Date('2026-03-29T12:00:00.000Z');
+    const postViewedAt = new Date('2026-03-29T12:30:00.000Z');
 
     const prisma = {
       user: {
@@ -99,6 +101,35 @@ describe('AuthService profile lists', () => {
           },
         ]),
       },
+      promptView: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            promptId: 'prompt_viewed_1',
+            lastViewedAt: promptViewedAt,
+            prompt: {
+              id: 'prompt_viewed_1',
+              title: 'Viewed prompt',
+              slug: 'viewed-prompt',
+              featuredImageUrl: null,
+            },
+          },
+        ]),
+      },
+      postView: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            postId: 'post_viewed_1',
+            lastViewedAt: postViewedAt,
+            post: {
+              id: 'post_viewed_1',
+              title: 'Viewed newsletter',
+              slug: 'viewed-newsletter',
+              featuredImageUrl: null,
+              tags: [{ slug: 'newsletter' }],
+            },
+          },
+        ]),
+      },
       $transaction: vi.fn(async (input: unknown[]) => Promise.all(input)),
     } as unknown as ConstructorParameters<typeof AuthService>[0];
 
@@ -106,12 +137,14 @@ describe('AuthService profile lists', () => {
     const summary = await service.getProfileSummary('user_1');
 
     expect(summary.recentActivity[0]).toEqual({
-      id: `save:prompt_saved_1:${savedAt.toISOString()}`,
-      type: 'SAVE',
-      promptTitle: 'Saved prompt',
-      promptSlug: 'saved-prompt',
-      promptImage: null,
-      createdAt: savedAt.toISOString(),
+      id: `view:post:post_viewed_1:${postViewedAt.toISOString()}`,
+      type: 'VIEW_POST',
+      targetType: 'POST',
+      targetPath: '/newsletter/viewed-newsletter',
+      title: 'Viewed newsletter',
+      image: null,
+      subtitle: 'Newsletter history',
+      createdAt: postViewedAt.toISOString(),
     });
     expect(summary.savedPrompts[0]).toEqual({
       id: 'prompt_saved_1',
@@ -126,11 +159,15 @@ describe('AuthService profile lists', () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: `like:prompt_liked_1:${likedAt.toISOString()}`,
-          promptSlug: 'liked-prompt',
+          targetPath: '/prompt/liked-prompt',
         }),
         expect.objectContaining({
           id: 'create:prompt_created_1',
-          promptSlug: 'created-prompt',
+          targetPath: '/prompt/created-prompt',
+        }),
+        expect.objectContaining({
+          id: `view:prompt:prompt_viewed_1:${promptViewedAt.toISOString()}`,
+          targetPath: '/prompt/viewed-prompt',
         }),
       ]),
     );
@@ -142,6 +179,8 @@ describe('AuthService profile lists', () => {
     const likedNewest = new Date('2026-03-29T11:55:00.000Z');
     const likedOlder = new Date('2026-03-29T11:35:00.000Z');
     const createdMid = new Date('2026-03-29T11:50:00.000Z');
+    const promptViewedLatest = new Date('2026-03-29T12:05:00.000Z');
+    const postViewedMid = new Date('2026-03-29T11:52:00.000Z');
 
     const savedFindMany = vi.fn().mockResolvedValue([
       {
@@ -176,6 +215,31 @@ describe('AuthService profile lists', () => {
         createdAt: createdMid,
       },
     ]);
+    const promptViewFindMany = vi.fn().mockResolvedValue([
+      {
+        promptId: 'prompt_view_latest',
+        lastViewedAt: promptViewedLatest,
+        prompt: {
+          id: 'prompt_view_latest',
+          title: 'Viewed Latest',
+          slug: 'viewed-latest',
+          featuredImageUrl: null,
+        },
+      },
+    ]);
+    const postViewFindMany = vi.fn().mockResolvedValue([
+      {
+        postId: 'post_view_mid',
+        lastViewedAt: postViewedMid,
+        post: {
+          id: 'post_view_mid',
+          title: 'Viewed Blog',
+          slug: 'viewed-blog',
+          featuredImageUrl: null,
+          tags: [],
+        },
+      },
+    ]);
 
     const prisma = {
       user: {
@@ -193,16 +257,24 @@ describe('AuthService profile lists', () => {
         count: vi.fn().mockResolvedValue(1),
         findMany: promptFindMany,
       },
+      promptView: {
+        count: vi.fn().mockResolvedValue(1),
+        findMany: promptViewFindMany,
+      },
+      postView: {
+        count: vi.fn().mockResolvedValue(1),
+        findMany: postViewFindMany,
+      },
       $transaction: vi.fn(async (input: unknown[]) => Promise.all(input)),
     } as unknown as ConstructorParameters<typeof AuthService>[0];
 
     const service = new AuthService(prisma, createConfigService());
     const response = await service.getProfileActivity('user_1', 1, 2);
 
-    expect(response.total).toBe(5);
+    expect(response.total).toBe(7);
     expect(response.items).toHaveLength(2);
-    expect(response.items[0].id).toBe(`like:prompt_like_new:${likedNewest.toISOString()}`);
-    expect(response.items[1].id).toBe('create:prompt_create_mid');
+    expect(response.items[0].id).toBe(`save:prompt_save_new:${savedNewest.toISOString()}`);
+    expect(response.items[1].id).toBe(`like:prompt_like_new:${likedNewest.toISOString()}`);
 
     expect(savedFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -219,6 +291,51 @@ describe('AuthService profile lists', () => {
         take: 3,
       }),
     );
+    expect(promptViewFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 3,
+      }),
+    );
+    expect(postViewFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 3,
+      }),
+    );
+  });
+
+  it('excludes views for content that is no longer published', async () => {
+    const prisma = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'user_1' }),
+      },
+      savedPrompt: {
+        count: vi.fn().mockResolvedValue(0),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      promptLike: {
+        count: vi.fn().mockResolvedValue(0),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      prompt: {
+        count: vi.fn().mockResolvedValue(0),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      promptView: {
+        count: vi.fn().mockResolvedValue(0),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      postView: {
+        count: vi.fn().mockResolvedValue(0),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      $transaction: vi.fn(async (input: unknown[]) => Promise.all(input)),
+    } as unknown as ConstructorParameters<typeof AuthService>[0];
+
+    const service = new AuthService(prisma, createConfigService());
+    const response = await service.getProfileActivity('user_1', 0, 20);
+
+    expect(response.total).toBe(0);
+    expect(response.items).toEqual([]);
   });
 
   it('returns paginated saved prompts with slugs', async () => {

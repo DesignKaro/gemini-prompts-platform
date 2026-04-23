@@ -266,7 +266,7 @@ export class CategoriesService {
             ? undefined
             : data.parentId
               ? { connect: { id: data.parentId } }
-            : { disconnect: true },
+              : { disconnect: true },
       },
     });
     await this.syncCategoryMediaUsage(category.id, category.imageUrl);
@@ -320,7 +320,10 @@ export class CategoriesService {
 
       const promptsWithCategory = await tx.prompt.findMany({
         where: { categories: { some: { id } } },
-        select: { id: true, categories: { where: { id: fallbackCategory.id }, select: { id: true } } },
+        select: {
+          id: true,
+          categories: { where: { id: fallbackCategory.id }, select: { id: true } },
+        },
       });
 
       for (const prompt of promptsWithCategory) {
@@ -337,7 +340,10 @@ export class CategoriesService {
 
       const postsWithCategory = await tx.post.findMany({
         where: { categories: { some: { id } } },
-        select: { id: true, categories: { where: { id: fallbackCategory.id }, select: { id: true } } },
+        select: {
+          id: true,
+          categories: { where: { id: fallbackCategory.id }, select: { id: true } },
+        },
       });
 
       for (const post of postsWithCategory) {
@@ -354,7 +360,10 @@ export class CategoriesService {
 
       const collabsWithCategory = await tx.collab.findMany({
         where: { categories: { some: { id } } },
-        select: { id: true, categories: { where: { id: fallbackCategory.id }, select: { id: true } } },
+        select: {
+          id: true,
+          categories: { where: { id: fallbackCategory.id }, select: { id: true } },
+        },
       });
 
       for (const collab of collabsWithCategory) {

@@ -228,9 +228,9 @@ export class PublicService {
     return hydrated[0] ?? item;
   }
 
-  private async hydrateGalleryImageRefs<
-    T extends { galleryImageUrls?: Prisma.JsonValue | null },
-  >(items: T[]): Promise<Array<T & { galleryImageUrls: string[] }>> {
+  private async hydrateGalleryImageRefs<T extends { galleryImageUrls?: Prisma.JsonValue | null }>(
+    items: T[],
+  ): Promise<Array<T & { galleryImageUrls: string[] }>> {
     const normalizedItems = items.map((item) => ({
       item,
       gallery: this.normalizeGalleryImageUrls(item.galleryImageUrls),
@@ -268,7 +268,9 @@ export class PublicService {
           }
           return assetMap.get(refId) ?? null;
         })
-        .filter((imageUrl): imageUrl is string => typeof imageUrl === 'string' && imageUrl.length > 0),
+        .filter(
+          (imageUrl): imageUrl is string => typeof imageUrl === 'string' && imageUrl.length > 0,
+        ),
     }));
   }
 
@@ -608,7 +610,8 @@ export class PublicService {
     }
 
     this.contactSubmissionTableBootstrapInFlight = this.prisma
-      .$executeRawUnsafe(`
+      .$executeRawUnsafe(
+        `
       CREATE TABLE IF NOT EXISTS \`ContactSubmission\` (
         \`id\` VARCHAR(191) NOT NULL,
         \`name\` VARCHAR(120) NOT NULL,
@@ -633,7 +636,8 @@ export class PublicService {
         INDEX \`ContactSubmission_status_createdAt_idx\`(\`status\`, \`createdAt\`),
         INDEX \`ContactSubmission_reviewedById_idx\`(\`reviewedById\`)
       ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-    `)
+    `,
+      )
       .then(() => undefined);
 
     try {
@@ -1160,7 +1164,7 @@ export class PublicService {
       metaDescription: compact
         ? this.compactText(post.metaDescription ?? null, 220)
         : (post.metaDescription ?? null),
-      content: isLocked ? null : compactedContent ?? '',
+      content: isLocked ? null : (compactedContent ?? ''),
       postType: post.postType,
       postFormat: post.postFormat,
       visibility: post.visibility,
@@ -2809,7 +2813,9 @@ export class PublicService {
     const now = new Date();
     const includeExclusive =
       visibilityMode !== 'viewer' || this.canAccessExclusiveContent(resolvedViewer);
-    const categoryIdSql = Prisma.join(uniqueCategoryIds.map((categoryId) => Prisma.sql`${categoryId}`));
+    const categoryIdSql = Prisma.join(
+      uniqueCategoryIds.map((categoryId) => Prisma.sql`${categoryId}`),
+    );
     const visibilityFilter = includeExclusive
       ? Prisma.sql``
       : Prisma.sql`AND p.visibility = ${PromptVisibility.FREE}`;
@@ -3315,26 +3321,28 @@ export class PublicService {
       hydratedCategories.map((category) => category.id),
       resolvedViewer,
     );
-        const categories = hydratedCategories
-          .map((category) => {
-            const promptCount = promptCountMap.get(category.id) ?? 0;
-            const postCount = postCountMap.get(category.id) ?? 0;
-            return {
-              id: category.id,
-              name: category.name,
-              slug: category.slug,
-              description: category.description,
-              imageUrl: this.sanitizePublicMediaUrl(category.imageUrl),
-              promptCount,
-              postCount,
-              totalCount: promptCount + postCount,
-            };
-          })
+    const categories = hydratedCategories
+      .map((category) => {
+        const promptCount = promptCountMap.get(category.id) ?? 0;
+        const postCount = postCountMap.get(category.id) ?? 0;
+        return {
+          id: category.id,
+          name: category.name,
+          slug: category.slug,
+          description: category.description,
+          imageUrl: this.sanitizePublicMediaUrl(category.imageUrl),
+          promptCount,
+          postCount,
+          totalCount: promptCount + postCount,
+        };
+      })
       .sort((a, b) => {
         const aName = a.name.toLowerCase();
         const bName = b.name.toLowerCase();
-        const aScore = Number(aName.startsWith(normalizedTerm)) * 2 + Number(aName === normalizedTerm);
-        const bScore = Number(bName.startsWith(normalizedTerm)) * 2 + Number(bName === normalizedTerm);
+        const aScore =
+          Number(aName.startsWith(normalizedTerm)) * 2 + Number(aName === normalizedTerm);
+        const bScore =
+          Number(bName.startsWith(normalizedTerm)) * 2 + Number(bName === normalizedTerm);
         return bScore - aScore || b.totalCount - a.totalCount || a.name.localeCompare(b.name);
       })
       .slice(0, taxonomyLimit);
@@ -3352,8 +3360,10 @@ export class PublicService {
       .sort((a, b) => {
         const aName = a.name.toLowerCase();
         const bName = b.name.toLowerCase();
-        const aScore = Number(aName.startsWith(normalizedTerm)) * 2 + Number(aName === normalizedTerm);
-        const bScore = Number(bName.startsWith(normalizedTerm)) * 2 + Number(bName === normalizedTerm);
+        const aScore =
+          Number(aName.startsWith(normalizedTerm)) * 2 + Number(aName === normalizedTerm);
+        const bScore =
+          Number(bName.startsWith(normalizedTerm)) * 2 + Number(bName === normalizedTerm);
         return bScore - aScore || b.usage - a.usage || a.name.localeCompare(b.name);
       })
       .slice(0, tagLimit);
@@ -3588,11 +3598,7 @@ export class PublicService {
     };
   }
 
-  async createNewsletterSubmission(input: {
-    email: string;
-    source: string;
-    pagePath?: string;
-  }) {
+  async createNewsletterSubmission(input: { email: string; source: string; pagePath?: string }) {
     const email = input.email?.trim().toLowerCase();
     const source = input.source?.trim();
     const pagePath = input.pagePath?.trim() || null;

@@ -227,7 +227,8 @@ export default async function TagsArchivePage({ searchParams }: PageProps) {
   const page = Math.max(1, Number.parseInt(resolvedSearchParams?.page ?? '1', 10) || 1);
   const seoSettings = await getSeoSettings();
   const baseUrl = getNormalizedBaseUrl(seoSettings);
-  const shouldNoIndex = seoSettings.noindexTagPages || (page > 1 && seoSettings.noindexPaginatedArchives);
+  const shouldNoIndex =
+    seoSettings.noindexTagPages || (page > 1 && seoSettings.noindexPaginatedArchives);
 
   return (
     <main className="page-shell bg-white">

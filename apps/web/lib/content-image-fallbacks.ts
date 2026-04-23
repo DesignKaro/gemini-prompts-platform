@@ -50,11 +50,15 @@ function pickDeterministicFallback(key: string, fallbacks: string[]) {
 }
 
 export function resolvePromptImage(image?: string | null, key?: string | null) {
-  return normalizeImage(image) ?? pickDeterministicFallback(key?.trim() || '', PROMPT_IMAGE_FALLBACKS);
+  return (
+    normalizeImage(image) ?? pickDeterministicFallback(key?.trim() || '', PROMPT_IMAGE_FALLBACKS)
+  );
 }
 
 export function resolvePostImage(image?: string | null, key?: string | null) {
-  return normalizeImage(image) ?? pickDeterministicFallback(key?.trim() || '', POST_IMAGE_FALLBACKS);
+  return (
+    normalizeImage(image) ?? pickDeterministicFallback(key?.trim() || '', POST_IMAGE_FALLBACKS)
+  );
 }
 
 export function resolveCategoryImage(image?: string | null, key?: string | null) {

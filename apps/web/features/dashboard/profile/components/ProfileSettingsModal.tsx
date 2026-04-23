@@ -92,7 +92,9 @@ export function ProfileSettingsModal({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[0.8rem] text-[#7a8292]">Profile</p>
-            <h2 className="text-[1.25rem] font-medium text-[#0f1116] sm:text-[1.4rem]">Edit profile</h2>
+            <h2 className="text-[1.25rem] font-medium text-[#0f1116] sm:text-[1.4rem]">
+              Edit profile
+            </h2>
           </div>
           <button
             type="button"

@@ -214,8 +214,14 @@ export function buildFaqSchema(url: string, items: FaqItemInput[], idSuffix = 'f
         },
       };
     })
-    .filter((item): item is { '@type': 'Question'; name: string; acceptedAnswer: { '@type': 'Answer'; text: string } } =>
-      Boolean(item),
+    .filter(
+      (
+        item,
+      ): item is {
+        '@type': 'Question';
+        name: string;
+        acceptedAnswer: { '@type': 'Answer'; text: string };
+      } => Boolean(item),
     );
 
   if (mainEntity.length === 0) {
@@ -336,12 +342,7 @@ export function buildProfileSchemas(input: ProfileSchemaInput): StructuredSchema
 }
 
 export function buildPromptSchema(input: PromptSchemaInput) {
-  const keywords = [
-    input.categoryName,
-    input.promptType,
-    input.visibility,
-    ...(input.tags ?? []),
-  ]
+  const keywords = [input.categoryName, input.promptType, input.visibility, ...(input.tags ?? [])]
     .map((value) => normalizeText(value ?? null))
     .filter((value): value is string => Boolean(value));
 

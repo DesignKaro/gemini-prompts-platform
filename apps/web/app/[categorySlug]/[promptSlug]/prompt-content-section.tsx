@@ -69,7 +69,9 @@ export function PromptContentSection({
 }: PromptContentSectionProps) {
   return (
     <>
-      {promptImageSlides.length > 0 ? <PromptImageSlider title={title} images={promptImageSlides} /> : null}
+      {promptImageSlides.length > 0 ? (
+        <PromptImageSlider title={title} images={promptImageSlides} />
+      ) : null}
 
       <section className="scroll-mt-24">
         <h2 className="text-[1.55rem] font-medium tracking-[-0.02em] text-[#0b0f18]">Prompt</h2>

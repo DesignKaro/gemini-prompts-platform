@@ -26,17 +26,19 @@ export class RedirectRulesService {
   constructor(private readonly prisma: PrismaService) {}
 
   private get redirectRuleDelegate() {
-    return (this.prisma as PrismaService & {
-      redirectRule: {
-        findMany: (args: Record<string, unknown>) => Promise<RedirectRuleRecord[]>;
-        count: (args: Record<string, unknown>) => Promise<number>;
-        create: (args: Record<string, unknown>) => Promise<RedirectRuleRecord>;
-        findUnique: (args: Record<string, unknown>) => Promise<RedirectRuleRecord | null>;
-        update: (args: Record<string, unknown>) => Promise<RedirectRuleRecord>;
-        findFirst: (args: Record<string, unknown>) => Promise<RedirectRuleRecord | null>;
-        delete: (args: Record<string, unknown>) => Promise<RedirectRuleRecord>;
-      };
-    }).redirectRule;
+    return (
+      this.prisma as PrismaService & {
+        redirectRule: {
+          findMany: (args: Record<string, unknown>) => Promise<RedirectRuleRecord[]>;
+          count: (args: Record<string, unknown>) => Promise<number>;
+          create: (args: Record<string, unknown>) => Promise<RedirectRuleRecord>;
+          findUnique: (args: Record<string, unknown>) => Promise<RedirectRuleRecord | null>;
+          update: (args: Record<string, unknown>) => Promise<RedirectRuleRecord>;
+          findFirst: (args: Record<string, unknown>) => Promise<RedirectRuleRecord | null>;
+          delete: (args: Record<string, unknown>) => Promise<RedirectRuleRecord>;
+        };
+      }
+    ).redirectRule;
   }
 
   async list(options: { skip?: number; take?: number; search?: string }) {
@@ -44,10 +46,7 @@ export class RedirectRulesService {
     const search = options.search?.trim();
     const where = search
       ? {
-          OR: [
-            { sourcePath: { contains: search } },
-            { destinationPath: { contains: search } },
-          ],
+          OR: [{ sourcePath: { contains: search } }, { destinationPath: { contains: search } }],
         }
       : undefined;
 

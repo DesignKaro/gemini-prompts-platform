@@ -74,8 +74,8 @@ export default async function DisclaimerPage() {
           <div className={LEGAL_CONTENT_CLASS}>
             <h2>1. General Disclaimer</h2>
             <p>
-              The information and content available on <strong>GeminiPrompts.io</strong> (&quot;we,&quot;
-              &quot;our,&quot; or &quot;us&quot;) are provided strictly for{' '}
+              The information and content available on <strong>GeminiPrompts.io</strong>{' '}
+              (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) are provided strictly for{' '}
               <strong>general informational and educational purposes only</strong>. While we make
               every effort to keep the content accurate, up to date, and useful, we make no
               representations or warranties of any kind — express or implied — about the
@@ -124,7 +124,9 @@ export default async function DisclaimerPage() {
             </p>
 
             <h2>4. Accuracy and Completeness</h2>
-            <p>We strive to provide accurate and current information, but we do not warrant that:</p>
+            <p>
+              We strive to provide accurate and current information, but we do not warrant that:
+            </p>
             <ul>
               <li>All content on the site is error-free, complete, or current at all times.</li>
               <li>The prompts will produce the intended results on any specific AI platform.</li>
@@ -186,7 +188,9 @@ export default async function DisclaimerPage() {
             </p>
 
             <h2>10. Contact Us</h2>
-            <p>If you have any questions or concerns about this Disclaimer, please reach out to us:</p>
+            <p>
+              If you have any questions or concerns about this Disclaimer, please reach out to us:
+            </p>
             <p>
               <strong>GeminiPrompts.io</strong>
               <br />

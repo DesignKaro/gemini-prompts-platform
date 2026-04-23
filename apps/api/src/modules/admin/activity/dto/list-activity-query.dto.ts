@@ -1,10 +1,7 @@
 import { AuditAction, AuditTargetType } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
-import {
-  toOptionalInt,
-  toOptionalTrimmedString,
-} from '../../../../common/dto/query-transformers';
+import { toOptionalInt, toOptionalTrimmedString } from '../../../../common/dto/query-transformers';
 import { PaginationQueryDto } from '../../dto/pagination-query.dto';
 
 export enum ActivitySortOrder {

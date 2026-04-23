@@ -14,5 +14,8 @@ export function formatSubmissionTimestamp(value: string | null) {
 }
 
 export function formatStatusLabel(status: ContactSubmissionStatus) {
-  return status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (value) => value.toUpperCase());
+  return status
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (value) => value.toUpperCase());
 }

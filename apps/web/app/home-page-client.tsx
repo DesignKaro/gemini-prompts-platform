@@ -1248,7 +1248,11 @@ export default function HomePageClient({
   }, [activeWatchReadListenCategory, topWatchReadListenCategories]);
 
   useEffect(() => {
-    if (initialLatestPrompts && activeWatchReadListenCategory === 'all' && watchReadListenCurrentPage === 1) {
+    if (
+      initialLatestPrompts &&
+      activeWatchReadListenCategory === 'all' &&
+      watchReadListenCurrentPage === 1
+    ) {
       return;
     }
     void loadWatchReadListenPrompts({
@@ -1553,7 +1557,9 @@ export default function HomePageClient({
     const firstCard = slider.querySelector<HTMLElement>('[data-category-pill]');
     const sliderStyles = window.getComputedStyle(slider);
     const gap = Number.parseFloat(sliderStyles.columnGap || sliderStyles.gap || '0');
-    const scrollAmount = firstCard ? firstCard.offsetWidth + gap : Math.round(slider.clientWidth * 0.72);
+    const scrollAmount = firstCard
+      ? firstCard.offsetWidth + gap
+      : Math.round(slider.clientWidth * 0.72);
 
     slider.scrollBy({
       left: direction === 'next' ? scrollAmount : -scrollAmount,
@@ -1570,7 +1576,9 @@ export default function HomePageClient({
     const firstCard = slider.querySelector<HTMLElement>('[data-trending-prompt-card]');
     const sliderStyles = window.getComputedStyle(slider);
     const gap = Number.parseFloat(sliderStyles.columnGap || sliderStyles.gap || '0');
-    const scrollAmount = firstCard ? firstCard.offsetWidth + gap : Math.round(slider.clientWidth * 0.86);
+    const scrollAmount = firstCard
+      ? firstCard.offsetWidth + gap
+      : Math.round(slider.clientWidth * 0.86);
 
     slider.scrollBy({
       left: direction === 'next' ? scrollAmount : -scrollAmount,
@@ -1768,14 +1776,12 @@ export default function HomePageClient({
               <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white via-white/35 to-transparent sm:hidden" />
             </div>
           </div>
-
         </div>
       </section>
 
       {/* Start counter section */}
       <section className="bg-[#f8f8f8] px-4 py-10 sm:px-6 sm:py-10 lg:px-8 lg:py-10">
         <div className="page-container-wide grid gap-8 lg:grid-cols-[0.4fr_0.6fr] lg:items-center lg:gap-10">
-          
           {/* Left: Heading and description */}
           <div className="flex w-full flex-col gap-5">
             <h2 className="font-poppins text-[1.8rem] font-medium tracking-[-0.04em] text-[#101010] sm:text-[2.25rem] lg:text-[2.7rem] lg:leading-[1.2]">
@@ -1790,42 +1796,42 @@ export default function HomePageClient({
           {/* Right: Counters */}
           <div className="flex w-full items-center pt-3 sm:pt-4 lg:justify-self-start lg:pt-0">
             <div className="grid w-full grid-cols-2 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-4 lg:gap-6">
-            <div className="flex flex-col items-center text-center">
-              <AnimatedCounter
-                value="5k+"
-                className="font-poppins text-[3rem] font-light leading-[0.92] tracking-[-0.06em] text-[#101010] sm:text-[5rem]"
-              />
-              <span className="mt-6 text-[1rem] font-normal leading-[1.2] tracking-[-0.03em] text-[#101010] sm:text-[1.05rem]">
-                Prompts
-              </span>
-            </div>
-            <div className="flex flex-col items-center text-center">
-              <AnimatedCounter
-                value="100k+"
-                className="font-poppins text-[3rem] font-light leading-[0.92] tracking-[-0.06em] text-[#101010] sm:text-[5rem]"
-              />
-              <span className="mt-6 text-[1rem] font-normal leading-[1.2] tracking-[-0.03em] text-[#101010] sm:text-[1.05rem]">
-                All Users
-              </span>
-            </div>
-            <div className="flex flex-col items-center text-center">
-              <AnimatedCounter
-                value="49k+"
-                className="font-poppins text-[3rem] font-light leading-[0.92] tracking-[-0.06em] text-[#101010] sm:text-[5rem]"
-              />
-              <span className="mt-6 text-[1rem] font-normal leading-[1.2] tracking-[-0.03em] text-[#101010] sm:text-[1.05rem]">
-                Subscribers
-              </span>
-            </div>
-            <div className="flex flex-col items-center text-center">
-              <AnimatedCounter
-                value="100+"
-                className="font-poppins text-[3rem] font-light leading-[0.92] tracking-[-0.06em] text-[#101010] sm:text-[5rem]"
-              />
-              <span className="mt-6 text-[1rem] font-normal leading-[1.2] tracking-[-0.03em] text-[#101010] sm:text-[1.05rem]">
-                Posts
-              </span>
-            </div>
+              <div className="flex flex-col items-center text-center">
+                <AnimatedCounter
+                  value="5k+"
+                  className="font-poppins text-[3rem] font-light leading-[0.92] tracking-[-0.06em] text-[#101010] sm:text-[5rem]"
+                />
+                <span className="mt-6 text-[1rem] font-normal leading-[1.2] tracking-[-0.03em] text-[#101010] sm:text-[1.05rem]">
+                  Prompts
+                </span>
+              </div>
+              <div className="flex flex-col items-center text-center">
+                <AnimatedCounter
+                  value="100k+"
+                  className="font-poppins text-[3rem] font-light leading-[0.92] tracking-[-0.06em] text-[#101010] sm:text-[5rem]"
+                />
+                <span className="mt-6 text-[1rem] font-normal leading-[1.2] tracking-[-0.03em] text-[#101010] sm:text-[1.05rem]">
+                  All Users
+                </span>
+              </div>
+              <div className="flex flex-col items-center text-center">
+                <AnimatedCounter
+                  value="49k+"
+                  className="font-poppins text-[3rem] font-light leading-[0.92] tracking-[-0.06em] text-[#101010] sm:text-[5rem]"
+                />
+                <span className="mt-6 text-[1rem] font-normal leading-[1.2] tracking-[-0.03em] text-[#101010] sm:text-[1.05rem]">
+                  Subscribers
+                </span>
+              </div>
+              <div className="flex flex-col items-center text-center">
+                <AnimatedCounter
+                  value="100+"
+                  className="font-poppins text-[3rem] font-light leading-[0.92] tracking-[-0.06em] text-[#101010] sm:text-[5rem]"
+                />
+                <span className="mt-6 text-[1rem] font-normal leading-[1.2] tracking-[-0.03em] text-[#101010] sm:text-[1.05rem]">
+                  Posts
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -1991,7 +1997,6 @@ export default function HomePageClient({
               </button>
             </div>
           </div>
-
         </div>
       </section>
 
@@ -2960,9 +2965,7 @@ export default function HomePageClient({
             <div className="mt-7 flex items-center justify-center gap-3">
               <button
                 type="button"
-                onClick={() =>
-                  setWatchReadListenCurrentPage((current) => Math.max(1, current - 1))
-                }
+                onClick={() => setWatchReadListenCurrentPage((current) => Math.max(1, current - 1))}
                 disabled={watchReadListenCurrentPage === 1 || isWatchReadListenLoadingInitial}
                 className="rounded-full border border-[#d1d7e1] bg-white px-4 py-2 text-[0.88rem] text-[#111111] transition-colors hover:border-[#b9c1cf] disabled:cursor-not-allowed disabled:opacity-55"
               >
@@ -2998,8 +3001,8 @@ export default function HomePageClient({
               Real Image Use Cases
             </h2>
             <p className="mx-auto mt-4 max-w-[44rem] text-[0.98rem] leading-7 text-[#667085] sm:text-[1.04rem]">
-              See how creators use Gemini Prompts to plan concepts, generate better visuals, and
-              get consistent image results with less guesswork.
+              See how creators use Gemini Prompts to plan concepts, generate better visuals, and get
+              consistent image results with less guesswork.
             </p>
           </div>
 
@@ -3104,10 +3107,7 @@ export default function HomePageClient({
                 const isOpen = openFaqId === item.id;
 
                 return (
-                  <div
-                    key={item.id}
-                    className="py-5"
-                  >
+                  <div key={item.id} className="py-5">
                     <button
                       type="button"
                       onClick={() => toggleFaq(item.id)}

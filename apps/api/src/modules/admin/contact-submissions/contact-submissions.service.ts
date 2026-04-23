@@ -130,7 +130,8 @@ export class ContactSubmissionsService {
     }
 
     this.tableBootstrapInFlight = this.prisma
-      .$executeRawUnsafe(`
+      .$executeRawUnsafe(
+        `
       CREATE TABLE IF NOT EXISTS \`ContactSubmission\` (
         \`id\` VARCHAR(191) NOT NULL,
         \`name\` VARCHAR(120) NOT NULL,
@@ -155,7 +156,8 @@ export class ContactSubmissionsService {
         INDEX \`ContactSubmission_status_createdAt_idx\`(\`status\`, \`createdAt\`),
         INDEX \`ContactSubmission_reviewedById_idx\`(\`reviewedById\`)
       ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-    `)
+    `,
+      )
       .then(() => undefined);
 
     try {
@@ -193,7 +195,9 @@ export class ContactSubmissionsService {
     const whereClause =
       conditions.length > 0 ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}` : Prisma.empty;
     const orderByClause =
-      options.sort === 'oldest' ? Prisma.sql`ORDER BY createdAt ASC` : Prisma.sql`ORDER BY createdAt DESC`;
+      options.sort === 'oldest'
+        ? Prisma.sql`ORDER BY createdAt ASC`
+        : Prisma.sql`ORDER BY createdAt DESC`;
 
     return this.withContactSubmissionTableRecovery(async () => {
       const [items, totalRows, sourceRows] = await Promise.all([

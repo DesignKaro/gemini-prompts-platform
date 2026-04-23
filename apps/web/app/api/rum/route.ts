@@ -103,7 +103,8 @@ function summarizeRumRecords(
         name,
         samples: bucket.length,
         p75: percentile(values, 0.75),
-        avg: bucket.length > 0 ? values.reduce((sum, value) => sum + value, 0) / bucket.length : null,
+        avg:
+          bucket.length > 0 ? values.reduce((sum, value) => sum + value, 0) / bucket.length : null,
         poorRate: bucket.length > 0 ? poorCount / bucket.length : 0,
       };
     })
@@ -147,9 +148,7 @@ export async function GET(request: Request) {
       : 7;
   const deviceTypeParam = (url.searchParams.get('deviceType') || 'mobile').toLowerCase();
   const deviceType: 'mobile' | 'tablet' | 'desktop' | 'all' =
-    deviceTypeParam === 'tablet' ||
-    deviceTypeParam === 'desktop' ||
-    deviceTypeParam === 'all'
+    deviceTypeParam === 'tablet' || deviceTypeParam === 'desktop' || deviceTypeParam === 'all'
       ? deviceTypeParam
       : 'mobile';
 

@@ -156,8 +156,11 @@ export function usePromptInteractions({
   syncAnonymousStatus = false,
 }: UsePromptInteractionsOptions) {
   const sessionContext = useContext(SessionContext);
-  const { data: session, status: sessionStatus, update } =
-    sessionContext ?? FALLBACK_SESSION_CONTEXT;
+  const {
+    data: session,
+    status: sessionStatus,
+    update,
+  } = sessionContext ?? FALLBACK_SESSION_CONTEXT;
   const [likedByIp, setLikedByIp] = useState(false);
   const [savedByUser, setSavedByUser] = useState(false);
   const [statusReady, setStatusReady] = useState(false);

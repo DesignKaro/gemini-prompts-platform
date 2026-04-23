@@ -26,7 +26,10 @@ function messageFromPayload(payload) {
   if (!payload) return null;
   if (typeof payload === 'string') return payload.trim() || null;
   if (Array.isArray(payload?.message)) {
-    const joined = payload.message.map((entry) => String(entry).trim()).filter(Boolean).join('. ');
+    const joined = payload.message
+      .map((entry) => String(entry).trim())
+      .filter(Boolean)
+      .join('. ');
     return joined || null;
   }
   if (typeof payload?.message === 'string' && payload.message.trim()) {
@@ -104,14 +107,18 @@ async function run() {
       description: 'Smoke category',
     },
   });
-  cleanupTasks.push(() => request('cleanup.categories.delete', `/admin/categories/${category.id}`, { method: 'DELETE' }));
+  cleanupTasks.push(() =>
+    request('cleanup.categories.delete', `/admin/categories/${category.id}`, { method: 'DELETE' }),
+  );
 
   await request('categories.update', `/admin/categories/${category.id}`, {
     method: 'PATCH',
     body: { description: 'Smoke category updated' },
   });
   await request('categories.delete', `/admin/categories/${category.id}`, { method: 'DELETE' });
-  await request('categories.restore', `/admin/categories/${category.id}/restore`, { method: 'PATCH' });
+  await request('categories.restore', `/admin/categories/${category.id}/restore`, {
+    method: 'PATCH',
+  });
 
   const tagSlug = `smoke-tag-${randomSuffix()}`;
   const tag = await request('tags.create', '/admin/tags', {
@@ -122,7 +129,9 @@ async function run() {
       color: '#334155',
     },
   });
-  cleanupTasks.push(() => request('cleanup.tags.delete', `/admin/tags/${tag.id}`, { method: 'DELETE' }));
+  cleanupTasks.push(() =>
+    request('cleanup.tags.delete', `/admin/tags/${tag.id}`, { method: 'DELETE' }),
+  );
 
   await request('tags.update', `/admin/tags/${tag.id}`, {
     method: 'PATCH',
@@ -176,7 +185,9 @@ async function run() {
       tagIds: [tag.id],
     },
   });
-  cleanupTasks.push(() => request('cleanup.prompts.delete', `/admin/prompts/${prompt.id}`, { method: 'DELETE' }));
+  cleanupTasks.push(() =>
+    request('cleanup.prompts.delete', `/admin/prompts/${prompt.id}`, { method: 'DELETE' }),
+  );
 
   await request('prompts.update', `/admin/prompts/${prompt.id}`, {
     method: 'PATCH',
@@ -215,7 +226,9 @@ async function run() {
       tagIds: [tag.id],
     },
   });
-  cleanupTasks.push(() => request('cleanup.posts.delete', `/admin/posts/${post.id}`, { method: 'DELETE' }));
+  cleanupTasks.push(() =>
+    request('cleanup.posts.delete', `/admin/posts/${post.id}`, { method: 'DELETE' }),
+  );
 
   await request('posts.update', `/admin/posts/${post.id}`, {
     method: 'PATCH',
@@ -238,7 +251,9 @@ async function run() {
       mime: 'image/png',
     },
   });
-  cleanupTasks.push(() => request('cleanup.media.delete', `/admin/media/${media.id}`, { method: 'DELETE' }));
+  cleanupTasks.push(() =>
+    request('cleanup.media.delete', `/admin/media/${media.id}`, { method: 'DELETE' }),
+  );
 
   await request('media.update', `/admin/media/${media.id}`, {
     method: 'PATCH',
@@ -256,7 +271,9 @@ async function run() {
       status: 'PENDING',
     },
   });
-  cleanupTasks.push(() => request('cleanup.comments.delete', `/admin/comments/${comment.id}`, { method: 'DELETE' }));
+  cleanupTasks.push(() =>
+    request('cleanup.comments.delete', `/admin/comments/${comment.id}`, { method: 'DELETE' }),
+  );
 
   await request('comments.reply', `/admin/comments/${comment.id}/reply`, {
     method: 'POST',
@@ -280,7 +297,9 @@ async function run() {
       permissionCodes: permissionCodes.slice(0, 2),
     },
   });
-  cleanupTasks.push(() => request('cleanup.roles.delete', `/admin/roles/${role.id}`, { method: 'DELETE' }));
+  cleanupTasks.push(() =>
+    request('cleanup.roles.delete', `/admin/roles/${role.id}`, { method: 'DELETE' }),
+  );
   await request('roles.update', `/admin/roles/${role.id}`, {
     method: 'PATCH',
     body: { description: 'Smoke role updated' },
@@ -296,7 +315,9 @@ async function run() {
       roleIds: [role.id],
     },
   });
-  cleanupTasks.push(() => request('cleanup.users.delete', `/admin/users/${user.id}`, { method: 'DELETE' }));
+  cleanupTasks.push(() =>
+    request('cleanup.users.delete', `/admin/users/${user.id}`, { method: 'DELETE' }),
+  );
 
   await request('users.update', `/admin/users/${user.id}`, {
     method: 'PATCH',
