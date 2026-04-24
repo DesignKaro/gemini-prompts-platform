@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { auth } from '../../../auth';
+import { AdsenseManualUnit } from '../../components/adsense-manual-unit';
 import AISummarizeWidget from '../../components/ai-summarize-widget';
 import { AuthorAvatar } from '../../components/author-avatar';
 import { ContentViewTracker } from '../../components/content-view-tracker';
@@ -290,10 +291,19 @@ async function NewsletterIssuePageContent({ params }: PageProps) {
                 <ExclusiveAccessCard contentLabel="newsletter issue" isSignedIn={isSignedIn} />
               </div>
             ) : (
-              <div className="prose prose-gray mt-12 max-w-none text-[1rem] leading-[1.85] text-[#3f4550]">
-                {/* eslint-disable-next-line react/no-danger */}
-                <div dangerouslySetInnerHTML={{ __html: post.content || '' }} />
-              </div>
+              <>
+                <AdsenseManualUnit
+                  slotName="postInline"
+                  format="fluid"
+                  layout="in-article"
+                  reserveHeightClassName="min-h-[280px]"
+                  className="mt-12 scroll-mt-24"
+                />
+                <div className="prose prose-gray mt-12 max-w-none text-[1rem] leading-[1.85] text-[#3f4550]">
+                  {/* eslint-disable-next-line react/no-danger */}
+                  <div dangerouslySetInnerHTML={{ __html: post.content || '' }} />
+                </div>
+              </>
             )}
 
             {post.tags.length > 0 ? (
@@ -308,6 +318,15 @@ async function NewsletterIssuePageContent({ params }: PageProps) {
                   </Link>
                 ))}
               </div>
+            ) : null}
+
+            {!post.isLocked ? (
+              <AdsenseManualUnit
+                slotName="postMultiplex"
+                format="autorelaxed"
+                reserveHeightClassName="min-h-[280px]"
+                className="mt-12 scroll-mt-24"
+              />
             ) : null}
 
             {post.relatedPosts && post.relatedPosts.length > 0 ? (

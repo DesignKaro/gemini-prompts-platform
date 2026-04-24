@@ -4,6 +4,7 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { auth } from '../../../auth';
 import AISummarizeWidget from '../../components/ai-summarize-widget';
+import { AdsenseManualUnit } from '../../components/adsense-manual-unit';
 import { AuthorAvatar } from '../../components/author-avatar';
 import { ContentViewTracker } from '../../components/content-view-tracker';
 import { ExclusiveAccessCard } from '../../components/exclusive-access-card';
@@ -371,6 +372,16 @@ async function PromptDetailPageContent({ params }: PageProps) {
                 promptContent={prompt.content}
               />
 
+              {!prompt.isLocked ? (
+                <AdsenseManualUnit
+                  slotName="promptInline"
+                  format="fluid"
+                  layout="in-article"
+                  reserveHeightClassName="min-h-[280px]"
+                  className="scroll-mt-24"
+                />
+              ) : null}
+
               {!prompt.isLocked && templateVariables.length > 0 ? (
                 <PromptVariableComposer template={promptText} variables={templateVariables} />
               ) : null}
@@ -399,6 +410,15 @@ async function PromptDetailPageContent({ params }: PageProps) {
                 initialCommentCount={prompt.commentCount}
                 readOnly={prompt.isLocked}
               />
+
+              {!prompt.isLocked ? (
+                <AdsenseManualUnit
+                  slotName="promptMultiplex"
+                  format="autorelaxed"
+                  reserveHeightClassName="min-h-[280px]"
+                  className="scroll-mt-24"
+                />
+              ) : null}
 
               {prompt.relatedPrompts && prompt.relatedPrompts.length > 0 ? (
                 <section className="scroll-mt-24">
