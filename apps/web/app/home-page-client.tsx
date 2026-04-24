@@ -947,7 +947,9 @@ export default function HomePageClient({
   const desktopCardHeight = 340;
   const mobileCardHeight = 160;
   const [activeTestimonial, setActiveTestimonial] = useState(0);
-  const [activeFaqCategory, setActiveFaqCategory] = useState(homeFaqCategories[0] ?? 'General');
+  const [activeFaqCategory, setActiveFaqCategory] = useState(
+    homeFaqCategories[0] ?? 'Gemini Prompt Basics',
+  );
   const [openFaqId, setOpenFaqId] = useState('');
   const [homeContent, setHomeContent] = useState<HomeResponse | null>(initialHomeContent);
   const [isHomeContentLoading, setIsHomeContentLoading] = useState(!initialHomeContent);
@@ -1687,8 +1689,7 @@ export default function HomePageClient({
 
   const setFaqCategory = (category: string) => {
     setActiveFaqCategory(category);
-    const firstItemInCategory = faqItems.find((item) => item.category === category);
-    setOpenFaqId(firstItemInCategory?.id ?? '');
+    setOpenFaqId('');
   };
 
   const toggleFaq = (id: string) => {
@@ -3073,20 +3074,20 @@ export default function HomePageClient({
       </section>
 
       <section className="reveal-section px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
-        <div className="page-container-wide rounded-[30px] bg-white px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
-          <div className="text-center">
-            <h2 className="section-heading-medium text-[1.8rem] leading-[1.08] tracking-[-0.05em] text-[#111827] sm:text-[2.05rem] lg:text-[2.25rem]">
-              Gemini Prompt FAQs
-            </h2>
-            <p className="mx-auto mt-4 max-w-[46rem] text-[0.98rem] leading-7 text-[#7a8191] sm:text-[1.05rem]">
-              Learn how to use every gemini prompt faster, from google gemini prompt basics to
-              gemini ai photo prompt styles for boys, girls, and creative niche concepts.
-            </p>
-          </div>
+        <div className="page-container-wide">
+          <div className="mx-auto w-full max-w-[1180px]">
+            <div className="text-center">
+              <h2 className="section-heading-medium text-[1.8rem] leading-[1.08] tracking-[-0.05em] text-[#111827] sm:text-[2.05rem] lg:text-[2.25rem]">
+                Gemini Prompt FAQs
+              </h2>
+              <p className="mx-auto mt-4 max-w-[46rem] text-[0.98rem] leading-7 text-[#7a8191] sm:text-[1.05rem]">
+                Learn how to use every gemini prompt faster, from google gemini prompt basics to
+                gemini ai photo prompt styles for boys, girls, and creative niche concepts.
+              </p>
+            </div>
 
-          <div className="mx-auto mt-8 w-full max-w-[800px]">
-            <div className="mb-5 flex flex-wrap items-center justify-center gap-2.5 sm:mb-6">
-              {homeFaqCategories.map((category: string) => {
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5 sm:mt-9 sm:gap-3">
+              {homeFaqCategories.map((category) => {
                 const isActive = activeFaqCategory === category;
 
                 return (
@@ -3094,7 +3095,7 @@ export default function HomePageClient({
                     key={category}
                     type="button"
                     onClick={() => setFaqCategory(category)}
-                    className={`rounded-full px-4 py-2 text-[0.92rem] transition-colors sm:px-5 sm:text-[0.98rem] ${isActive ? 'bg-[#d5ea52] text-[#101010]' : 'bg-[#f2f4f8] text-[#101010] hover:bg-[#e9edf3]'}`}
+                    className={`rounded-full border px-4 py-2 text-[0.92rem] transition-colors sm:px-5 sm:py-2.5 sm:text-[0.98rem] ${isActive ? 'border-[#151515] bg-[#151515] text-white' : 'border-[#e8e5de] bg-[#f6f5f1] text-[#2f2f2f] hover:border-[#d8d3c9]'}`}
                   >
                     {category}
                   </button>
@@ -3102,30 +3103,43 @@ export default function HomePageClient({
               })}
             </div>
 
-            <div className="rounded-[18px] bg-white px-4 sm:px-6">
+            <div className="mt-8 space-y-3 sm:mt-9 sm:space-y-4">
               {visibleFaqItems.map((item) => {
                 const isOpen = openFaqId === item.id;
 
                 return (
-                  <div key={item.id} className="py-5">
+                  <article
+                    key={item.id}
+                    className="overflow-hidden rounded-[22px] border border-[#e8e5de] bg-[#f6f5f1] shadow-[0_0_0_1px_rgba(255,255,255,0.35)_inset]"
+                  >
                     <button
                       type="button"
                       onClick={() => toggleFaq(item.id)}
-                      className="flex w-full items-center gap-4 text-left sm:items-start"
+                      aria-expanded={isOpen}
+                      className="flex w-full items-center justify-between gap-6 px-6 py-6 text-left sm:px-8 sm:py-7"
                     >
-                      <span className="inline-flex h-10 w-10 min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full bg-[#d5ea52] text-[1.6rem] font-medium leading-none text-[#101010] sm:mt-0.5 sm:h-7 sm:w-7 sm:min-h-7 sm:min-w-7 sm:text-[1.15rem] sm:font-normal">
-                        {isOpen ? '−' : '+'}
-                      </span>
-                      <span className="text-[1.08rem] leading-[1.35] tracking-[-0.01em] text-[#141922] sm:text-[1.28rem]">
+                      <span className="text-[1.18rem] leading-[1.25] tracking-[-0.03em] text-[#2f2f2f] sm:text-[1.32rem]">
                         {item.question}
                       </span>
+                      <span
+                        aria-hidden="true"
+                        className="relative h-7 w-7 shrink-0 text-[#151515] sm:h-8 sm:w-8"
+                      >
+                        <span className="absolute left-1/2 top-1/2 h-[2px] w-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current" />
+                        <span
+                          className={`absolute left-1/2 top-1/2 h-6 w-[2px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-current transition-opacity duration-200 ${isOpen ? 'opacity-0' : 'opacity-100'}`}
+                        />
+                      </span>
                     </button>
+
                     {isOpen ? (
-                      <p className="ml-11 mt-3 max-w-[52rem] text-[0.98rem] leading-8 text-[#5f6778] sm:text-[1.04rem]">
-                        {item.answer}
-                      </p>
+                      <div className="border-t border-[#e3e0d9] px-6 pb-6 pt-4 sm:px-8 sm:pb-7 sm:pt-5">
+                        <p className="max-w-[56rem] text-[0.98rem] leading-8 text-[#5e5b56] sm:text-[1.02rem]">
+                          {item.answer}
+                        </p>
+                      </div>
                     ) : null}
-                  </div>
+                  </article>
                 );
               })}
             </div>

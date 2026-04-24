@@ -52,7 +52,7 @@ export function PromptCardUI({ prompt, showReadTime = true }: PromptCardProps) {
   });
 
   return (
-    <article className="flex h-full flex-col rounded-[24px] bg-transparent">
+    <article className="group flex h-full flex-col rounded-[24px] bg-transparent">
       <div
         role="img"
         aria-label={prompt.title}
@@ -79,12 +79,12 @@ export function PromptCardUI({ prompt, showReadTime = true }: PromptCardProps) {
         {categorySlug ? (
           <Link
             href={`/${categorySlug}`}
-            className="absolute left-4 top-4 z-20 inline-flex h-9 items-center rounded-full bg-white/95 px-4 text-[0.78rem] font-[500] leading-none text-[#0b0f18] transition-colors hover:bg-white"
+            className="absolute left-4 top-4 z-20 inline-flex h-9 items-center rounded-full border border-white/20 bg-white/10 px-4 text-[0.78rem] font-[500] leading-none text-white opacity-0 backdrop-blur-md transition-all duration-300 hover:bg-white/20 group-hover:opacity-100"
           >
             {categoryName}
           </Link>
         ) : (
-          <span className="absolute left-4 top-4 z-20 inline-flex h-9 items-center rounded-full bg-white/95 px-4 text-[0.78rem] font-[500] leading-none text-[#0b0f18]">
+          <span className="absolute left-4 top-4 z-20 inline-flex h-9 items-center rounded-full border border-white/20 bg-white/10 px-4 text-[0.78rem] font-[500] leading-none text-white opacity-0 backdrop-blur-md transition-opacity duration-300 group-hover:opacity-100">
             {categoryName}
           </span>
         )}

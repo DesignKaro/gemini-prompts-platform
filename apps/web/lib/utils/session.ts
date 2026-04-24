@@ -13,7 +13,11 @@ const MEDIUM_REFRESH_COOLDOWN_MS = 15_000;
 const SOFT_REFRESH_COOLDOWN_MS = 5_000;
 const FAST_RETRY_COOLDOWN_MS = 2_000;
 const HARD_COOLDOWN_AUTH_ERRORS = new Set(['AccountSuspended']);
-const MEDIUM_COOLDOWN_AUTH_ERRORS = new Set(['RefreshAccessTokenError', 'GoogleTokenMissing']);
+const MEDIUM_COOLDOWN_AUTH_ERRORS = new Set([
+  'RefreshAccessTokenError',
+  'RefreshAccessTokenRetryableError',
+  'GoogleTokenMissing',
+]);
 const FAST_RETRY_AUTH_ERRORS = new Set(['GoogleBackendSyncFailed']);
 
 function resolveRefreshCooldownMs(authError?: string | null) {

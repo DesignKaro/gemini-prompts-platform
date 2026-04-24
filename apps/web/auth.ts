@@ -99,6 +99,20 @@ function optionalEnv(name: string): string | undefined {
   return value.trim();
 }
 
+function positiveIntEnv(name: string, fallback: number): number {
+  const value = optionalEnv(name);
+  if (!value) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
 const googleClientId = optionalEnv('GOOGLE_CLIENT_ID');
 const googleClientSecret = optionalEnv('GOOGLE_CLIENT_SECRET');
 const nextAuthSecret =
@@ -118,6 +132,20 @@ function isTruthyEnv(value: string | undefined): boolean {
 const apiBaseUrls = resolveApiBaseUrls();
 const authDebugEnabled = isTruthyEnv(optionalEnv('AUTH_DEBUG'));
 const SUSPENDED_ACCOUNT_MESSAGE = 'Your account has been suspended. Please contact support.';
+const DEFAULT_REFRESH_TOKEN_TTL_DAYS = 90;
+const DEFAULT_SESSION_UPDATE_AGE_SECONDS = 24 * 60 * 60;
+const refreshTokenTtlDays = positiveIntEnv(
+  'REFRESH_TOKEN_TTL_DAYS',
+  DEFAULT_REFRESH_TOKEN_TTL_DAYS,
+);
+const authSessionMaxAgeSeconds = positiveIntEnv(
+  'NEXTAUTH_SESSION_MAX_AGE_SECONDS',
+  refreshTokenTtlDays * 24 * 60 * 60,
+);
+const authSessionUpdateAgeSeconds = Math.min(
+  positiveIntEnv('NEXTAUTH_SESSION_UPDATE_AGE_SECONDS', DEFAULT_SESSION_UPDATE_AGE_SECONDS),
+  authSessionMaxAgeSeconds,
+);
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -280,6 +308,46 @@ function accessTokenExpired(token: JWT): boolean {
   return Date.now() >= expiresAt - refreshThresholdMs;
 }
 
+function isTerminalRefreshError(error: unknown): boolean {
+  if (!(error instanceof AuthApiError)) {
+    return false;
+  }
+
+  if (error.status === 400 || error.status === 401 || error.status === 403) {
+    return true;
+  }
+
+  const normalizedMessage = error.message.trim().toLowerCase();
+  return (
+    normalizedMessage.includes('refresh token is invalid or expired') ||
+    normalizedMessage.includes('refresh token is required')
+  );
+}
+
+function applyRefreshFailure(token: JWT, error: unknown): JWT {
+  if (error instanceof AuthApiError && isSuspendedAccountMessage(error.message)) {
+    token.authError = 'AccountSuspended';
+    token.authErrorMessage = SUSPENDED_ACCOUNT_MESSAGE;
+    token.apiAccessToken = undefined;
+    token.apiAccessTokenExpiresAt = undefined;
+    token.apiRefreshToken = undefined;
+    return token;
+  }
+
+  if (isTerminalRefreshError(error)) {
+    token.authError = 'RefreshAccessTokenError';
+    token.authErrorMessage = 'Session expired. Please sign in again.';
+    token.apiAccessToken = undefined;
+    token.apiAccessTokenExpiresAt = undefined;
+    token.apiRefreshToken = undefined;
+    return token;
+  }
+
+  token.authError = 'RefreshAccessTokenRetryableError';
+  token.authErrorMessage = 'Temporary session refresh issue. Retrying automatically.';
+  return token;
+}
+
 const authConfig: NextAuthConfig = {
   secret: nextAuthSecret,
   trustHost: true,
@@ -289,6 +357,11 @@ const authConfig: NextAuthConfig = {
   },
   session: {
     strategy: 'jwt',
+    maxAge: authSessionMaxAgeSeconds,
+    updateAge: authSessionUpdateAgeSeconds,
+  },
+  jwt: {
+    maxAge: authSessionMaxAgeSeconds,
   },
   providers: [
     ...(googleClientId && googleClientSecret
@@ -529,16 +602,7 @@ const authConfig: NextAuthConfig = {
           const refreshed = await refreshApiSession(token.apiRefreshToken);
           return mergeTokenFromApiResponse(token, refreshed);
         } catch (error) {
-          if (error instanceof AuthApiError && isSuspendedAccountMessage(error.message)) {
-            token.authError = 'AccountSuspended';
-            token.authErrorMessage = SUSPENDED_ACCOUNT_MESSAGE;
-          } else {
-            token.authError = 'RefreshAccessTokenError';
-            token.authErrorMessage = 'Session refresh failed.';
-          }
-          token.apiAccessToken = undefined;
-          token.apiAccessTokenExpiresAt = undefined;
-          token.apiRefreshToken = undefined;
+          return applyRefreshFailure(token, error);
         }
       }
 
@@ -547,16 +611,7 @@ const authConfig: NextAuthConfig = {
           const refreshed = await refreshApiSession(token.apiRefreshToken);
           return mergeTokenFromApiResponse(token, refreshed);
         } catch (error) {
-          if (error instanceof AuthApiError && isSuspendedAccountMessage(error.message)) {
-            token.authError = 'AccountSuspended';
-            token.authErrorMessage = SUSPENDED_ACCOUNT_MESSAGE;
-          } else {
-            token.authError = 'RefreshAccessTokenError';
-            token.authErrorMessage = 'Session refresh failed.';
-          }
-          token.apiAccessToken = undefined;
-          token.apiAccessTokenExpiresAt = undefined;
-          token.apiRefreshToken = undefined;
+          return applyRefreshFailure(token, error);
         }
       }
 

@@ -97,8 +97,10 @@ function ProfilePageContent() {
             ? 'Finishing Google sign-in. This can take a few seconds.'
             : session.authError === 'GoogleTokenMissing'
               ? 'Google login token was missing. Please sign out and sign in again.'
+              : session.authError === 'RefreshAccessTokenRetryableError'
+                ? 'Session refresh is temporarily unavailable. Retrying automatically.'
               : session.authError === 'RefreshAccessTokenError'
-                ? 'Session refresh failed. Please sign out and sign in again.'
+                ? 'Session expired. Please sign in again.'
                 : 'Login sync failed. Please sign out and sign in again.';
       const nextMessage =
         session.authError === 'AccountSuspended'
