@@ -156,9 +156,7 @@ export function SiteFooter() {
 
           {footerSections.map((section) => (
             <div key={section.title} className="min-w-0">
-              <h2 className="text-[1.05rem] capitalize text-white/88">
-                {section.title}
-              </h2>
+              <h2 className="text-[1.05rem] capitalize text-white/88">{section.title}</h2>
               <div className="mt-5 flex flex-col gap-3.5">
                 {section.links.map((link) => (
                   <FooterLinkItem

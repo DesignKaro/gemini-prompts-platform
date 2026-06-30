@@ -85,7 +85,9 @@ export function AdsenseManualUnit({
 
     try {
       const queue =
-        window.adsbygoogle && 'push' in window.adsbygoogle ? window.adsbygoogle : (window.adsbygoogle = []);
+        window.adsbygoogle && 'push' in window.adsbygoogle
+          ? window.adsbygoogle
+          : (window.adsbygoogle = []);
 
       queue.push({});
     } catch {

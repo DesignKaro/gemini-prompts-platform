@@ -17,9 +17,12 @@ export function ContentViewTracker({ target, contentId, delayMs = 1200 }: Conten
       return;
     }
 
-    hasTrackedRef.current = true;
     const timeoutId = window.setTimeout(
       () => {
+        if (hasTrackedRef.current) {
+          return;
+        }
+        hasTrackedRef.current = true;
         if (target === 'prompt') {
           void trackPromptView(contentId);
           return;
